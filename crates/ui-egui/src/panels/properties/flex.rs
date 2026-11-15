@@ -17,11 +17,11 @@ const FLEX_JUSTIFY: [(&str, &str, &str); 6] = [
 ];
 
 /// The selected Flex Layout container (the first), with its objects' bounds.
-fn selected_container(app: &DesignApp) -> Option<(designcraft_doc::Item, Vec<designcraft_geom::Rect>)> {
+fn selected_container(app: &DesignApp) -> Option<(pliego_doc::Item, Vec<pliego_geom::Rect>)> {
     let st = app.session.active()?;
     let it = st.selection.items.iter().filter_map(|i| st.doc.item(*i)).find(|it| it.flex.is_some())?.clone();
     let kids = match &it.content {
-        designcraft_doc::Content::Group { items } => items.iter().map(|c| c.bounds()).collect(),
+        pliego_doc::Content::Group { items } => items.iter().map(|c| c.bounds()).collect(),
         _ => Vec::new(),
     };
     Some((it, kids))
@@ -29,8 +29,8 @@ fn selected_container(app: &DesignApp) -> Option<(designcraft_doc::Item, Vec<des
 
 /// The chosen (column, row) of the Flex Layout alignment grid, and whether a space justification
 /// leaves only one axis (`Some(true)` for a row layout).
-fn flex_grid_choice(f: Option<&designcraft_doc::FlexLayout>) -> ((usize, usize), Option<bool>) {
-    use designcraft_doc::{FlexAlign, FlexJustify};
+fn flex_grid_choice(f: Option<&pliego_doc::FlexLayout>) -> ((usize, usize), Option<bool>) {
+    use pliego_doc::{FlexAlign, FlexJustify};
     let pos = |a: FlexAlign| match a {
         FlexAlign::Start => 0,
         FlexAlign::Center => 1,
@@ -53,7 +53,7 @@ fn flex_grid_choice(f: Option<&designcraft_doc::FlexLayout>) -> ((usize, usize),
 
 /// The alignment grid: 3 × 3 cells (one column or row of three when a space justification spreads
 /// the objects along the main axis); the chosen cell shows the direction's arrow.
-fn flex_grid(ui: &mut Ui, r: Rect, f: Option<&designcraft_doc::FlexLayout>) -> Option<u8> {
+fn flex_grid(ui: &mut Ui, r: Rect, f: Option<&pliego_doc::FlexLayout>) -> Option<u8> {
     let t = Tokens::get(ui.ctx());
     let resp = ui.interact(r, ui.scope_id().with("flex_grid"), Sense::click());
     ui.painter().rect_stroke(r, 2.0, Stroke::new(1.0, t.field_border), StrokeKind::Inside);
@@ -76,9 +76,9 @@ fn flex_grid(ui: &mut Ui, r: Rect, f: Option<&designcraft_doc::FlexLayout>) -> O
             if on && f.is_some() {
                 ui.painter().rect_filled(c.shrink(2.0), 2.0, t.well);
                 let icon = match f.map(|f| f.direction) {
-                    Some(designcraft_doc::FlexDirection::RowReverse) => "flex-left",
-                    Some(designcraft_doc::FlexDirection::Column) => "flex-down",
-                    Some(designcraft_doc::FlexDirection::ColumnReverse) => "flex-up",
+                    Some(pliego_doc::FlexDirection::RowReverse) => "flex-left",
+                    Some(pliego_doc::FlexDirection::Column) => "flex-down",
+                    Some(pliego_doc::FlexDirection::ColumnReverse) => "flex-up",
                     _ => "flex-right",
                 };
                 icons::paint(ui.painter(), c.shrink(3.0), icon, t.text_strong);
@@ -96,7 +96,7 @@ fn flex_grid(ui: &mut Ui, r: Rect, f: Option<&designcraft_doc::FlexLayout>) -> O
 /// Flex Layout controls, as InDesign's panel: Create Flex Layout; alignment grid, width and height
 /// (Auto/Fixed); justification, direction and wrap; padding and spacing.
 pub(super) fn flex_section(app: &mut DesignApp, ui: &mut Ui) {
-    use designcraft_doc::{FlexSize, flex};
+    use pliego_doc::{FlexSize, flex};
     let t = Tokens::get(ui.ctx());
     let lang = app.ui.language.clone();
     let tr = |s: &str| crate::i18n::tr(&lang, s).to_string();
@@ -191,10 +191,10 @@ pub(super) fn flex_section(app: &mut DesignApp, ui: &mut Ui) {
         place(ui, sub(b, 78.0, 0.0, 132.0, FIELD_H), |ui| {
             ui.spacing_mut().item_spacing.x = 2.0;
             for (d, icon, tip) in [
-                (designcraft_doc::FlexDirection::Row, "flex-right", "Row"),
-                (designcraft_doc::FlexDirection::RowReverse, "flex-left", "Reverse Row"),
-                (designcraft_doc::FlexDirection::Column, "flex-down", "Column"),
-                (designcraft_doc::FlexDirection::ColumnReverse, "flex-up", "Reverse Column"),
+                (pliego_doc::FlexDirection::Row, "flex-right", "Row"),
+                (pliego_doc::FlexDirection::RowReverse, "flex-left", "Reverse Row"),
+                (pliego_doc::FlexDirection::Column, "flex-down", "Column"),
+                (pliego_doc::FlexDirection::ColumnReverse, "flex-up", "Reverse Column"),
             ] {
                 if widgets::icon_toggle_sized(ui, icon, enabled && dir == d, &tr(tip), vec2(31.0, 21.0)).clicked() {
                     set = Some(json!({"direction": d}));

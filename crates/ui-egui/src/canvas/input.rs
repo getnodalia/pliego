@@ -158,7 +158,7 @@ fn context_target(app: &mut DesignApp, p: Point, zoom: f64) -> crate::menus::Con
 }
 
 /// The frontmost item under canvas point `p` and that point in its spread, hit as the tools do.
-fn item_at(app: &DesignApp, p: Point, zoom: f64) -> Option<(designcraft_doc::ItemId, Point)> {
+fn item_at(app: &DesignApp, p: Point, zoom: f64) -> Option<(pliego_doc::ItemId, Point)> {
     let st = app.session.active()?;
     let (sr, sp) = CanvasLayout::new(&st.doc, st.editing_parents).spread_at(p)?;
     let tol = 4.0 / zoom.max(1e-6);
@@ -174,7 +174,7 @@ fn item_at(app: &DesignApp, p: Point, zoom: f64) -> Option<(designcraft_doc::Ite
 /// new object. `None` when the pointer isn't over the canvas or over such a frame, for a locked
 /// frame, which a drop never replaces, and for a line or any path that encloses no area, which
 /// would become a zero-height image frame (#2290), as the place cursor skips them.
-pub fn drop_frame(app: &DesignApp, screen: Option<Pos2>) -> Option<designcraft_doc::ItemId> {
+pub fn drop_frame(app: &DesignApp, screen: Option<Pos2>) -> Option<pliego_doc::ItemId> {
     let rect = app.canvas_rect?;
     let pos = screen.filter(|p| rect.contains(*p))?;
     let v = app.view()?;
@@ -479,7 +479,7 @@ pub(super) fn handle_input(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::
 
 /// A key for the active tool (caret movement, nudging, Backspace); Escape it leaves alone
 /// deselects.
-fn tool_key(app: &mut DesignApp, key: egui::Key, modifiers: egui::Modifiers, vi: designcraft_engine::ViewInfo) {
+fn tool_key(app: &mut DesignApp, key: egui::Key, modifiers: egui::Modifiers, vi: pliego_engine::ViewInfo) {
     let k = match key {
         egui::Key::ArrowLeft => ToolKey::Left,
         egui::Key::ArrowRight => ToolKey::Right,

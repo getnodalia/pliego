@@ -3,11 +3,11 @@
 //! other. Every value lives in the dialog's fields, so the control channel sets them
 //! (`ui.dialog.set`) like a user would; `confirm` turns them into `file.new`.
 
-use designcraft_doc::Intent;
-use designcraft_doc::build::{NewDocument, PRESETS};
-use designcraft_geom::units::{PT_PER_MM, parse_measure};
-use designcraft_geom::{Unit, format_measure};
 use egui::{Align, Align2, Color32, FontId, Layout, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use pliego_doc::Intent;
+use pliego_doc::build::{NewDocument, PRESETS};
+use pliego_geom::units::{PT_PER_MM, parse_measure};
+use pliego_geom::{Unit, format_measure};
 use serde_json::{Map, Value, json};
 
 use crate::DesignApp;

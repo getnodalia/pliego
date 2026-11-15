@@ -83,7 +83,7 @@ fn autoflow_sets_frames_on_dragged_columns() {
     s.execute("file.new", &json!({"preset": "Letter", "pages": 1, "columns": 2, "gutter": 18, "margins": 54})).unwrap();
     // The margin box is 504 pt wide; the gutter is dragged left. There is no command for
     // dragging a column guide yet, so set what an import would leave, on the parent.
-    let dragged = designcraft_doc::Columns { count: 2, gutter: 18.0, positions: Some(vec![0.0, 150.0, 170.0, 504.0]) };
+    let dragged = pliego_doc::Columns { count: 2, gutter: 18.0, positions: Some(vec![0.0, 150.0, 170.0, 504.0]) };
     s.edit(|d, _| {
         for pg in &mut std::sync::Arc::make_mut(&mut d.parents[0]).pages {
             pg.columns = dragged.clone();
@@ -147,7 +147,7 @@ fn facing_document(pages: usize, marker: usize) -> (Session, u64) {
 
 /// Every frame of the story on the column of its page, the story running through the pages in
 /// order, two frames a page.
-fn assert_frames_in_columns(d: &Document, frames: &[designcraft_doc::ItemId]) {
+fn assert_frames_in_columns(d: &Document, frames: &[pliego_doc::ItemId]) {
     for (i, f) in frames.iter().enumerate() {
         let page = d.page_of_item(*f).unwrap();
         assert_eq!(page, i / 2, "frame {i}");
@@ -176,10 +176,10 @@ fn autoflow_fills_the_pages_that_follow_before_adding_any() {
     assert!(d.page_of_item(*frames.last().unwrap()).unwrap() > 2, "{} frames", frames.len());
     assert_frames_in_columns(d, &frames);
     // The text ends before the document does: no empty frame after it.
-    let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+    let cs = pliego_compose::compose_story(d, sid, &Default::default());
     assert!(frames.iter().all(|f| cs.frame(*f).is_some_and(|ft| !ft.range.is_empty())));
     assert!(d.page_of_item(*frames.last().unwrap()).unwrap() < 5);
-    assert_eq!(d.page_of_item(designcraft_doc::ItemId(marker)), Some(2));
+    assert_eq!(d.page_of_item(pliego_doc::ItemId(marker)), Some(2));
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -198,7 +198,7 @@ fn autoflow_adds_pages_at_the_end_of_the_document() {
     assert_eq!(r["pagesAdded"].as_u64(), Some(d.page_count() as u64 - 3), "{r}");
     // The document's own pages come first, the added ones after the last of them.
     assert_eq!((0..3).map(|i| d.page(i).unwrap().id).collect::<Vec<_>>(), ids);
-    assert_eq!(d.page_of_item(designcraft_doc::ItemId(marker)), Some(2));
+    assert_eq!(d.page_of_item(pliego_doc::ItemId(marker)), Some(2));
     let frames = d.story(StoryId(r["story"].as_u64().unwrap())).unwrap().frames.clone();
     assert_frames_in_columns(d, &frames);
     assert_eq!(d.page_of_item(*frames.last().unwrap()), Some(d.page_count() - 1));
@@ -256,7 +256,7 @@ fn autoflow_leaves_no_empty_frame_on_the_pages_that_follow() {
     let sid = StoryId(r["story"].as_u64().unwrap());
     let frames = &d.story(sid).unwrap().frames;
     assert!(frames.len() >= 2, "{r}");
-    let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+    let cs = pliego_compose::compose_story(d, sid, &Default::default());
     assert!(frames.iter().all(|f| cs.frame(*f).is_some_and(|ft| !ft.range.is_empty())), "{} frames", frames.len());
     assert_eq!(d.spreads.iter().map(|sp| sp.items.len()).sum::<usize>(), frames.len());
     let _ = std::fs::remove_dir_all(&dir);
@@ -290,7 +290,7 @@ fn autoflow_adds_the_pages_odd_and_even_page_breaks_ask_for() {
     // From page 1, an odd page break needs pages 2 and 3 (2 stays empty), an even one page 2.
     // A frame such a break ends early holds few characters; taken for a full frame, it made
     // autoflow add a page per few characters left.
-    use designcraft_doc::{EVEN_PAGE_BREAK, ODD_PAGE_BREAK, build::NewDocument};
+    use pliego_doc::{EVEN_PAGE_BREAK, ODD_PAGE_BREAK, build::NewDocument};
     for (brk, added) in [(ODD_PAGE_BREAK, 2), (EVEN_PAGE_BREAK, 1)] {
         let mut d = Document::new(&NewDocument { pages: 1, facing_pages: false, primary_text_frame: true, ..Default::default() });
         let sid = d.settings.primary_story.unwrap();
@@ -304,7 +304,7 @@ fn autoflow_adds_the_pages_odd_and_even_page_breaks_ask_for() {
         );
         assert_eq!(autoflow(&mut d, sid, 50, "file.place", false).unwrap(), added, "{brk:?}");
         assert_eq!(d.page_count(), added + 1, "{brk:?}");
-        assert_eq!(designcraft_compose::compose_story(&d, sid, &Default::default()).overset_at, None, "{brk:?}");
+        assert_eq!(pliego_compose::compose_story(&d, sid, &Default::default()).overset_at, None, "{brk:?}");
     }
 }
 
@@ -348,7 +348,7 @@ fn autoflow_sizes_no_frame_by_one_a_start_option_ends_early() {
 #[test]
 fn autoflow_looks_past_a_deleted_paragraph_for_the_start_option() {
     // The title frame ends before a tracked deletion; the chapter after it starts on an odd page.
-    use designcraft_doc::{ChangeMark, build::NewDocument};
+    use pliego_doc::{ChangeMark, build::NewDocument};
     let mut d = Document::new(&NewDocument { pages: 1, facing_pages: false, primary_text_frame: true, ..Default::default() });
     let sid = d.settings.primary_story.unwrap();
     let st = d.story_mut(sid).unwrap();
@@ -357,14 +357,14 @@ fn autoflow_looks_past_a_deleted_paragraph_for_the_start_option() {
     st.format_chars(6..11, |f| f.over.change = Some(ChangeMark::Deleted));
     let ids = d.next_id;
     assert_eq!(autoflow(&mut d, sid, 2000, "file.place", false).unwrap(), 4);
-    assert_eq!(designcraft_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
+    assert_eq!(pliego_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
     assert!(d.next_id - ids < 100, "{} ids", d.next_id - ids);
 }
 
 #[test]
 fn autoflow_asks_for_every_frame_the_start_options_ask_for_at_once() {
     // A paragraph per page: no frame sets a fill rate, yet one round shouldn't add one frame.
-    use designcraft_doc::build::NewDocument;
+    use pliego_doc::build::NewDocument;
     let mut d = Document::new(&NewDocument { pages: 1, facing_pages: false, primary_text_frame: true, ..Default::default() });
     let sid = d.settings.primary_story.unwrap();
     let st = d.story_mut(sid).unwrap();
@@ -374,14 +374,14 @@ fn autoflow_asks_for_every_frame_the_start_options_ask_for_at_once() {
     }
     let ids = d.next_id;
     assert_eq!(autoflow(&mut d, sid, 2000, "file.place", false).unwrap(), 199);
-    assert_eq!(designcraft_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
+    assert_eq!(pliego_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
     assert!(d.next_id - ids < 2000, "{} ids", d.next_id - ids);
 }
 
 #[test]
 fn autoflow_asks_no_frame_for_a_deleted_or_hidden_break() {
     // Composing skips breaks in the overset text that tracked changes delete or a condition hides.
-    use designcraft_doc::{ChangeMark, Condition, PAGE_BREAK, build::NewDocument};
+    use pliego_doc::{ChangeMark, Condition, PAGE_BREAK, build::NewDocument};
     for hide in [false, true] {
         let mut d = Document::new(&NewDocument { pages: 1, facing_pages: false, primary_text_frame: true, ..Default::default() });
         d.conditions.push(Condition { name: "Hidden".into(), color: [0, 0, 0], visible: false });
@@ -400,7 +400,7 @@ fn autoflow_asks_no_frame_for_a_deleted_or_hidden_break() {
         }
         let ids = d.next_id;
         autoflow(&mut d, sid, 2000, "file.place", false).unwrap();
-        assert_eq!(designcraft_compose::compose_story(&d, sid, &Default::default()).overset_at, None, "hide {hide}");
+        assert_eq!(pliego_compose::compose_story(&d, sid, &Default::default()).overset_at, None, "hide {hide}");
         assert!(d.next_id - ids < 100, "hide {hide}: {} pages, {} ids", d.page_count(), d.next_id - ids);
     }
 }
@@ -408,7 +408,7 @@ fn autoflow_asks_no_frame_for_a_deleted_or_hidden_break() {
 #[test]
 fn autoflow_counts_a_break_and_the_start_option_it_meets_once() {
     // Each chapter ends in a page break and starts on the next page: one new page each, not two.
-    use designcraft_doc::{PAGE_BREAK, build::NewDocument};
+    use pliego_doc::{PAGE_BREAK, build::NewDocument};
     let mut d = Document::new(&NewDocument { pages: 1, facing_pages: false, primary_text_frame: true, ..Default::default() });
     let sid = d.settings.primary_story.unwrap();
     let st = d.story_mut(sid).unwrap();
@@ -418,6 +418,6 @@ fn autoflow_counts_a_break_and_the_start_option_it_meets_once() {
     }
     let ids = d.next_id;
     assert_eq!(autoflow(&mut d, sid, 2000, "file.place", false).unwrap(), 199);
-    assert_eq!(designcraft_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
+    assert_eq!(pliego_compose::compose_story(&d, sid, &Default::default()).overset_at, None);
     assert!(d.next_id - ids < 2000, "{} ids", d.next_id - ids);
 }

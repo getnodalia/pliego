@@ -60,7 +60,7 @@ fn page_preset_row(ui: &mut Ui, lang: &str, w: f64, h: f64) -> Option<(f64, f64)
 /// Properties with the Page tool (Properties › Edit Page), as InDesign's: a "Page" band with Back,
 /// Page Size for this page alone (which page, preset, orientation, W/H), Margins and Columns and
 /// Quick Actions. Back leaves parent editing and returns to the Selection tool and document properties.
-pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: designcraft_doc::SpreadRef, page: usize) {
+pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: pliego_doc::SpreadRef, page: usize) {
     let u = units(app);
     let lang = app.ui.language.clone();
     let Some(st) = app.session.active() else { return };
@@ -83,7 +83,7 @@ pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: designcraf
     });
     rule(ui);
     if back {
-        if matches!(spread, designcraft_doc::SpreadRef::Parent(_)) {
+        if matches!(spread, pliego_doc::SpreadRef::Parent(_)) {
             let _ = app.run("layout.parents.edit", json!({"on": false}));
         }
         let _ = app.run("layout.selectPage", json!({"page": null}));
@@ -94,8 +94,8 @@ pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: designcraf
     // Which page.
     let b = block(ui, FIELD_H);
     let (names, selected): (Vec<String>, usize) = match spread {
-        designcraft_doc::SpreadRef::Doc(si) => ((0..d.page_count()).map(|i| app.session.page_label(i)).collect(), d.first_page_of_spread(si) + page),
-        designcraft_doc::SpreadRef::Parent(_) => {
+        pliego_doc::SpreadRef::Doc(si) => ((0..d.page_count()).map(|i| app.session.page_label(i)).collect(), d.first_page_of_spread(si) + page),
+        pliego_doc::SpreadRef::Parent(_) => {
             ((0..sp.pages.len()).map(|i| format!("{} · {}", sp.parent.as_ref().map(|p| p.label()).unwrap_or_default(), i + 1)).collect(), page)
         }
     };
@@ -104,11 +104,11 @@ pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: designcraf
     });
     if let Some(p) = picked {
         match spread {
-            designcraft_doc::SpreadRef::Doc(_) => {
+            pliego_doc::SpreadRef::Doc(_) => {
                 let _ = app.run("layout.selectPage", json!({"page": p + 1}));
                 crate::canvas::go_to_page(app, p);
             }
-            designcraft_doc::SpreadRef::Parent(_) => {
+            pliego_doc::SpreadRef::Parent(_) => {
                 let _ = app.run("layout.selectParentPage", json!({"parent": sp.id.0, "page": p}));
             }
         }
@@ -132,19 +132,19 @@ pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: designcraf
     }
     if let Some((nw, nh)) = size
         && let Some((cmd, params)) =
-            designcraft_tools::layout::page_size_command(&d, spread, page, json!({"width": nw, "height": nh, "anchor": app.ui.ref_point.min(8)}))
+            pliego_tools::layout::page_size_command(&d, spread, page, json!({"width": nw, "height": nh, "anchor": app.ui.ref_point.min(8)}))
     {
         let _ = app.run(cmd, params);
     }
-    if matches!(spread, designcraft_doc::SpreadRef::Parent(_)) {
+    if matches!(spread, pliego_doc::SpreadRef::Parent(_)) {
         margin_section(app, ui);
     }
     ui.add_space(6.0);
     let fw = full_width(ui);
     if outline_button(ui, crate::i18n::tr(&lang, "Margins and Columns"), fw).clicked() {
         match spread {
-            designcraft_doc::SpreadRef::Doc(si) => crate::canvas::go_to_page(app, d.first_page_of_spread(si) + page),
-            designcraft_doc::SpreadRef::Parent(_) => crate::canvas::show_spread(app, spread),
+            pliego_doc::SpreadRef::Doc(si) => crate::canvas::go_to_page(app, d.first_page_of_spread(si) + page),
+            pliego_doc::SpreadRef::Parent(_) => crate::canvas::show_spread(app, spread),
         }
         crate::menus::activate(app, "layout.marginsAndColumns", &Value::Null);
     }
@@ -166,9 +166,9 @@ fn resize_document(app: &mut DesignApp, n: usize, nv: f64) {
 }
 
 /// The margins after field `k` (top, bottom, outside, inside) is set to `nv`; all four when linked.
-fn edited_margins(mut m: designcraft_doc::Margins, linked: bool, k: usize, nv: f64) -> designcraft_doc::Margins {
+fn edited_margins(mut m: pliego_doc::Margins, linked: bool, k: usize, nv: f64) -> pliego_doc::Margins {
     if linked {
-        return designcraft_doc::Margins { top: nv, bottom: nv, inside: nv, outside: nv };
+        return pliego_doc::Margins { top: nv, bottom: nv, inside: nv, outside: nv };
     }
     match k {
         0 => m.top = nv,
@@ -221,7 +221,7 @@ fn margin_section(app: &mut DesignApp, ui: &mut Ui) {
     if let Some(p) = shown {
         let linked = temp_bool(ui, "margins_linked", true);
         let b = block(ui, 2.0 * FIELD_H + 5.0);
-        let mut set: Option<designcraft_doc::Margins> = None;
+        let mut set: Option<pliego_doc::Margins> = None;
         let fields = [
             ("margin-top", "Top", p.margins.top, 0.0, 0.0),
             ("margin-bottom", "Bottom", p.margins.bottom, 0.0, 26.0),

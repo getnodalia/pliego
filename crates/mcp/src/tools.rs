@@ -95,7 +95,7 @@ fn tool(name: &str, title: &str, desc: &str, schema: Value, read_only: bool) -> 
     })
 }
 
-const APP_ONLY: &str = " Desktop app only (`designcraft-cli mcp --connect PORT`).";
+const APP_ONLY: &str = " Desktop app only (`pliego-cli mcp --connect PORT`).";
 
 /// All tools, in `tools/list` order.
 pub fn tool_definitions() -> Vec<Value> {
@@ -106,7 +106,7 @@ pub fn tool_definitions() -> Vec<Value> {
         tool(
             "list_commands",
             "List commands",
-            "List DesignCraft commands: id, label, menu path, shortcut, parameter description and whether it can run right now. \
+            "List Pliego commands: id, label, menu path, shortcut, parameter description and whether it can run right now. \
              Every user-visible action is a command (frame.create, text.insert, type.char, style.paragraph.apply, layout.pages.insert, \
              object.fill, transform.move, edit.undo…); run them with execute or batch.",
             obj(
@@ -121,7 +121,7 @@ pub fn tool_definitions() -> Vec<Value> {
         tool(
             "execute",
             "Execute command",
-            "Run any DesignCraft command by id with JSON params (ids and params from list_commands). Examples: \
+            "Run any Pliego command by id with JSON params (ids and params from list_commands). Examples: \
              {\"command\":\"frame.create\",\"params\":{\"rect\":[36,36,576,300],\"content\":\"text\",\"text\":\"Hello\"}} → {id, story}; \
              {\"command\":\"type.char\",\"params\":{\"size\":24}}; {\"command\":\"edit.undo\"}. Coordinates are points in spread space. \
              In the desktop app the UI-only commands (view.*, window.*, help.*, edit.dynamicSpelling, and app.* except app.links, \
@@ -210,14 +210,14 @@ pub fn tool_definitions() -> Vec<Value> {
         tool(
             "open_document",
             "Open document",
-            "Open a .designcraft file as a new, active document.",
+            "Open a .pliego file as a new, active document.",
             obj(json!({"path": string("File path")}), &["path"]),
             false,
         ),
         tool(
             "save_document",
             "Save document",
-            "Save the active document in the native .designcraft format.",
+            "Save the active document in the native .pliego format.",
             obj(json!({"path": string("Destination (default: the document's current path)")}), &[]),
             false,
         ),
@@ -500,7 +500,7 @@ fn filter_commands(all: Value, a: &Args) -> Value {
 }
 
 fn batch(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
-    use designcraft_engine::script;
+    use pliego_engine::script;
     let steps = match (a.get("commands").and_then(Value::as_array), a.get("script").and_then(Value::as_str)) {
         (Some(c), _) if !c.is_empty() => script::parse(&Value::Array(c.clone()).to_string())?,
         (_, Some(t)) => script::parse(t)?,
@@ -528,7 +528,7 @@ fn render_page(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     let b64 = r.get("pngBase64").and_then(Value::as_str).ok_or("renderer returned no image")?.to_string();
     let path = a.get("path").and_then(Value::as_str);
     if let Some(path) = path {
-        let png = designcraft_engine::cmd::base64_decode(&b64);
+        let png = pliego_engine::cmd::base64_decode(&b64);
         b.write_file(path, &png)?;
     }
     Ok(ToolResult::image(b64, &json!({"width": r.get("width"), "height": r.get("height"), "path": path})))
@@ -542,7 +542,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     // else can read (the temporary folder may be shared with other users).
     let private = match keep {
         Some(_) => None,
-        None => Some(private_temp_dir("designcraft-mcp")?),
+        None => Some(private_temp_dir("pliego-mcp")?),
     };
     let target = match (keep, &private) {
         (Some(p), _) => p.to_string(),
@@ -556,7 +556,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
         std::fs::remove_dir(dir).ok();
     }
     let (r, png) = (r?, png.transpose()?.unwrap_or_default());
-    Ok(ToolResult::image(designcraft_engine::cmd::base64_encode(&png), &json!({"width": r.get("width"), "height": r.get("height"), "path": keep})))
+    Ok(ToolResult::image(pliego_engine::cmd::base64_encode(&png), &json!({"width": r.get("width"), "height": r.get("height"), "path": keep})))
 }
 
 /// A new folder under the temporary folder that only this user can read, named after `prefix`.
@@ -696,6 +696,6 @@ pub fn call_tool(b: &mut dyn Backend, name: &str, args: &Value) -> ToolResult {
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| dispatch(b, name, a))) {
         Ok(Ok(r)) => r,
         Ok(Err(e)) => ToolResult::error(format!("{name}: {e}")),
-        Err(payload) => ToolResult::error(format!("{name}: internal error: {}", designcraft_engine::guard::panic_message(payload.as_ref()))),
+        Err(payload) => ToolResult::error(format!("{name}: internal error: {}", pliego_engine::guard::panic_message(payload.as_ref()))),
     }
 }

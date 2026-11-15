@@ -20,7 +20,7 @@ pub const PANEL_COMMAND: &str = "window.panel";
 /// The command that selects a tool; a binding on it carries the tool id.
 pub const TOOL_COMMAND: &str = "tool.select";
 
-/// InDesign's default keys for the panels DesignCraft has, where DesignCraft's own defaults leave
+/// InDesign's default keys for the panels Pliego has, where Pliego's own defaults leave
 /// the key free.
 const PANEL_KEYS: &[(&str, &str)] = &[
     ("swatches", "F5"),
@@ -193,7 +193,7 @@ fn build_catalog() -> (Vec<Bindable>, HashSet<&'static str>) {
         .map(|b| b.trigger)
         .collect();
     let mut internal = HashSet::new();
-    for c in designcraft_engine::command_specs() {
+    for c in pliego_engine::command_specs() {
         let shortcut = c.shortcut.filter(|d| Binding::parse(d).is_ok_and(|b| !ui_keys.contains(&b.trigger)));
         if c.menu.is_empty() && shortcut.is_none() && !paths.contains_key(c.id) {
             internal.insert(c.id);
@@ -212,7 +212,7 @@ fn build_catalog() -> (Vec<Bindable>, HashSet<&'static str>) {
         let defaults: Vec<&str> = own.into_iter().chain(twin).collect();
         add(panel(id), label, &defaults, Some(vec!["Window".into(), (*label).into()]), Kind::Command);
     }
-    for group in designcraft_tools::TOOL_GROUPS {
+    for group in pliego_tools::TOOL_GROUPS {
         let Some(first) = group.first() else { continue };
         for t in group.iter() {
             let kind = Kind::Tool { group: Some(first.id.to_string()) };
@@ -428,7 +428,7 @@ mod tests {
             assert_eq!(keymap_for(p, saved).bindings(&cmd), before, "{p:?}: a saved reserved chord");
         }
         // Through `window.setShortcut`, as the Keyboard Shortcuts dialog and the control channel set keys.
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let sc = os_chord(platform());
         let r = menus::run_ui(&mut app, "window.setShortcut", &json!({"id": "app.palette", "shortcut": sc, "steal": true})).unwrap();
         assert!(r.unwrap_err().ends_with("is reserved by the system"));
@@ -466,7 +466,7 @@ mod tests {
     /// An app typing in a text frame holding "Page ", with the caret at its end, and a function
     /// that runs one frame of the whole UI with `events` and `modifiers` held.
     fn typing_in_a_text_frame() -> (DesignApp, Value, impl FnMut(&mut DesignApp, egui::Modifiers, Vec<egui::Event>)) {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let story = app.run("frame.create", json!({"rect": [36, 36, 300, 200], "content": "text", "text": "Page "})).unwrap()["story"].clone();
         app.select_tool("type");
@@ -562,7 +562,7 @@ mod tests {
         assert!(!listed(internal));
         assert!(listed(find("edit.undo").unwrap()));
         assert!(catalog().iter().filter(|b| matches!(b.kind, Kind::Tool { .. })).all(listed));
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let r = menus::run_ui(&mut app, "window.setShortcut", &json!({"id": "selection.set", "shortcut": "Cmd+Z"})).unwrap().unwrap();
         assert_eq!(r["conflicts"], json!(["edit.undo"]));
     }
@@ -570,7 +570,7 @@ mod tests {
     /// A panel and the command that opens it share their key without a reported conflict.
     #[test]
     fn a_panels_twin_is_not_a_conflict() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         for steal in [false, true] {
             let r = menus::run_ui(&mut app, "window.setShortcut", &json!({"id": "app.characterPanel", "shortcut": "Cmd+T", "steal": steal}))
                 .unwrap()

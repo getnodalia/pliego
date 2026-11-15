@@ -1,7 +1,7 @@
 //! Paragraph / character styles and swatches.
 
-use designcraft_color::{Swatch, SwatchValue};
-use designcraft_doc::{CharAttrs, CharacterStyle, Effects, Item, ObjectStyle, ParaAttrs, ParagraphStyle, Styles};
+use pliego_color::{Swatch, SwatchValue};
+use pliego_doc::{CharAttrs, CharacterStyle, Effects, Item, ObjectStyle, ParaAttrs, ParagraphStyle, Styles};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_text_or_frames, ok, str_param};
@@ -34,7 +34,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "{name, entries: [{name?, characters?, family, style?, relativeSize?, horizontalScale?, verticalScale?, baselineShift?, scaleOption?}]} — replaces a composite font definition; empty characters selects the base entry",
             has_doc,
             |s, p| {
-                let f: designcraft_doc::cjk::CompositeFont =
+                let f: pliego_doc::cjk::CompositeFont =
                     serde_json::from_value(p.clone()).map_err(|e| bad("style.compositeFont.set", e.to_string()))?;
                 if f.name.trim().is_empty()
                     || f.entries.is_empty()
@@ -93,7 +93,7 @@ pub fn specs() -> Vec<CommandSpec> {
                         e.split = v;
                     }
                     let out = serde_json::to_value(&*e).unwrap_or_default();
-                    if *e == designcraft_doc::ExportTag::default() {
+                    if *e == pliego_doc::ExportTag::default() {
                         st.export_tags.remove(&key);
                     }
                     Ok(out)
@@ -322,14 +322,14 @@ pub fn specs() -> Vec<CommandSpec> {
         }),
         cmd!(query "ink.list", "Ink Manager", [], None, "{} → {allToProcess, inks: [{name, process: bool (printed as process), alias?}]} — the spot inks", has_doc, |s, _| {
             let d = &s.doc()?.doc;
-            let inks = designcraft_pdf::inks::ink_set(d);
+            let inks = pliego_pdf::inks::ink_set(d);
             let inks: Vec<Value> = d
                 .swatches
                 .iter()
-                .filter(|w| matches!(w.value, designcraft_color::swatch::SwatchValue::Color { color_type: designcraft_color::swatch::ColorType::Spot, .. }))
+                .filter(|w| matches!(w.value, pliego_color::swatch::SwatchValue::Color { color_type: pliego_color::swatch::ColorType::Spot, .. }))
                 .map(|w| {
                     let alias = d.inks.aliases.iter().find(|(a, _)| *a == w.name).map(|(_, t)| t.clone());
-                    json!({"name": w.name, "process": designcraft_pdf::inks::spot_output(d, &inks, &w.name).1, "alias": alias})
+                    json!({"name": w.name, "process": pliego_pdf::inks::spot_output(d, &inks, &w.name).1, "alias": alias})
                 })
                 .collect();
             Ok(json!({"allToProcess": d.inks.all_to_process, "inks": inks}))
@@ -353,10 +353,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     if let Some(name) = &ink {
                         let is_spot = |n: &str| {
                             d.swatch(n).is_some_and(|w| {
-                                matches!(
-                                    w.value,
-                                    designcraft_color::swatch::SwatchValue::Color { color_type: designcraft_color::swatch::ColorType::Spot, .. }
-                                )
+                                matches!(w.value, pliego_color::swatch::SwatchValue::Color { color_type: pliego_color::swatch::ColorType::Spot, .. })
                             })
                         };
                         if !is_spot(name) {
@@ -375,7 +372,7 @@ pub fn specs() -> Vec<CommandSpec> {
                         }
                         match alias {
                             Some(Value::String(to)) => {
-                                let mut set = designcraft_pdf::inks::ink_set(d);
+                                let mut set = pliego_pdf::inks::ink_set(d);
                                 let ids = (set.lookup(name), set.lookup(&to));
                                 if let (Some(from), Some(target)) = ids
                                     && !set.alias(from, target)
@@ -425,7 +422,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     for g in &mut d.color_groups {
                         g.swatches.retain(|w| !names.contains(w));
                     }
-                    d.color_groups.push(designcraft_doc::ColorGroup { name: name.clone(), swatches: names });
+                    d.color_groups.push(pliego_doc::ColorGroup { name: name.clone(), swatches: names });
                     Ok(json!({"name": name}))
                 })
             }

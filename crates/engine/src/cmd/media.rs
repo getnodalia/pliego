@@ -3,8 +3,8 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, MediaOptions, Shape};
-use designcraft_geom::{Affine, Rect, shapes};
+use pliego_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, MediaOptions, Shape};
+use pliego_geom::{Affine, Rect, shapes};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_selection, ok, targets};
@@ -32,7 +32,7 @@ pub(crate) fn place_media(s: &mut Session, p: &Value, name: String, mime: &str, 
         let aid = d.add_asset(Asset { id: fresh, name, mime, link, data: Arc::new(bytes), ..Default::default() });
         let id = match target {
             Some(fid) => {
-                let it = d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?;
+                let it = d.item_mut(fid).ok_or(pliego_doc::DocError::NoItem(fid))?;
                 let r = it.inner_bounds();
                 it.content = Content::Graphic(Graphic {
                     layer_options: None,
@@ -93,7 +93,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 let poster = match p.get("poster") {
                     Some(Value::Object(_)) => {
                         let (bytes, name, link) = super::file::read_source(&p["poster"])?;
-                        let px = designcraft_render::image_size(&bytes).ok_or_else(|| bad("media.options", "the poster isn't a readable image"))?;
+                        let px = pliego_render::image_size(&bytes).ok_or_else(|| bad("media.options", "the poster isn't a readable image"))?;
                         Some(Some((bytes, name, link, px)))
                     }
                     Some(Value::Null) => Some(None),
@@ -103,7 +103,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     let poster_id = match poster {
                         Some(Some((bytes, name, link, px))) => {
                             let fresh = AssetId(d.alloc());
-                            let mime = designcraft_render::image_mime(&bytes).to_string();
+                            let mime = pliego_render::image_mime(&bytes).to_string();
                             Some(Some(d.add_asset(Asset {
                                 id: fresh,
                                 name,
@@ -148,7 +148,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let it = d.item(id).ok_or_else(|| bad("media.get", "no such object"))?;
             let (Some(m), Content::Graphic(g)) = (&it.media, &it.content) else { return Err(bad("media.get", "not a video or sound")) };
             let a = d.assets.get(&g.asset);
-            Ok(json!({"kind": a.and_then(|a| designcraft_doc::media_kind(&a.mime)), "name": a.map(|a| a.name.clone()), "playOnPageLoad": m.play_on_page_load,
+            Ok(json!({"kind": a.and_then(|a| pliego_doc::media_kind(&a.mime)), "name": a.map(|a| a.name.clone()), "playOnPageLoad": m.play_on_page_load,
                 "loop": m.looping, "controls": m.controls, "poster": m.poster.map(|p| p.0)}))
         }),
     ]
@@ -165,14 +165,14 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let line = s.execute("line.create", &json!({"a": [18, 600], "b": [594, 600]})).unwrap();
-        let original = serde_json::to_value(s.doc().unwrap().doc.item(designcraft_doc::ItemId(line["id"].as_u64().unwrap())).unwrap()).unwrap();
+        let original = serde_json::to_value(s.doc().unwrap().doc.item(pliego_doc::ItemId(line["id"].as_u64().unwrap())).unwrap()).unwrap();
         let fake = super::super::file::base64_encode(b"\x00\x00\x00\x18ftypmp42");
 
         let r = s.execute("file.place", &json!({"base64": fake, "name": "clip.mp4"})).unwrap();
 
         assert_ne!(r["id"], line["id"]);
         let d = &s.doc().unwrap().doc;
-        assert_eq!(serde_json::to_value(d.item(designcraft_doc::ItemId(line["id"].as_u64().unwrap())).unwrap()).unwrap(), original);
+        assert_eq!(serde_json::to_value(d.item(pliego_doc::ItemId(line["id"].as_u64().unwrap())).unwrap()).unwrap(), original);
         assert_eq!(d.spreads[0].items.len(), 2);
     }
 
@@ -188,14 +188,14 @@ mod tests {
         assert_eq!(g["controls"], true);
         // The placeholder is dark with a light play mark.
         let d = s.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         assert!(img.pixel(110, 110)[0] < 80, "dark frame");
         assert!(img.pixel(260, 190)[0] > 200, "play mark");
         // A poster replaces the placeholder.
         let px: Vec<u8> = (0..8 * 8).flat_map(|_| [255, 0, 0, 255]).collect();
-        let png = designcraft_render::Rendered { width: 8, height: 8, pixels: px }.to_png();
+        let png = pliego_render::Rendered { width: 8, height: 8, pixels: px }.to_png();
         s.execute(
             "media.options",
             &json!({"ids": [id], "loop": true, "poster": {"base64": super::super::file::base64_encode(&png), "name": "p.png"}}),
@@ -243,7 +243,7 @@ mod tests {
         let eps = b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 10 10 154 82\nnewpath\n%%EOF\n";
         let r = s.execute("file.place", &json!({"base64": super::super::file::base64_encode(eps), "name": "logo.eps", "x": 72, "y": 72})).unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let b = d.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().bounds();
+        let b = d.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().bounds();
         assert!((b.width() - 144.0).abs() < 1e-6 && (b.height() - 72.0).abs() < 1e-6, "{b:?}");
         // Renders (the placeholder) and exports.
         assert!(s.execute("file.exportPdf", &json!({})).is_ok());

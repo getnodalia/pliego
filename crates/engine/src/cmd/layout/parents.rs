@@ -1,7 +1,7 @@
 use super::{Result, SpreadId, Value, bad, json};
 
 /// A parent spread named by prefix, label (`A-Parent`) or index.
-pub(super) fn parent_spread_index(d: &designcraft_doc::Document, v: &Value) -> Option<usize> {
+pub(super) fn parent_spread_index(d: &pliego_doc::Document, v: &Value) -> Option<usize> {
     match v {
         Value::Number(n) => n.as_u64().and_then(|i| usize::try_from(i).ok()).filter(|i| *i < d.parents.len()),
         Value::String(s) => d.parents.iter().position(|p| p.parent.as_ref().is_some_and(|i| i.prefix == *s || i.label() == *s)),
@@ -13,7 +13,7 @@ pub(super) fn parent_spread_index(d: &designcraft_doc::Document, v: &Value) -> O
 /// its prefix (`"A"`) when only one parent has it. `null` or `"[None]"` → `Some(None)` (no parent);
 /// missing → `None` (the command's default). Unknown or ambiguous names are errors, so a typo never
 /// clears a page's parent.
-pub(super) fn parent_ref(cmd: &str, d: &designcraft_doc::Document, v: Option<&Value>) -> Result<Option<Option<SpreadId>>> {
+pub(super) fn parent_ref(cmd: &str, d: &pliego_doc::Document, v: Option<&Value>) -> Result<Option<Option<SpreadId>>> {
     let Some(v) = v else { return Ok(None) };
     match v {
         Value::Null => Ok(Some(None)),
@@ -23,7 +23,7 @@ pub(super) fn parent_ref(cmd: &str, d: &designcraft_doc::Document, v: Option<&Va
             d.parents.iter().find(|p| p.id.0 == id).map(|p| Some(Some(p.id))).ok_or_else(|| bad(cmd, format!("no parent with id {id}")))
         }
         Value::String(s) => {
-            let by = |f: &dyn Fn(&designcraft_doc::ParentInfo) -> bool| -> Vec<SpreadId> {
+            let by = |f: &dyn Fn(&pliego_doc::ParentInfo) -> bool| -> Vec<SpreadId> {
                 d.parents.iter().filter(|p| p.parent.as_ref().is_some_and(f)).map(|p| p.id).collect()
             };
             let mut hits = by(&|i| i.label() == *s);
@@ -42,7 +42,7 @@ pub(super) fn parent_ref(cmd: &str, d: &designcraft_doc::Document, v: Option<&Va
 
 /// Whether a parent other than index `except` is labelled `label` (`A-Parent`). Parents may share
 /// a prefix, but a label names one parent.
-pub(super) fn parent_label_taken(d: &designcraft_doc::Document, label: &str, except: Option<usize>) -> bool {
+pub(super) fn parent_label_taken(d: &pliego_doc::Document, label: &str, except: Option<usize>) -> bool {
     d.parents.iter().enumerate().any(|(i, x)| Some(i) != except && x.parent.as_ref().is_some_and(|o| o.label() == label))
 }
 
@@ -83,14 +83,14 @@ pub(super) fn parent_options(s: &mut crate::Session, p: &Value) -> Result<Value>
     if base == Some(id) {
         return Err(bad(CMD, format!("{} cannot be based on itself", info.label())));
     }
-    let label = |d: &designcraft_doc::Document, i: usize| d.parents.get(i).and_then(|x| x.parent.as_ref()).map(|i| i.label());
+    let label = |d: &pliego_doc::Document, i: usize| d.parents.get(i).and_then(|x| x.parent.as_ref()).map(|i| i.label());
     if let Some(b) = base
         && d.parent_base_cycles(pi, b)
     {
         let (name, b) = (info.label(), d.parent_index(b).and_then(|i| label(d, i)).unwrap_or_default());
         return Err(bad(CMD, format!("{name} cannot be based on {b}: that would make a cycle")));
     }
-    let new = designcraft_doc::ParentInfo {
+    let new = pliego_doc::ParentInfo {
         prefix: prefix.unwrap_or_else(|| info.prefix.clone()),
         name: name.unwrap_or_else(|| info.name.clone()),
         based_on: base,
@@ -114,7 +114,7 @@ pub(super) fn parent_options(s: &mut crate::Session, p: &Value) -> Result<Value>
     })
 }
 
-pub(super) fn parent_page_target(d: &designcraft_doc::Document, p: &Value, cmd: &str) -> Result<(usize, usize)> {
+pub(super) fn parent_page_target(d: &pliego_doc::Document, p: &Value, cmd: &str) -> Result<(usize, usize)> {
     let parent = p.get("parent").and_then(Value::as_u64).map(SpreadId).ok_or_else(|| bad(cmd, "give a parent spread id"))?;
     let si = d.parent_index(parent).ok_or_else(|| bad(cmd, "no such parent"))?;
     let pi = p
@@ -145,7 +145,7 @@ pub(super) fn parent_page_size(s: &mut crate::Session, p: &Value) -> Result<Valu
         Some(v) => v.as_u64().filter(|n| *n <= 8).ok_or_else(|| bad(ID, "anchor: 0–8"))? as usize,
     };
     s.edit(|d, _| {
-        super::pages::resize_spread_page(d, designcraft_doc::SpreadRef::Parent(si), pi, w, h, anchor);
+        super::pages::resize_spread_page(d, pliego_doc::SpreadRef::Parent(si), pi, w, h, anchor);
         d.sync_parent_margins();
         Ok(json!({"parent": d.parents[si].id.0, "page": pi}))
     })
@@ -153,7 +153,7 @@ pub(super) fn parent_page_size(s: &mut crate::Session, p: &Value) -> Result<Valu
 
 #[cfg(test)]
 mod parent_margin_tests {
-    use designcraft_doc::{Document, Margins};
+    use pliego_doc::{Document, Margins};
     use serde_json::json;
 
     use crate::Session;
@@ -384,7 +384,7 @@ mod parent_tests {
         assert!(copy.pages.iter().all(|p| src.pages.iter().all(|q| q.id != p.id)));
         assert!(copy.items.iter().all(|i| src.items.iter().all(|j| j.id != i.id)));
         // The copied text frame has its own story.
-        let story = |it: &designcraft_doc::Item| it.text_frame().map(|t| t.story);
+        let story = |it: &pliego_doc::Item| it.text_frame().map(|t| t.story);
         let (s0, s1) = (src.items.iter().find_map(|i| story(i)), copy.items.iter().find_map(|i| story(i)));
         assert!(s0.is_some() && s1.is_some() && s0 != s1);
         assert!(s.execute("layout.parents.duplicate", &json!({"parent": "Nope"})).is_err());
@@ -403,7 +403,7 @@ mod parent_tests {
         let r = s.execute("layout.parents.edit", &json!({"parent": ids[2]})).unwrap();
         assert_eq!(r, json!({"on": true, "parent": ids[2]}));
         assert!(s.doc().unwrap().editing_parents);
-        let n = s.doc().unwrap().doc.parent_index(designcraft_doc::SpreadId(ids[2])).unwrap();
+        let n = s.doc().unwrap().doc.parent_index(pliego_doc::SpreadId(ids[2])).unwrap();
         let shown: Vec<_> = s
             .ui_requests
             .iter()
@@ -428,7 +428,7 @@ mod parent_tests {
     fn a_new_parent_keeps_dragged_columns() {
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({"pages": 1})).unwrap();
-        let dragged = designcraft_doc::Columns { count: 2, gutter: 12.0, positions: Some(vec![0.0, 100.0, 130.0, 540.0]) };
+        let dragged = pliego_doc::Columns { count: 2, gutter: 12.0, positions: Some(vec![0.0, 100.0, 130.0, 540.0]) };
         // There is no command for dragging a column guide yet, so set what an import would leave.
         s.edit(|d, _| {
             let pg = &mut std::sync::Arc::make_mut(&mut d.spreads[0]).pages[0];
@@ -440,8 +440,8 @@ mod parent_tests {
         let d = &s.doc().unwrap().doc;
         let parent = d.parents.iter().find(|p| p.id.0 == id).unwrap();
         assert_eq!(parent.pages.len(), 2);
-        let side = |s: designcraft_doc::PageSide| parent.pages.iter().find(|p| p.side == s).unwrap();
-        let (left, right) = (side(designcraft_doc::PageSide::Left), side(designcraft_doc::PageSide::Right));
+        let side = |s: pliego_doc::PageSide| parent.pages.iter().find(|p| p.side == s).unwrap();
+        let (left, right) = (side(pliego_doc::PageSide::Left), side(pliego_doc::PageSide::Right));
         assert_eq!(right.columns, dragged);
         assert_eq!(right.column_rects().iter().map(|r| r.width()).collect::<Vec<_>>(), vec![100.0, 410.0]);
         assert_eq!(left.columns.positions, Some(vec![0.0, 410.0, 440.0, 540.0]));
@@ -572,8 +572,8 @@ mod parent_base_tests {
         id
     }
 
-    fn page(s: &crate::Session, abs: usize) -> designcraft_render::Rendered {
-        let mut rr = designcraft_render::Renderer::new();
+    fn page(s: &crate::Session, abs: usize) -> pliego_render::Rendered {
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         rr.render_page(&s.doc().unwrap().doc, &s.cache, abs, 1.0, false, &Default::default()).unwrap()
     }
@@ -602,11 +602,11 @@ mod parent_base_tests {
         assert!(paper(img.pixel(170, 20)), "the page's item over B's: {:?}", img.pixel(170, 20));
         assert!(black(page(&s, 0).pixel(50, 100)) && !cyan(page(&s, 0).pixel(250, 100)), "page 1 uses A only");
         // Parent B itself shows A's items under its own.
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
-        let placed = [designcraft_render::Placed { spread: designcraft_doc::SpreadRef::Parent(1), xf: designcraft_geom::Affine::IDENTITY }];
-        let opts = designcraft_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
-        let img = rr.render(&s.doc().unwrap().doc, &s.cache, &placed, (400, 400), designcraft_geom::Affine::IDENTITY, &opts);
+        let placed = [pliego_render::Placed { spread: pliego_doc::SpreadRef::Parent(1), xf: pliego_geom::Affine::IDENTITY }];
+        let opts = pliego_render::RenderOptions { background: Some([255, 255, 255, 255]), ..Default::default() };
+        let img = rr.render(&s.doc().unwrap().doc, &s.cache, &placed, (400, 400), pliego_geom::Affine::IDENTITY, &opts);
         assert!(black(img.pixel(50, 100)) && cyan(img.pixel(150, 150)), "{:?} {:?}", img.pixel(50, 100), img.pixel(150, 150));
         let inspect = s.execute("document.inspect", &json!({})).unwrap();
         assert_eq!(inspect["parents"][1]["basedOn"], "A-Parent");
@@ -631,18 +631,18 @@ mod parent_base_tests {
         s.execute("file.new", &json!({"pages": 1, "facingPages": false})).unwrap();
         s.execute("layout.parents.new", &json!({"prefix": "XYZ"})).unwrap();
         s.execute("layout.parents.options", &json!({"parent": "XYZ", "basedOn": "A"})).unwrap();
-        let marker = designcraft_doc::story::PAGE_NUMBER.to_string();
+        let marker = pliego_doc::story::PAGE_NUMBER.to_string();
         let r = s
             .execute("frame.create", &json!({"spread": {"kind": "parent", "index": 0}, "rect": [72, 30, 500, 60], "content": "text", "text": marker}))
             .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let sid = d.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = d.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         let glyphs = |on| -> usize {
             let cs = s.cache.get_on(&d, sid, on);
             cs.frames.iter().flat_map(|f| f.lines.iter()).map(|l| l.glyphs.iter().filter(|g| g.visible && g.adv > 0.0).count()).sum()
         };
-        assert_eq!(glyphs(designcraft_compose::ShownOn::Own), 1, "A");
-        assert_eq!(glyphs(designcraft_compose::ShownOn::Parent(1)), 3, "XYZ");
+        assert_eq!(glyphs(pliego_compose::ShownOn::Own), 1, "A");
+        assert_eq!(glyphs(pliego_compose::ShownOn::Parent(1)), 3, "XYZ");
     }
 
     /// A file whose parents are based on each other opens, with the cycle broken and reported.

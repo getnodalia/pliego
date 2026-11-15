@@ -14,7 +14,7 @@ pub(super) fn dashed(painter: &egui::Painter, a: Pos2, b: Pos2, stroke: Stroke, 
 pub(super) const MAX_BASELINES: usize = 216 * 72;
 
 /// Baseline grid lines inside a page, measured from its top: `start + n * increment` for n >= 0 (the bottom
-/// edge is not a line), `start` from [`BaselineGrid::origin`](designcraft_doc::BaselineGrid::origin). Lines
+/// edge is not a line), `start` from [`BaselineGrid::origin`](pliego_doc::BaselineGrid::origin). Lines
 /// above the page are skipped without walking them, however far up the start is.
 pub(super) fn baseline_grid_lines(start: f64, increment: f64, height: f64) -> impl Iterator<Item = f64> {
     let step = increment.max(1.0);
@@ -69,7 +69,7 @@ pub(super) fn draw_guides(
 }
 
 /// The bleed and slug outlines of a spread, in their own colours.
-fn draw_bleed_and_slug(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, sp: &designcraft_doc::Spread) {
+fn draw_bleed_and_slug(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, sp: &pliego_doc::Spread) {
     let s = &doc.settings;
     let rect = |r: DRect| xf.rect(slot.xf.transform_rect_bbox(r));
     // Bleed, then slug: one rectangle each around the spread (the inside offset only applies
@@ -82,7 +82,7 @@ fn draw_bleed_and_slug(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &
 }
 
 /// Page tool › Show Parent Page Overlay: the parent page's size over the page.
-fn draw_parent_overlay(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, pi: usize, p: &designcraft_doc::Page, pr: DRect) {
+fn draw_parent_overlay(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, pi: usize, p: &pliego_doc::Page, pr: DRect) {
     let rect = |r: DRect| xf.rect(slot.xf.transform_rect_bbox(r));
     if p.show_parent_overlay
         && let SpreadRef::Doc(si) = slot.spread
@@ -97,7 +97,7 @@ fn draw_parent_overlay(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &
 
 /// A page's baseline grid (when `baseline` is on and the view is zoomed in far enough), margins
 /// and columns.
-fn draw_page_grids(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, p: &designcraft_doc::Page, pr: DRect, baseline: bool) {
+fn draw_page_grids(painter: &egui::Painter, xf: &Xf, doc: &Document, slot: &SpreadSlot, p: &pliego_doc::Page, pr: DRect, baseline: bool) {
     let s = &doc.settings;
     let pt = |q: Point| xf.to_screen(slot.xf * q);
     let rect = |r: DRect| xf.rect(slot.xf.transform_rect_bbox(r));
@@ -133,7 +133,7 @@ struct GuideCtx<'a> {
     xf: &'a Xf,
     doc: &'a Document,
     slot: &'a SpreadSlot,
-    sp: &'a designcraft_doc::Spread,
+    sp: &'a pliego_doc::Spread,
     pasteboard: DRect,
 }
 
@@ -141,7 +141,7 @@ struct GuideCtx<'a> {
 /// guides where they would be dropped. `page`: its index in the spread, the page, and its bounds.
 fn draw_page_guides(
     cx: &GuideCtx,
-    page: (usize, &designcraft_doc::Page, DRect),
+    page: (usize, &pliego_doc::Page, DRect),
     moving: Option<&MovingGuides>,
     selection: &std::collections::HashSet<GuideSel>,
 ) {
@@ -157,8 +157,8 @@ fn draw_page_guides(
             && m.guides.contains(&key)
         {
             g.position += match g.orientation {
-                designcraft_doc::Orientation::Vertical => m.dx,
-                designcraft_doc::Orientation::Horizontal => m.dy,
+                pliego_doc::Orientation::Vertical => m.dx,
+                pliego_doc::Orientation::Horizontal => m.dy,
             };
         }
         draw_guide(cx, pr, &g, selected);
@@ -166,14 +166,14 @@ fn draw_page_guides(
 }
 
 /// One guide as a line: across the pasteboard for a spread guide, across its page otherwise.
-fn draw_guide(cx: &GuideCtx, pr: DRect, g: &designcraft_doc::Guide, selected: bool) {
+fn draw_guide(cx: &GuideCtx, pr: DRect, g: &pliego_doc::Guide, selected: bool) {
     let GuideCtx { painter, xf, doc, slot, sp, pasteboard } = *cx;
     let pt = |q: Point| xf.to_screen(slot.xf * q);
     // Spread guides cross the pasteboard; page guides their page.
     let span = if g.spread { pasteboard } else { pr };
     let (a, bb) = match g.orientation {
-        designcraft_doc::Orientation::Horizontal => (Point::new(span.x0, g.position), Point::new(span.x1, g.position)),
-        designcraft_doc::Orientation::Vertical => {
+        pliego_doc::Orientation::Horizontal => (Point::new(span.x0, g.position), Point::new(span.x1, g.position)),
+        pliego_doc::Orientation::Vertical => {
             let span = if g.spread { sp.bounds().inflate(0.0, 36.0) } else { pr };
             (Point::new(g.position, span.y0), Point::new(g.position, span.y1))
         }
@@ -202,7 +202,7 @@ pub(super) fn draw_flattener_preview(painter: &egui::Painter, xf: &Xf, doc: &Doc
     for slot in &layout.slots {
         let Some(sp) = doc.spread(slot.spread) else { continue };
         for it in sp.items.iter().filter(|it| !it.hidden && transparent(it)) {
-            let r = it.bounds().inflate(designcraft_render::effect_outset(it), designcraft_render::effect_outset(it));
+            let r = it.bounds().inflate(pliego_render::effect_outset(it), pliego_render::effect_outset(it));
             painter.rect_filled(xf.rect(slot.xf.transform_rect_bbox(r)), 0.0, red);
         }
     }

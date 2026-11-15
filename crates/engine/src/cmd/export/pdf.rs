@@ -6,7 +6,7 @@ use super::{EngineError, Marks, PdfOptions, Result, Session, Standard, Value, ba
 pub(super) fn pages_param(id: &str, p: &Value, page_count: usize) -> Result<Option<Vec<usize>>> {
     Ok(match p.get("pages") {
         None | Some(Value::Null) => None,
-        Some(Value::String(s)) => Some(designcraft_pdf::parse_page_range(s, page_count).map_err(|e| bad(id, e.to_string()))?),
+        Some(Value::String(s)) => Some(pliego_pdf::parse_page_range(s, page_count).map_err(|e| bad(id, e.to_string()))?),
         Some(Value::Array(a)) => {
             let mut v = Vec::new();
             for x in a {
@@ -134,11 +134,11 @@ pub(crate) fn flatten_ppi(id: &str, p: &Value) -> Result<Option<f64>> {
 /// itself and its transparency blend space. Export PDF and File › Print add their view options
 /// to it ([`pdf_export`]); Separations Preview separates it as it is.
 pub(crate) fn print_pdf(
-    d: &designcraft_doc::Document,
-    cache: &designcraft_compose::Cache,
+    d: &pliego_doc::Document,
+    cache: &pliego_compose::Cache,
     opts: &PdfOptions,
     ppi: Option<f64>,
-) -> Result<designcraft_pdf::ExportReport> {
+) -> Result<pliego_pdf::ExportReport> {
     // PDF/X-1a: craft-prepress flattens the PDF in its inks; `ppi` sets its resolution.
     let x1a = opts.standard == Standard::PdfX1a;
     let mut opts = opts.clone();
@@ -146,27 +146,27 @@ pub(crate) fn print_pdf(
         opts.flatten_dpi = ppi.unwrap_or(300.0) as f32;
     }
     let flattened = if x1a { None } else { ppi.map(|ppi| flatten(d, cache, ppi)) };
-    let base: &designcraft_doc::Document = flattened.as_ref().map_or(d, |f| &f.0);
+    let base: &pliego_doc::Document = flattened.as_ref().map_or(d, |f| &f.0);
     let (layered, layer_count) = if opts.standard == Standard::PdfA2b { rasterize_layered(base)? } else { (None, 0) };
-    let base2: &designcraft_doc::Document = layered.as_ref().unwrap_or(base);
+    let base2: &pliego_doc::Document = layered.as_ref().unwrap_or(base);
     let shadows = if x1a { shadow_masks(base2, cache, f64::from(opts.flatten_dpi)) } else { Default::default() };
     let (fx_doc, fx_count) = rasterize_effects(base2, cache, &shadows);
     opts.shadows = std::sync::Arc::new(shadows);
     let opts = &opts;
-    let doc: &designcraft_doc::Document = fx_doc.as_ref().unwrap_or(base2);
+    let doc: &pliego_doc::Document = fx_doc.as_ref().unwrap_or(base2);
     let boxed = crate::cmd::interchange::with_pdf_boxes(doc);
-    let doc: &designcraft_doc::Document = &boxed;
-    let mut r = designcraft_pdf::export_pdf_with_report(doc, cache, opts).map_err(|e| EngineError::Other(e.to_string()))?;
+    let doc: &pliego_doc::Document = &boxed;
+    let mut r = pliego_pdf::export_pdf_with_report(doc, cache, opts).map_err(|e| EngineError::Other(e.to_string()))?;
     // Flattening and effect rasterization replace placements, so inspect the source too.
-    if d.has_graphic_layer_visibility_overrides() && !r.warnings.iter().any(|w| w == designcraft_doc::GRAPHIC_LAYER_RENDERING_WARNING) {
-        r.warnings.push(designcraft_doc::GRAPHIC_LAYER_RENDERING_WARNING.into());
+    if d.has_graphic_layer_visibility_overrides() && !r.warnings.iter().any(|w| w == pliego_doc::GRAPHIC_LAYER_RENDERING_WARNING) {
+        r.warnings.push(pliego_doc::GRAPHIC_LAYER_RENDERING_WARNING.into());
     }
     // Transparency Blend Space: the page group of pages with transparency. CMYK print output
     // gets its CMYK page groups from the writer.
-    let spreads = designcraft_pdf::sheet_spreads(doc, opts);
+    let spreads = pliego_pdf::sheet_spreads(doc, opts);
     let blended: Vec<bool> = spreads.iter().map(|si| doc.spreads.get(*si).is_some_and(|sp| sp.items.iter().any(|it| transparent(it)))).collect();
-    if !designcraft_pdf::print_color(doc, opts) && blended.iter().any(|b| *b) {
-        match designcraft_pdf::add_blend_space(&r.bytes, &blended, doc.settings.blend_space == designcraft_doc::BlendSpace::Cmyk) {
+    if !pliego_pdf::print_color(doc, opts) && blended.iter().any(|b| *b) {
+        match pliego_pdf::add_blend_space(&r.bytes, &blended, doc.settings.blend_space == pliego_doc::BlendSpace::Cmyk) {
             Some(b) => r.bytes = b,
             None => r.warnings.push("the transparency blend space couldn't be set".into()),
         }
@@ -187,17 +187,17 @@ pub(crate) fn print_pdf(
 
 /// The PDF that File › Export PDF writes for `p`, with its warnings: the print PDF
 /// ([`print_pdf`]) with its view options, timings and transitions. File › Print prints it.
-pub(crate) fn pdf_export(s: &Session, p: &Value) -> Result<designcraft_pdf::ExportReport> {
+pub(crate) fn pdf_export(s: &Session, p: &Value) -> Result<pliego_pdf::ExportReport> {
     pdf_report(&s.doc()?.doc, &s.cache, p)
 }
 
 /// [`pdf_export`] of `doc`: `file.package` writes its PDF of the packaged copy with it.
-pub(crate) fn pdf_report(doc: &designcraft_doc::Document, cache: &designcraft_compose::Cache, p: &Value) -> Result<designcraft_pdf::ExportReport> {
+pub(crate) fn pdf_report(doc: &pliego_doc::Document, cache: &pliego_compose::Cache, p: &Value) -> Result<pliego_pdf::ExportReport> {
     let opts = options(p, doc.page_count())?;
     let ppi = flatten_ppi("file.exportPdf", p)?;
     let (cat, dest) = view_options(p)?;
     let mut r = print_pdf(doc, cache, &opts, ppi)?;
-    let spreads = designcraft_pdf::sheet_spreads(doc, &opts);
+    let spreads = pliego_pdf::sheet_spreads(doc, &opts);
     let mut cat = cat;
     if let Some(dest) = dest
         && let Some(first) = first_page_ref(&r.bytes)
@@ -205,7 +205,7 @@ pub(crate) fn pdf_report(doc: &designcraft_doc::Document, cache: &designcraft_co
         cat.push_str(&format!("/OpenAction[{first} 0 R{dest}]"));
     }
     if !cat.is_empty() {
-        match designcraft_pdf::add_catalog_entries(&r.bytes, &cat) {
+        match pliego_pdf::add_catalog_entries(&r.bytes, &cat) {
             Some(b) => r.bytes = b,
             None => r.warnings.push("the PDF view options couldn't be set".into()),
         }
@@ -213,16 +213,16 @@ pub(crate) fn pdf_report(doc: &designcraft_doc::Document, cache: &designcraft_co
     // Flip pages every N seconds (presentation).
     if let Some(secs) = p.get("advanceSeconds").and_then(Value::as_f64).filter(|s| *s > 0.0) {
         let dur: Vec<Option<String>> = (0..spreads.len()).map(|_| Some(format!("/Dur {secs:.2}"))).collect();
-        match designcraft_pdf::add_page_entries(&r.bytes, &dur) {
+        match pliego_pdf::add_page_entries(&r.bytes, &dur) {
             Some(b) => r.bytes = b,
             None => r.warnings.push("page timings couldn't be set".into()),
         }
     }
     // Page transitions (each spread's first page holds them).
-    let trans: Vec<Option<designcraft_doc::PageTransition>> =
+    let trans: Vec<Option<pliego_doc::PageTransition>> =
         spreads.into_iter().map(|si| doc.spreads.get(si).and_then(|sp| sp.pages.first()).and_then(|pg| pg.transition)).collect();
     if trans.iter().any(Option::is_some) {
-        match designcraft_pdf::add_transitions(&r.bytes, &trans) {
+        match pliego_pdf::add_transitions(&r.bytes, &trans) {
             Some(b) => r.bytes = b,
             None => r.warnings.push("page transitions couldn't be added to this PDF".into()),
         }
@@ -303,7 +303,7 @@ mod variable_font_tests {
         let Ok(data) = std::fs::read("/System/Library/Fonts/Supplemental/Skia.ttf") else {
             return;
         };
-        designcraft_fonts::FontDb::global().add_font(data);
+        pliego_fonts::FontDb::global().add_font(data);
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Variable"})).unwrap();
@@ -323,7 +323,7 @@ mod placed_pdf_print_tests {
     use crate::Session;
     use crate::cmd::{base64_decode, base64_encode};
 
-    /// A one-page PDF 1.7 with a black box, as VectorCraft writes a logo.
+    /// A one-page PDF 1.7 with a black box, as Pluma writes a logo.
     fn logo() -> Vec<u8> {
         let mut s = Session::new();
         s.execute("file.new", &json!({"width": 100, "height": 50})).unwrap();
@@ -405,7 +405,7 @@ mod print_group_tests {
     use crate::Session;
     use crate::cmd::{base64_decode, base64_encode};
 
-    /// A one-page PDF 1.7 with a black box, as VectorCraft writes a logo.
+    /// A one-page PDF 1.7 with a black box, as Pluma writes a logo.
     fn logo() -> Vec<u8> {
         let mut s = Session::new();
         s.execute("file.new", &json!({"width": 100, "height": 50})).unwrap();
@@ -436,7 +436,7 @@ mod print_group_tests {
         assert!(t.contains("/Group<</Type/Group/S/Transparency/I true>>"), "placed page group without a blending space");
         assert!(t.contains("/Group<</Type/Group/S/Transparency/CS/DeviceCMYK>>"), "CMYK page group");
         assert!(!t.contains("DeviceRGB"), "no RGB left");
-        assert!(!designcraft_pdf::has_rgb_groups(t.as_bytes()));
+        assert!(!pliego_pdf::has_rgb_groups(t.as_bytes()));
         // The file still reads, with the same page.
         let r = s.execute("file.exportPdf", &json!({})).unwrap();
         let bytes = base64_decode(r["base64"].as_str().unwrap());
@@ -444,7 +444,7 @@ mod print_group_tests {
         // An RGB blend space keeps RGB groups.
         s.execute("edit.transparencyBlendSpace", &json!({"space": "rgb"})).unwrap();
         let t = text(&mut s);
-        assert!(t.contains("/CS/DeviceRGB") && designcraft_pdf::has_rgb_groups(t.as_bytes()));
+        assert!(t.contains("/CS/DeviceRGB") && pliego_pdf::has_rgb_groups(t.as_bytes()));
     }
 }
 
@@ -654,7 +654,7 @@ mod overset_tests {
         // wider line no longer fits. 112 pt is the width where that is the only difference.
         let mut s = Session::new();
         s.execute("file.new", &json!({"width": 300, "height": 200, "pages": 12, "facingPages": false, "margins": 0})).unwrap();
-        let text = format!("Continued on page {}", designcraft_doc::story::PAGE_NUMBER);
+        let text = format!("Continued on page {}", pliego_doc::story::PAGE_NUMBER);
         s.execute("frame.create", &json!({"spread": {"kind": "parent", "index": 0}, "rect": [20, 20, 132, 36], "content": "text", "text": text}))
             .unwrap();
 

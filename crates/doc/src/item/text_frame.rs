@@ -229,7 +229,7 @@ impl Default for TextFrameOptions {
             auto_size_no_line_breaks: false,
             column_rule: false,
             column_rule_weight: 1.0,
-            column_rule_color: designcraft_color::swatch::BLACK.into(),
+            column_rule_color: pliego_color::swatch::BLACK.into(),
             column_rule_tint: 1.0,
             column_rule_offset: 0.0,
             column_rule_top_inset: 0.0,

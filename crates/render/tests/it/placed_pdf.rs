@@ -3,7 +3,7 @@
 //! shadings with points far off the page, ten thousand overlapping triangles or forty thousand
 //! patches do not panic, overflow the stack or take more than a minute, and the rest of the page is
 //! drawn. A page with a `/UserUnit` is sized in points, and so are its boxes. The function and mesh
-//! cases follow pdfcraft's tests in `crates/render/src/raster.rs`.
+//! cases follow papel's tests in `crates/render/src/raster.rs`.
 
 use std::sync::Arc;
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -12,11 +12,11 @@ use std::time::Duration;
 use craft_pdf::interpret::Function;
 use craft_pdf::syntax::Pdf;
 use craft_pdf::syntax::object::{Object, ObjectIdentifier};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, PdfCrop, Shape, SpreadRef};
-use designcraft_geom::{Affine, Rect, shapes};
-use designcraft_render::{Rendered, Renderer, pdf_crop_box, pdf_page_size};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, PdfCrop, Shape, SpreadRef};
+use pliego_geom::{Affine, Rect, shapes};
+use pliego_render::{Rendered, Renderer, pdf_crop_box, pdf_page_size};
 
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const RED: [u8; 4] = [255, 0, 0, 255];

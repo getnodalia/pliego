@@ -4,9 +4,9 @@
 //! buttons, underlined link labels, `•••` more-options, 21 pt icon toggles in a `#303030` well,
 //! section headers and 1.5 pt section rules.
 
-use designcraft_geom::Unit;
-use designcraft_geom::units::{format_measure, parse_measure};
 use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use pliego_geom::Unit;
+use pliego_geom::units::{format_measure, parse_measure};
 
 use crate::theme::Tokens;
 
@@ -615,12 +615,12 @@ pub fn paint_stroke_chip(p: &egui::Painter, r: egui::Rect, color: Option<Color32
 }
 
 /// Resolve a swatch to a display colour (and gradient end colours).
-pub fn swatch_colors(doc: &designcraft_doc::Document, name: &str, tint: f32) -> (Option<Color32>, Option<(Color32, Color32)>) {
-    let conv = |c: designcraft_color::Color| {
+pub fn swatch_colors(doc: &pliego_doc::Document, name: &str, tint: f32) -> (Option<Color32>, Option<(Color32, Color32)>) {
+    let conv = |c: pliego_color::Color| {
         let [r, g, b, _] = c.to_rgba8(1.0);
         Color32::from_rgb(r, g, b)
     };
-    if let Some(g) = designcraft_color::swatch::resolve_gradient(&doc.swatches, name)
+    if let Some(g) = pliego_color::swatch::resolve_gradient(&doc.swatches, name)
         && let (Some(a), Some(b)) = (g.stops.first(), g.stops.last())
     {
         return (None, Some((conv(a.color), conv(b.color))));
@@ -871,10 +871,10 @@ mod tests {
         assert_eq!(k.format(12.5), "12.5 pt");
         let close = |s: &str, pt: f64| (k.parse(s).unwrap() - pt).abs() < 1e-9;
         assert!(close("12", 12.0) && close("12 pt", 12.0) && close("1p", 12.0));
-        assert!(close("13Q", 13.0 * designcraft_geom::units::PT_PER_Q), "{:?}", k.parse("13Q"));
-        assert!(close("22H", 22.0 * designcraft_geom::units::PT_PER_Q));
-        assert!(close("5mm", 5.0 * designcraft_geom::units::PT_PER_MM));
-        assert!(close("9pt+1H", 9.0 + designcraft_geom::units::PT_PER_Q));
+        assert!(close("13Q", 13.0 * pliego_geom::units::PT_PER_Q), "{:?}", k.parse("13Q"));
+        assert!(close("22H", 22.0 * pliego_geom::units::PT_PER_Q));
+        assert!(close("5mm", 5.0 * pliego_geom::units::PT_PER_MM));
+        assert!(close("9pt+1H", 9.0 + pliego_geom::units::PT_PER_Q));
         assert_eq!(k.parse("13x"), None, "an unknown unit is an invalid value, not 13 pt");
         // Every ` pt` field reads units, whichever constructor made it (the Control panel's Font
         // Size, Leading and Baseline Shift, Character ••• Baseline Shift…).

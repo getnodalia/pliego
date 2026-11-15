@@ -4,8 +4,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use designcraft_doc::vars::{Use, VarKind, var_index};
-use designcraft_doc::{Document, SpreadRef, Story, StoryId};
+use pliego_doc::vars::{Use, VarKind, var_index};
+use pliego_doc::{Document, SpreadRef, Story, StoryId};
 
 use crate::ComposedStory;
 

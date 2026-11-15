@@ -9,11 +9,11 @@ mod parse;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use designcraft_doc::{
+use pliego_doc::{
     DataField, DataFieldKind, DataSource, Delimiter, Document, ItemId, MergeOptions, Page, Placeholder, PlaceholderAnchor, PlaceholderRole,
     Selection, SourceStatus, SpreadRef, StoryId,
 };
-use designcraft_geom::{Rect, Vec2};
+use pliego_geom::{Rect, Vec2};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, id_param, ok, str_param};
@@ -27,7 +27,7 @@ use parse::{
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use parse::fingerprint_from;
 
-pub(crate) fn fingerprint_from_path(path: &str) -> Option<designcraft_doc::Fingerprint> {
+pub(crate) fn fingerprint_from_path(path: &str) -> Option<pliego_doc::Fingerprint> {
     fingerprint_of(Path::new(path))
 }
 
@@ -427,10 +427,7 @@ fn assign_page(dst: &mut Document, abs: usize, from: &Page) {
 }
 
 fn overset_count(doc: &Document) -> usize {
-    doc.stories
-        .keys()
-        .filter(|sid| designcraft_compose::compose_story(doc, **sid, &designcraft_compose::ComposeOptions::default()).is_overset())
-        .count()
+    doc.stories.keys().filter(|sid| pliego_compose::compose_story(doc, **sid, &pliego_compose::ComposeOptions::default()).is_overset()).count()
 }
 
 fn add_placeholder(d: &mut Document, sel: &Selection, p: &Value, name: &str) -> Result<Value> {
@@ -489,7 +486,7 @@ fn add_placeholder(d: &mut Document, sel: &Selection, p: &Value, name: &str) -> 
             let marker = format!("<<{name}>>");
             let at = {
                 let text = d.story(story).map(|st| st.text.clone()).unwrap_or_default();
-                designcraft_doc::floor_char_boundary(&text, at.min(text.len()))
+                pliego_doc::floor_char_boundary(&text, at.min(text.len()))
             };
             if let Some(st) = d.story_mut(story) {
                 st.replace(at..at, &marker);
@@ -498,8 +495,8 @@ fn add_placeholder(d: &mut Document, sel: &Selection, p: &Value, name: &str) -> 
             PlaceholderAnchor::Text { story, start: at, end: at.saturating_add(marker.len()) }
         } else {
             let text = d.story(story).map(|st| st.text.clone()).unwrap_or_default();
-            let start = designcraft_doc::floor_char_boundary(&text, at.min(text.len()));
-            let end = designcraft_doc::floor_char_boundary(&text, end.min(text.len())).max(start);
+            let start = pliego_doc::floor_char_boundary(&text, at.min(text.len()));
+            let end = pliego_doc::floor_char_boundary(&text, end.min(text.len())).max(start);
             PlaceholderAnchor::Text { story, start, end }
         }
     };
@@ -731,7 +728,7 @@ fn parse_file(bytes: &[u8], name: &str, delimiter: Option<Delimiter>, sheet: Opt
         return Err(format!("{ext} workbooks are not supported"));
     }
     if ext == "xlsx" {
-        let grid = designcraft_textimport::xlsx_records(bytes, sheet).map_err(|e| e.to_string())?;
+        let grid = pliego_textimport::xlsx_records(bytes, sheet).map_err(|e| e.to_string())?;
         return table_from_grid(grid, Delimiter::Comma);
     }
     table_from_bytes(bytes, name, delimiter)

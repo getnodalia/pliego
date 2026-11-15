@@ -14,8 +14,8 @@ impl<'a> Ex<'a> {
     /// A `Gradient` element; stop colours missing from the swatches become anonymous colours.
     fn gradient_el(
         &mut self,
-        s: &designcraft_color::Swatch,
-        gradient: &designcraft_color::Gradient,
+        s: &pliego_color::Swatch,
+        gradient: &pliego_color::Gradient,
         colors: &mut Vec<El>,
         by_value: &mut Vec<(Color, String)>,
     ) -> El {
@@ -188,14 +188,14 @@ impl<'a> Ex<'a> {
             let id = format!("CustomStrokeStyle/{}", st.name);
             let pcts = |v: &[f64]| v.iter().map(|x| num(x * 100.0)).collect::<Vec<_>>().join(" ");
             let el = match &st.kind {
-                designcraft_doc::StrokeType::Stripes { bands } => {
+                pliego_doc::StrokeType::Stripes { bands } => {
                     let flat: Vec<f64> = bands.iter().flat_map(|(a, w)| [*a, a + w]).collect();
                     Some(El::new("StripedStrokeStyle").attr("StripeArray", pcts(&flat)))
                 }
-                designcraft_doc::StrokeType::Dashed { pattern } => {
+                pliego_doc::StrokeType::Dashed { pattern } => {
                     Some(El::new("DashedStrokeStyle").attr("DashArray", pattern.iter().map(|x| num(*x)).collect::<Vec<_>>().join(" ")))
                 }
-                designcraft_doc::StrokeType::Dotted => Some(El::new("DottedStrokeStyle").attr("DotArray", "0 200")),
+                pliego_doc::StrokeType::Dotted => Some(El::new("DottedStrokeStyle").attr("DotArray", "0 200")),
                 _ => None,
             };
             if let Some(el) = el {

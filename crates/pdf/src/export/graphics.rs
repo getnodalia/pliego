@@ -6,12 +6,12 @@ use super::*;
 impl Exporter<'_> {
     /// A placed PDF as krilla embeds it. krilla refuses a PDF newer than the file it writes (the
     /// export fails at the end with `VersionMismatch(Pdf17)`), and PDF/X-4 is PDF 1.6 while
-    /// VectorCraft and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
+    /// Pluma and most tools write 1.7. PDF 1.7 changed nothing in how a page draws, so a 1.7
     /// file goes in as 1.6 (its header and catalog `/Version` relabelled, as
     /// `qpdf --force-version=1.6` does). A newer
     /// file is left out and the export fails naming it ([`Exporter::check_placed_versions`]).
     /// Returns the document with its page count.
-    fn placed_pdf(&mut self, asset: &designcraft_doc::Asset, data: Arc<Vec<u8>>) -> Option<(krilla::pdf::PdfDocument, usize)> {
+    fn placed_pdf(&mut self, asset: &pliego_doc::Asset, data: Arc<Vec<u8>>) -> Option<(krilla::pdf::PdfDocument, usize)> {
         use hayro_syntax::PdfVersion as V;
         let Ok(pdf) = krilla::pdf::Pdf::new(data.clone()) else {
             self.warn(format!("{}: can't read the placed PDF", asset.name));
@@ -67,8 +67,8 @@ impl Exporter<'_> {
         let asset = self.doc.assets.get(&id)?.clone();
         // Use the same EPS preview as the renderer, preserving CMYK TIFF inks below. The
         // content cache is keyed on the bytes actually converted, so equal previews share one.
-        let data = if designcraft_images::is_eps(&asset.data) {
-            let Some((proxy, _)) = designcraft_images::eps_proxy(&asset.data) else {
+        let data = if pliego_images::is_eps(&asset.data) {
+            let Some((proxy, _)) = pliego_images::eps_proxy(&asset.data) else {
                 self.warn(format!("image `{}` could not be decoded and was skipped", asset.name));
                 self.images.insert(id, None);
                 return None;
@@ -95,7 +95,7 @@ impl Exporter<'_> {
             Some(image::ImageFormat::Jpeg) => jpeg(data.clone().into(), || embedded_icc(&data), mode),
             // A CMYK TIFF keeps its ink values (`image` decodes it to RGB, and 100% K would print
             // as four-colour black). PDF/A exports are RGB only.
-            Some(image::ImageFormat::Tiff) if !self.rgb_only && designcraft_images::is_cmyk_tiff(&data) => match cmyk_tiff(&data, mode) {
+            Some(image::ImageFormat::Tiff) if !self.rgb_only && pliego_images::is_cmyk_tiff(&data) => match cmyk_tiff(&data, mode) {
                 Some(img) => Some(img),
                 None => {
                     warning = Some(CMYK_FALLBACK_WARNING);
@@ -127,9 +127,9 @@ impl Exporter<'_> {
     /// Draw a placed graphic, inside its clipping path when it has one. `hidden` is the
     /// placed PDF's layer choice: `None` keeps the file's defaults, `Some(&[])` shows every layer.
     /// Retained IDML graphic-layer options are not applied when drawing, so they warn here.
-    pub(crate) fn graphic(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic, hidden: Option<&[String]>) {
-        if g.layer_options.as_ref().is_some_and(designcraft_doc::GraphicLayerOptions::has_visibility_overrides) {
-            self.warn(designcraft_doc::GRAPHIC_LAYER_RENDERING_WARNING);
+    pub(crate) fn graphic(&mut self, s: &mut Surface, g: &pliego_doc::Graphic, hidden: Option<&[String]>) {
+        if g.layer_options.as_ref().is_some_and(pliego_doc::GraphicLayerOptions::has_visibility_overrides) {
+            self.warn(pliego_doc::GRAPHIC_LAYER_RENDERING_WARNING);
         }
         match g.clip_region().map(|(region, even_odd)| (to_path(&region), even_odd)) {
             Some((Some(clip), even_odd)) => {
@@ -147,7 +147,7 @@ impl Exporter<'_> {
         }
     }
 
-    pub(super) fn graphic_unclipped(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic, hidden: Option<&[String]>) {
+    pub(super) fn graphic_unclipped(&mut self, s: &mut Surface, g: &pliego_doc::Graphic, hidden: Option<&[String]>) {
         if self.graphic_media_placeholder(s, g) || self.graphic_placed_pdf(s, g, hidden) || self.graphic_placed_svg(s, g) {
             return;
         }
@@ -162,9 +162,9 @@ impl Exporter<'_> {
     }
 
     /// Video or sound without a poster: a dark frame with a play mark. `false` when `g` is not one.
-    fn graphic_media_placeholder(&self, s: &mut Surface, g: &designcraft_doc::Graphic) -> bool {
+    fn graphic_media_placeholder(&self, s: &mut Surface, g: &pliego_doc::Graphic) -> bool {
         let Some(asset) = self.doc.assets.get(&g.asset) else { return false };
-        if designcraft_doc::media_kind(&asset.mime).is_none() {
+        if pliego_doc::media_kind(&asset.mime).is_none() {
             return false;
         }
         let (w, h) = g.size;
@@ -188,7 +188,7 @@ impl Exporter<'_> {
     }
 
     /// A placed PDF goes in as vectors (the page as a form XObject). `false` when `g` is not one.
-    fn graphic_placed_pdf(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic, hidden: Option<&[String]>) -> bool {
+    fn graphic_placed_pdf(&mut self, s: &mut Surface, g: &pliego_doc::Graphic, hidden: Option<&[String]>) -> bool {
         let doc = self.doc;
         let Some(asset) = doc.assets.get(&g.asset).filter(|asset| asset.data.starts_with(b"%PDF")) else { return false };
         // Cropped to a box: the whole page, placed so that the box spans graphic space.
@@ -258,10 +258,10 @@ impl Exporter<'_> {
     }
 
     /// A placed SVG goes in as vectors too. `false` when `g` is not one.
-    fn graphic_placed_svg(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic) -> bool {
-        let Some(asset) = self.doc.assets.get(&g.asset).filter(|asset| designcraft_images::is_svg(&asset.data)) else { return false };
+    fn graphic_placed_svg(&mut self, s: &mut Surface, g: &pliego_doc::Graphic) -> bool {
+        let Some(asset) = self.doc.assets.get(&g.asset).filter(|asset| pliego_images::is_svg(&asset.data)) else { return false };
         let Some(size) = Size::from_wh(g.size.0.max(1e-3) as f32, g.size.1.max(1e-3) as f32) else { return true };
-        let tree = self.svgs.entry(g.asset).or_insert_with(|| designcraft_images::svg_tree(&asset.data).map(Arc::new)).clone();
+        let tree = self.svgs.entry(g.asset).or_insert_with(|| pliego_images::svg_tree(&asset.data).map(Arc::new)).clone();
         match tree {
             Some(tree) => {
                 use krilla_svg::SurfaceExt;
@@ -280,22 +280,22 @@ impl Exporter<'_> {
     /// painted through the image's ink coverage (its darkness), over 0% ink for a greyscale
     /// image, whose white is opaque. `false`, drawing nothing, when the image keeps its own
     /// colours: no swatch, one that no longer exists, a colour image.
-    fn colorized(&mut self, s: &mut Surface, g: &designcraft_doc::Graphic) -> bool {
+    fn colorized(&mut self, s: &mut Surface, g: &pliego_doc::Graphic) -> bool {
         if g.fill.is_none() {
             return false;
         }
         let Some(asset) = self.doc.assets.get(&g.asset) else { return false };
-        let Some(tone) = designcraft_images::tone(&asset.data) else { return false };
+        let Some(tone) = pliego_images::tone(&asset.data) else { return false };
         let Some(paint) = self.swatch_color(&g.fill.swatch, g.fill.tint) else { return false };
-        let Some(coverage) = designcraft_images::decode_rgba(&asset.data).and_then(|img| CoverageImage::new(&img)) else { return false };
+        let Some(coverage) = pliego_images::decode_rgba(&asset.data).and_then(|img| CoverageImage::new(&img)) else { return false };
         let interpolate = RasterMode::for_standard(self.opts.standard).interpolate;
         let Ok(mask) = Image::from_custom(coverage, interpolate) else { return false };
         let size = Size::from_wh(g.size.0.max(1e-3) as f32, g.size.1.max(1e-3) as f32);
         let (Some(size), Some(rect)) = (size, to_path(&Rect::new(0.0, 0.0, g.size.0, g.size.1).to_path(0.1))) else { return false };
         s.push_transform(&tf(g.xf));
-        if tone == designcraft_images::Tone::Gray {
+        if tone == pliego_images::Tone::Gray {
             let blank =
-                self.swatch_color(designcraft_color::swatch::PAPER, 1.0).unwrap_or_else(|| device(&Color::cmyk(0.0, 0.0, 0.0, 0.0), self.rgb_only));
+                self.swatch_color(pliego_color::swatch::PAPER, 1.0).unwrap_or_else(|| device(&Color::cmyk(0.0, 0.0, 0.0, 0.0), self.rgb_only));
             s.set_fill(Some(Fill { paint: blank.into(), ..Default::default() }));
             s.draw_path(&rect);
         }

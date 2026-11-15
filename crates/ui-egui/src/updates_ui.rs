@@ -118,7 +118,7 @@ pub(crate) fn show(app: &mut DesignApp, ctx: &egui::Context) {
     #[cfg(target_arch = "wasm32")]
     if app.updates_rt.manual_window_open {
         let mut open = true;
-        let title = crate::i18n::tr(&app.ui.language, "DesignCraft Updates");
+        let title = crate::i18n::tr(&app.ui.language, "Pliego Updates");
         let ok_label = crate::i18n::tr(&app.ui.language, "OK");
         egui::Window::new(title)
             .open(&mut open)
@@ -142,7 +142,7 @@ pub(crate) fn show(app: &mut DesignApp, ctx: &egui::Context) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_engine::Session;
+    use pliego_engine::Session;
 
     #[test]
     fn default_runtime_is_idle() {
@@ -165,8 +165,8 @@ mod tests {
         let release = craft_update::Release {
             tag: "v99.0.0".into(),
             version: craft_update::parse_version("99.0.0"),
-            name: "DesignCraft 99.0.0".into(),
-            html_url: "https://github.com/storytold/designcraft/releases/tag/v99.0.0".into(),
+            name: "Pliego 99.0.0".into(),
+            html_url: "https://github.com/getnodalia/pliego/releases/tag/v99.0.0".into(),
             ..Default::default()
         };
         app.updates_rt.updater.offer(release);

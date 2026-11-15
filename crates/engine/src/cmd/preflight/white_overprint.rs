@@ -11,11 +11,11 @@ use std::collections::{BTreeMap, HashSet};
 use std::ops::Range;
 use std::sync::Arc;
 
-use designcraft_color::{Color, ColorType, SwatchValue, swatch};
-use designcraft_doc::cjk_settings::AdornmentOverprint;
-use designcraft_doc::{AnchoredObject, CharProps, Content, Document, Item, ItemId, SpreadRef, Story, StrokeType};
-use designcraft_geom::Affine;
-use designcraft_pdf::{drawn_children, item_exported, layer_exported, shown_parent_items};
+use pliego_color::{Color, ColorType, SwatchValue, swatch};
+use pliego_doc::cjk_settings::AdornmentOverprint;
+use pliego_doc::{AnchoredObject, CharProps, Content, Document, Item, ItemId, SpreadRef, Story, StrokeType};
+use pliego_geom::Affine;
+use pliego_pdf::{drawn_children, item_exported, layer_exported, shown_parent_items};
 
 use super::{Issue, page_of};
 use crate::Session;

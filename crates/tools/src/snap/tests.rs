@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Guide, Item, Margins, PageSide, Selection, Shape, Stroke};
-use designcraft_geom::shapes;
-use designcraft_geom::{Affine, Unit};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Document, Guide, Item, Margins, PageSide, Selection, Shape, Stroke};
+use pliego_geom::shapes;
+use pliego_geom::{Affine, Unit};
 
 use crate::layout::CanvasLayout;
 
@@ -179,7 +179,7 @@ fn excluded_guide_is_not_a_target() {
     let sel = Selection::default();
     let cx = ctx_on(&doc, &sel, &cache, &layout);
     let line = Rect::new(102.0, 100.0, 102.0, 300.0);
-    let dragged = [designcraft_doc::GuideSel { spread: SpreadRef::Doc(0), page: 0, index: 0 }];
+    let dragged = [pliego_doc::GuideSel { spread: SpreadRef::Doc(0), page: 0, index: 0 }];
     let hit = snap(&cx, move_req(line, &[]));
     assert!((hit.delta.x - 2.0).abs() < 1e-6, "{:?}", hit.delta);
     let hit = snap(&cx, SnapRequest { exclude_guides: &dragged, ..move_req(line, &[]) });
@@ -437,7 +437,7 @@ fn baseline_relative_to_the_top_margin_snaps_from_the_margin() {
     std::sync::Arc::make_mut(&mut doc.spreads[0]).pages[0].margins.top = 37.0;
     doc.settings.baseline_grid.start = 0.0;
     doc.settings.baseline_grid.increment = 10.0;
-    doc.settings.baseline_grid.relative_to = designcraft_doc::GridRelative::TopMargin;
+    doc.settings.baseline_grid.relative_to = pliego_doc::GridRelative::TopMargin;
     let cache = Cache::new();
     let layout = CanvasLayout::new(&doc, false);
     let sel = Selection::default();
@@ -450,10 +450,8 @@ fn baseline_relative_to_the_top_margin_snaps_from_the_margin() {
 #[test]
 fn nearer_of_margin_and_baseline_wins() {
     // Bottom margin at 792 - 54 = 738, between baseline lines 732 and 744.
-    let doc = Document::new(&NewDocument {
-        margins: designcraft_doc::Margins { top: 54.0, bottom: 54.0, inside: 54.0, outside: 42.0 },
-        ..Default::default()
-    });
+    let doc =
+        Document::new(&NewDocument { margins: pliego_doc::Margins { top: 54.0, bottom: 54.0, inside: 54.0, outside: 42.0 }, ..Default::default() });
     let cache = Cache::new();
     let layout = CanvasLayout::new(&doc, false);
     let sel = Selection::default();
@@ -512,9 +510,9 @@ fn grouped_child_matches_spread_side() {
     let mut child = Item::new(child_id, layer, Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 100.0, 40.0)));
     child.xf = Affine::rotate((-90.0_f64).to_radians());
     let group_id = ItemId(doc.alloc());
-    let mut group = Item::new(group_id, layer, Shape::Group, designcraft_geom::PathData::default());
+    let mut group = Item::new(group_id, layer, Shape::Group, pliego_geom::PathData::default());
     group.xf = Affine::scale_non_uniform(2.0, 1.0);
-    group.content = designcraft_doc::Content::Group { items: vec![std::sync::Arc::new(child)] };
+    group.content = pliego_doc::Content::Group { items: vec![std::sync::Arc::new(child)] };
     doc.insert_item(SpreadRef::Doc(0), group, None).unwrap();
     let cache = Cache::new();
     let layout = CanvasLayout::new(&doc, false);
@@ -809,7 +807,7 @@ fn parent_item_angle_matches() {
     let mut item = Item::new(id, layer, Shape::Rectangle, shapes::rectangle(rect));
     item.xf = Affine::translate((center.x, center.y)) * Affine::rotate((-30.0_f64).to_radians()) * Affine::translate((-center.x, -center.y));
     doc.insert_item(SpreadRef::Parent(ppi), item, None).unwrap();
-    assert!(doc.spreads[0].items.iter().all(|it| (designcraft_geom::decompose::decompose(it.xf).rotation - 30.0).abs() > 1.0));
+    assert!(doc.spreads[0].items.iter().all(|it| (pliego_geom::decompose::decompose(it.xf).rotation - 30.0).abs() > 1.0));
     let cache = Cache::new();
     let layout = CanvasLayout::new(&doc, false);
     let sel = Selection::default();
@@ -845,10 +843,10 @@ fn rotated_group_uses_the_per_child_union() {
     let mut child_a = Item::new(ItemId(doc.alloc()), layer, Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 10.0, 10.0)));
     child_a.stroke = Stroke { weight: 2.0, ..Stroke::default() };
     let child_b = Item::new(ItemId(doc.alloc()), layer, Shape::Rectangle, shapes::rectangle(Rect::new(40.0, 30.0, 50.0, 40.0)));
-    let mut group = Item::new(ItemId(doc.alloc()), layer, Shape::Group, designcraft_geom::PathData::default());
+    let mut group = Item::new(ItemId(doc.alloc()), layer, Shape::Group, pliego_geom::PathData::default());
     let xf = Affine::translate((300.0, 400.0)) * Affine::rotate((-45.0_f64).to_radians());
     group.xf = xf;
-    group.content = designcraft_doc::Content::Group { items: vec![Arc::new(child_a), Arc::new(child_b)] };
+    group.content = pliego_doc::Content::Group { items: vec![Arc::new(child_a), Arc::new(child_b)] };
     doc.insert_item(SpreadRef::Doc(0), group, None).unwrap();
     let a_vis = Rect::new(-1.0, -1.0, 11.0, 11.0);
     let b_vis = Rect::new(40.0, 30.0, 50.0, 40.0);
@@ -878,9 +876,9 @@ fn rotated_group_child_does_not_offer_local_zero() {
     let mut doc = Document::new(&NewDocument::default());
     let layer = doc.default_layer();
     let child = Item::new(ItemId(doc.alloc()), layer, Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 40.0, 20.0)));
-    let mut group = Item::new(ItemId(doc.alloc()), layer, Shape::Group, designcraft_geom::PathData::default());
+    let mut group = Item::new(ItemId(doc.alloc()), layer, Shape::Group, pliego_geom::PathData::default());
     group.xf = Affine::rotate((-30.0_f64).to_radians());
-    group.content = designcraft_doc::Content::Group { items: vec![Arc::new(child)] };
+    group.content = pliego_doc::Content::Group { items: vec![Arc::new(child)] };
     doc.insert_item(SpreadRef::Doc(0), group, None).unwrap();
     let cache = Cache::new();
     let layout = CanvasLayout::new(&doc, false);

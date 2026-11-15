@@ -101,14 +101,14 @@ fn relocated_packages_rebind_embedded_image_links_on_open() {
     let dir = std::env::temp_dir().join(format!("dc-package-relocation-{}-{nonce}", std::process::id()));
     let original = dir.join("original");
     let moved = dir.join("moved");
-    let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+    let png = pliego_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
     let mut s = Session::new();
     s.execute("file.new", &json!({"title": "OwnedPackage", "width": 72, "height": 72})).unwrap();
     s.execute("file.place", &json!({"base64": super::super::base64_encode(&png), "name": "owned.png", "x": 5, "y": 5, "width": 16})).unwrap();
     s.execute("file.package", &json!({"dir": original.to_string_lossy(), "idml": true, "pdf": false})).unwrap();
     std::fs::rename(&original, &moved).unwrap();
     let expected = std::path::absolute(moved.join("Links").join("owned.png")).unwrap();
-    for (command, extension) in [("file.open", "designcraft"), ("file.openIdml", "idml")] {
+    for (command, extension) in [("file.open", "pliego"), ("file.openIdml", "idml")] {
         let mut opened = Session::new();
         opened.execute(command, &json!({"path": moved.join(format!("OwnedPackage.{extension}")).to_string_lossy()})).unwrap();
         let asset = opened.doc().unwrap().doc.assets.values().next().unwrap();
@@ -189,9 +189,9 @@ fn package_report_names_placed_pdf_layer_choices() {
     let r = s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": true, "pdf": false})).unwrap();
     let report = r["report"].as_str().unwrap();
     assert!(report.contains("Placed PDF layers"), "{report}");
-    // The DesignCraft copy keeps the choice; only the linked IDML copy shows file defaults.
-    let packed = super::super::from_bytes(&std::fs::read(dir.join("LayeredPackage.designcraft")).unwrap()).unwrap();
-    let item = packed.item(designcraft_doc::ItemId(id.as_u64().unwrap())).unwrap();
+    // The Pliego copy keeps the choice; only the linked IDML copy shows file defaults.
+    let packed = super::super::from_bytes(&std::fs::read(dir.join("LayeredPackage.pliego")).unwrap()).unwrap();
+    let item = packed.item(pliego_doc::ItemId(id.as_u64().unwrap())).unwrap();
     assert_eq!(item.pdf_hidden_layers, vec!["Red".to_string()]);
     assert!(item.has_pdf_layer_override());
     std::fs::remove_dir_all(dir).unwrap();
@@ -203,7 +203,7 @@ fn package_report_names_placed_pdf_layer_choices() {
 fn package_idml_links_the_links_folder_and_embeds_nothing() {
     let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let dir = std::env::temp_dir().join(format!("dc-package-idml-links-{}-{nonce}", std::process::id()));
-    let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+    let png = pliego_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
     let mut s = Session::new();
     s.execute("file.new", &json!({"title": "LinkedPackage", "width": 72, "height": 72})).unwrap();
     s.execute("file.place", &json!({"base64": super::super::base64_encode(&png), "name": "my photo.png", "x": 5, "y": 5, "width": 16})).unwrap();
@@ -223,7 +223,7 @@ fn package_idml_links_the_links_folder_and_embeds_nothing() {
     assert!(!spreads.contains(&folder), "the package's own folder is not written: {spreads}");
     assert!(spreads.contains(&format!(r#"LinkResourceURI="{uri}""#)), "{spreads}");
     assert!(!spreads.contains("<Contents") && !spreads.contains(r#"StoredState="Embedded""#), "no image is embedded");
-    let back = designcraft_idml::import_idml_with(&idml, &|_| None).unwrap();
+    let back = pliego_idml::import_idml_with(&idml, &|_| None).unwrap();
     let asset = back.assets.values().next().unwrap();
     assert!(asset.data.is_empty(), "no image is embedded");
     assert_eq!(asset.link.as_deref(), Some("Links/my photo.png"));
@@ -264,7 +264,7 @@ fn package_leaves_missing_links_missing() {
     assert!(!r["files"].to_string().contains("gone.svg"), "{}", r["files"]);
     let report = r["report"].as_str().unwrap();
     assert!(report.contains("gone.svg (missing)"), "{report}");
-    for (command, extension) in [("file.open", "designcraft"), ("file.openIdml", "idml")] {
+    for (command, extension) in [("file.open", "pliego"), ("file.openIdml", "idml")] {
         let mut opened = Session::new();
         opened.execute(command, &json!({"path": out.join(format!("TwoLinks.{extension}")).to_string_lossy()})).unwrap();
         assert_eq!(status(&mut opened, "gone.svg"), Some(json!("missing")), "{extension}");
@@ -280,12 +280,12 @@ fn package_documents_hold_relative_links_only() {
     let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let dir = std::env::temp_dir().join(format!("dc-package-relative-{}-{nonce}", std::process::id()));
     let folder = dir.file_name().unwrap().to_string_lossy().into_owned();
-    let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+    let png = pliego_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
     let mut s = Session::new();
     s.execute("file.new", &json!({"title": "RelativePackage", "width": 72, "height": 72})).unwrap();
     s.execute("file.place", &json!({"base64": super::super::base64_encode(&png), "name": "owned.png", "x": 5, "y": 5, "width": 16})).unwrap();
     s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": true, "pdf": false})).unwrap();
-    let packed = super::super::from_bytes(&std::fs::read(dir.join("RelativePackage.designcraft")).unwrap()).unwrap();
+    let packed = super::super::from_bytes(&std::fs::read(dir.join("RelativePackage.pliego")).unwrap()).unwrap();
     let link = packed.assets.values().next().unwrap().link.clone().unwrap();
     assert_eq!(link, "Links/owned.png");
     assert!(!link.contains(&folder));
@@ -310,7 +310,7 @@ fn package_writes_document_links_and_report() {
     let out = dir.join("Pkg");
     let r = s.execute("file.package", &json!({"dir": out.to_string_lossy(), "pdf": true, "instructions": "Print on matte."})).unwrap();
     let files: Vec<String> = r["files"].as_array().unwrap().iter().map(|f| f.as_str().unwrap().to_string()).collect();
-    assert!(files.iter().any(|f| f.ends_with(".designcraft")));
+    assert!(files.iter().any(|f| f.ends_with(".pliego")));
     assert!(files.iter().any(|f| f.ends_with(".idml")));
     assert!(files.iter().any(|f| f.ends_with(".pdf")));
     assert!(out.join("Links").join("logo.svg").exists());
@@ -319,7 +319,7 @@ fn package_writes_document_links_and_report() {
     assert!(report.find("Print on matte.") < report.find("Package report:"), "the instructions come first: {report}");
     assert!(report.contains("Preflight:"), "{report}");
     // The packaged document links to its Links folder.
-    let doc_file = files.iter().find(|f| f.ends_with(".designcraft")).unwrap();
+    let doc_file = files.iter().find(|f| f.ends_with(".pliego")).unwrap();
     let packed = super::super::from_bytes(&std::fs::read(doc_file).unwrap()).unwrap();
     let link = packed.assets.values().next().unwrap().link.clone().unwrap();
     assert!(link.contains("Links"), "{link}");
@@ -332,8 +332,8 @@ fn package_writes_document_links_and_report() {
 
 #[test]
 fn package_copies_the_fonts_their_licences_allow() {
-    use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
-    use designcraft_fonts::testing::{font_with, with_fs_type};
+    use pliego_fonts::DOCUMENT_FONTS_FOLDER;
+    use pliego_fonts::testing::{font_with, with_fs_type};
     const FREE: &str = "DocFont Package Free";
     const RESTRICTED: &str = "DocFont Package Restricted";
     let dir = std::env::temp_dir().join(format!("dc-package-fonts-{}", std::process::id()));
@@ -356,7 +356,7 @@ fn package_copies_the_fonts_their_licences_allow() {
         s.execute("text.select", &json!({"story": r["story"], "anchor": a, "focus": b})).unwrap();
         s.execute("type.char", &json!({"fontFamily": family, "fontStyle": "Regular"})).unwrap();
     }
-    let src = dir.join("src").join("Fonts.designcraft");
+    let src = dir.join("src").join("Fonts.pliego");
     s.execute("file.save", &json!({"path": src.to_string_lossy()})).unwrap();
     let mut s = Session::new();
     assert_eq!(s.execute("file.open", &json!({"path": src.to_string_lossy()})).unwrap()["documentFonts"], 2);
@@ -379,7 +379,7 @@ fn package_copies_the_fonts_their_licences_allow() {
     let report = r["report"].as_str().unwrap();
     assert!(report.contains(&format!("{RESTRICTED} Regular — not copied: its licence doesn't allow it")), "{report}");
     assert!(report.contains(&format!("{FREE} Regular\n")), "{report}");
-    assert!(report.contains(&format!("{} Regular — included with DesignCraft", designcraft_fonts::DEFAULT_FAMILY)), "{report}");
+    assert!(report.contains(&format!("{} Regular — included with Pliego", pliego_fonts::DEFAULT_FAMILY)), "{report}");
     // The packaged document opens with its fonts.
     let doc = r["files"][0].as_str().unwrap().to_string();
     assert_eq!(Session::new().execute("file.open", &json!({"path": doc})).unwrap()["documentFonts"], 1);
@@ -392,8 +392,8 @@ fn package_copies_the_fonts_their_licences_allow() {
 
 #[test]
 fn package_copies_the_fallback_fonts_that_draw_text() {
-    use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
-    use designcraft_fonts::testing::{font_with, with_fs_type};
+    use pliego_fonts::DOCUMENT_FONTS_FOLDER;
+    use pliego_fonts::testing::{font_with, with_fs_type};
     const NAMED: &str = "DocFont Fallback Named";
     const HELPER: &str = "DocFont Fallback Helper";
     const RESTRICTED: &str = "DocFont Fallback Restricted";
@@ -414,7 +414,7 @@ fn package_copies_the_fallback_fonts_that_draw_text() {
     let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": text})).unwrap();
     s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": text.len()})).unwrap();
     s.execute("type.char", &json!({"fontFamily": NAMED, "fontStyle": "Regular"})).unwrap();
-    let src = dir.join("src").join("Fallback.designcraft");
+    let src = dir.join("src").join("Fallback.pliego");
     // Written without File › Save's preview: drawing it before the document's fonts load would
     // pull in a system font that covers these characters (Unifont CSUR does) and draws them
     // ahead of the document's own fonts in this process.
@@ -442,8 +442,8 @@ fn package_copies_the_fallback_fonts_that_draw_text() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn packaged_fonts_keep_a_font_extension() {
-    use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
-    use designcraft_fonts::testing::{font_with, installed_face};
+    use pliego_fonts::DOCUMENT_FONTS_FOLDER;
+    use pliego_fonts::testing::{font_with, installed_face};
     // A font service's file without an extension is copied under a name the reopened
     // package loads.
     let dir = std::env::temp_dir().join(format!("dc-package-font-ext-{}", std::process::id()));
@@ -459,7 +459,7 @@ fn packaged_fonts_keep_a_font_extension() {
     let (mut copied, mut taken, mut files) = (Vec::new(), Vec::new(), Vec::new());
     assert_eq!(copy_font(&root, &face, &fonts, &mut copied, &mut taken, &mut files), "");
     assert_eq!(files, [fonts.join("12345.ttf")]);
-    let db = designcraft_fonts::FontDb::global();
+    let db = pliego_fonts::FontDb::global();
     let loaded = db.load_document_fonts(&fonts, &|_| Ok(()));
     assert_eq!((loaded.faces, loaded.skipped.len()), (1, 0), "{:?}", loaded.skipped);
     db.close_scope(loaded.scope);
@@ -499,7 +499,7 @@ fn package_uses_portable_names_inside_the_selected_directory() {
     let r = s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
     let files = r["files"].as_array().unwrap();
     assert!(files.iter().all(|path| Path::new(path.as_str().unwrap()).starts_with(&dir)));
-    assert!(dir.join("Annual_ Review.designcraft").is_file());
+    assert!(dir.join("Annual_ Review.pliego").is_file());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -508,7 +508,7 @@ fn package_overwrites_existing_regular_outputs() {
     let dir = std::env::temp_dir().join(format!("dc-package-overwrite-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    let document = dir.join("Annual.designcraft");
+    let document = dir.join("Annual.pliego");
     std::fs::write(&document, b"previous package").unwrap();
     #[cfg(unix)]
     {
@@ -522,7 +522,7 @@ fn package_overwrites_existing_regular_outputs() {
     s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
     s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
     assert!(super::super::from_bytes(&std::fs::read(&document).unwrap()).is_ok());
-    assert!(!dir.join(designcraft_fonts::DOCUMENT_FONTS_FOLDER).exists());
+    assert!(!dir.join(pliego_fonts::DOCUMENT_FONTS_FOLDER).exists());
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -539,7 +539,7 @@ fn package_accepts_a_relative_destination() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"title": "Relative"})).unwrap();
     s.execute("file.package", &json!({"dir": dir.to_string_lossy(), "idml": false})).unwrap();
-    assert!(dir.join("Relative.designcraft").is_file());
+    assert!(dir.join("Relative.pliego").is_file());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -559,7 +559,7 @@ fn package_refuses_redirected_destinations() {
     let redirected_root = base.join("redirected-package");
     symlink(&outside, &redirected_root).unwrap();
     assert!(s.execute("file.package", &json!({"dir": redirected_root.to_string_lossy(), "idml": false})).is_err());
-    assert!(!outside.join("Annual.designcraft").exists());
+    assert!(!outside.join("Annual.pliego").exists());
     std::fs::remove_file(&redirected_root).unwrap();
 
     // A linked folder above the package is followed, as `/tmp` is on macOS.
@@ -567,20 +567,20 @@ fn package_refuses_redirected_destinations() {
     symlink(&outside, &linked_parent).unwrap();
     let nested_package = linked_parent.join("nested").join("Package");
     s.execute("file.package", &json!({"dir": nested_package.to_string_lossy(), "idml": false})).unwrap();
-    assert!(outside.join("nested").join("Package").join("Annual.designcraft").is_file());
+    assert!(outside.join("nested").join("Package").join("Annual.pliego").is_file());
     std::fs::remove_file(&linked_parent).unwrap();
 
     let package = base.join("Package");
     std::fs::create_dir_all(&package).unwrap();
     symlink(&outside, package.join("Links")).unwrap();
     assert!(s.execute("file.package", &json!({"dir": package.to_string_lossy(), "idml": false})).is_err());
-    assert!(!outside.join("Annual.designcraft").exists());
+    assert!(!outside.join("Annual.pliego").exists());
     std::fs::remove_file(package.join("Links")).unwrap();
     std::fs::create_dir(package.join("Links")).unwrap();
 
-    let kept = outside.join("kept.designcraft");
+    let kept = outside.join("kept.pliego");
     std::fs::write(&kept, b"kept").unwrap();
-    symlink(&kept, package.join("Annual.designcraft")).unwrap();
+    symlink(&kept, package.join("Annual.pliego")).unwrap();
     assert!(s.execute("file.package", &json!({"dir": package.to_string_lossy(), "idml": false})).is_err());
     assert_eq!(std::fs::read(&kept).unwrap(), b"kept");
     let _ = std::fs::remove_dir_all(&base);
@@ -606,7 +606,7 @@ fn package_refuses_windows_directory_redirects() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"title": "Annual"})).unwrap();
     assert!(s.execute("file.package", &json!({"dir": redirected.to_string_lossy(), "idml": false})).is_err());
-    assert!(!outside.join("Annual.designcraft").exists());
+    assert!(!outside.join("Annual.pliego").exists());
     std::fs::remove_dir(&redirected).unwrap();
     let _ = std::fs::remove_dir_all(&base);
 }

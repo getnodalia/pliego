@@ -1,8 +1,8 @@
 //! Gradient Swatch tool (G): drag across the selected objects (or the object under the pointer)
 //! to set where their gradient fill starts and ends; Shift constrains the angle to 45° steps.
 
-use designcraft_doc::SpreadRef;
-use designcraft_geom::{Point, Vec2};
+use pliego_doc::SpreadRef;
+use pliego_geom::{Point, Vec2};
 use serde_json::json;
 
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};

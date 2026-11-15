@@ -55,7 +55,7 @@ pub enum Item {
 fn cmd_item(id: &str, params: Value) -> Item {
     let (label, shortcut) = match ui_label(id) {
         Some((l, sc)) => (l.to_string(), sc),
-        None => match designcraft_engine::find_command(id) {
+        None => match pliego_engine::find_command(id) {
             Some(c) => (c.label.to_string(), c.shortcut),
             None => (id.to_string(), None),
         },
@@ -72,7 +72,7 @@ mod swedish_tests {
 
     #[test]
     fn swedish_interface_is_selectable_and_translates_every_menu_label() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         run_ui(&mut app, "app.language", &json!({"lang": "sv"})).unwrap().unwrap();
         assert_eq!(app.ui.language, "sv");
         assert_eq!(checked(&app, "app.language", &json!({"lang": "sv"})), Some(true));

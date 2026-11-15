@@ -15,23 +15,23 @@ pub struct RecentPreview {
 }
 
 /// The most pixels a recent file's preview may have to be shown (its PNG is bounded by
-/// `designcraft_format::MAX_PREVIEW_BYTES`, but a small PNG can claim a huge picture).
+/// `pliego_format::MAX_PREVIEW_BYTES`, but a small PNG can claim a huge picture).
 const MAX_PREVIEW_PIXELS: u64 = 1 << 24;
 
-/// The picture a `.designcraft` file saved of its first page; None when the file is gone, isn't
+/// The picture a `.pliego` file saved of its first page; None when the file is gone, isn't
 /// ours, or was saved before files had one (it gets one when saved again).
 pub fn recent_preview(path: &str) -> Option<RecentPreview> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // Only the zip directory and the preview entry are read, not the whole document.
-        let png = designcraft_format::read_preview(std::io::BufReader::new(crate::io::open(path).ok()?))?;
+        let png = pliego_format::read_preview(std::io::BufReader::new(crate::io::open(path).ok()?))?;
         // A preview is a small picture: one whose header claims more pixels than that isn't
         // decoded (a decode is bounded, but not at thumbnail size).
-        let (w, h) = designcraft_images::pixel_size(&png)?;
+        let (w, h) = pliego_images::pixel_size(&png)?;
         if u64::from(w).saturating_mul(u64::from(h)) > MAX_PREVIEW_PIXELS {
             return None;
         }
-        let img = designcraft_images::decode_rgba(&png)?;
+        let img = pliego_images::decode_rgba(&png)?;
         let (width, height) = img.dimensions();
         Some(RecentPreview { width, height, rgba: img.into_raw() })
     }
@@ -85,12 +85,12 @@ fn open_path(s: &mut Session, p: &Value) -> Result<Value> {
         // The content decides first: a file's extension may be missing or wrong. The extension
         // then routes files whose content isn't recognised to the reader that explains why.
         let ext = std::path::Path::new(path).extension().and_then(std::ffi::OsStr::to_str).unwrap_or_default().to_ascii_lowercase();
-        let native = designcraft_format::is_designcraft(&bytes) || bytes.trim_ascii_start().starts_with(b"{");
-        if designcraft_idml::is_idml(&bytes) || (!native && (crate::cmd::interchange::is_indd(path, &bytes) || ext == "idml")) {
+        let native = pliego_format::is_pliego(&bytes) || bytes.trim_ascii_start().starts_with(b"{");
+        if pliego_idml::is_idml(&bytes) || (!native && (crate::cmd::interchange::is_indd(path, &bytes) || ext == "idml")) {
             return crate::cmd::interchange::open_idml(s, p);
         }
-        if !native && ext != designcraft_format::EXTENSION {
-            return Err(bad("file.open", format!("{path}: not a DesignCraft or IDML file")));
+        if !native && ext != pliego_format::EXTENSION {
+            return Err(bad("file.open", format!("{path}: not a Pliego or IDML file")));
         }
         let (mut d, mut warnings) = load_bytes(&bytes)?;
         crate::cmd::interchange::resolve_packaged_links(&mut d, Some(std::path::Path::new(path)));
@@ -116,12 +116,12 @@ fn open_path(s: &mut Session, p: &Value) -> Result<Value> {
 pub(crate) fn load_document_fonts(d: &mut Document, path: &str) -> (Option<Arc<crate::FontScope>>, usize, Vec<String>) {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
+        use pliego_fonts::DOCUMENT_FONTS_FOLDER;
         let Some(folder) = std::path::Path::new(path).parent().map(document_fonts_folder) else { return (None, 0, Vec::new()) };
         // A document's folder is the agent's to name (a recovery entry or a book lists paths too):
         // the fonts crate asks the automation roots about the folder and each font file, so fonts
         // outside the read root stay unloaded.
-        let r = designcraft_fonts::FontDb::global().load_document_fonts(&folder, &|p| crate::file_access::check_read(p));
+        let r = pliego_fonts::FontDb::global().load_document_fonts(&folder, &|p| crate::file_access::check_read(p));
         d.font_scope = r.scope;
         let scope = (r.scope != 0).then(|| Arc::new(crate::FontScope(r.scope)));
         (scope, r.faces, r.skipped.into_iter().map(|s| format!("{DOCUMENT_FONTS_FOLDER}: {s}")).collect())
@@ -137,7 +137,7 @@ pub(crate) fn load_document_fonts(d: &mut Document, path: &str) -> (Option<Arc<c
 /// `Document fonts`, and file systems on Linux are case-sensitive. The exact name wins.
 #[cfg(not(target_arch = "wasm32"))]
 fn document_fonts_folder(dir: &std::path::Path) -> std::path::PathBuf {
-    use designcraft_fonts::DOCUMENT_FONTS_FOLDER;
+    use pliego_fonts::DOCUMENT_FONTS_FOLDER;
     // A bare file name has an empty parent; directory traversal needs an explicit `.`.
     let dir = if dir.as_os_str().is_empty() { std::path::Path::new(".") } else { dir };
     let exact = dir.join(DOCUMENT_FONTS_FOLDER);
@@ -156,7 +156,7 @@ pub(super) fn file_open_bytes(s: &mut Session, p: &Value) -> Result<Value> {
     let b = base64_decode(str_param(p, "base64").unwrap_or(""));
     // IDML packages are recognised by their stored `mimetype` first entry, INDD files by their
     // signature (or their name).
-    if designcraft_idml::is_idml(&b) || crate::cmd::interchange::is_indd(str_param(p, "name").unwrap_or_default(), &b) {
+    if pliego_idml::is_idml(&b) || crate::cmd::interchange::is_indd(str_param(p, "name").unwrap_or_default(), &b) {
         return crate::cmd::interchange::open_idml(s, p);
     }
     let (mut d, warnings) = load_bytes(&b)?;
@@ -173,8 +173,8 @@ pub(super) fn file_open_bytes(s: &mut Session, p: &Value) -> Result<Value> {
 mod document_fonts_tests {
     use std::path::{Path, PathBuf};
 
-    use designcraft_fonts::testing::font_with;
-    use designcraft_fonts::{DOCUMENT_FONTS_FOLDER, FaceRef, FontDb, FontSource};
+    use pliego_fonts::testing::font_with;
+    use pliego_fonts::{DOCUMENT_FONTS_FOLDER, FaceRef, FontDb, FontSource};
     use serde_json::{Value, json};
 
     use crate::Session;
@@ -203,7 +203,7 @@ mod document_fonts_tests {
         let mut s = Session::new();
         new_document(&mut s, family, text);
         if path.extension().is_some_and(|e| e == "idml") {
-            std::fs::write(path, designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+            std::fs::write(path, pliego_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         } else {
             s.execute("file.save", &json!({"path": path.to_string_lossy()})).unwrap();
         }
@@ -234,11 +234,11 @@ mod document_fonts_tests {
     #[test]
     fn opening_a_document_loads_its_document_fonts() {
         const FAMILY: &str = "DocFont Open Test";
-        let dir = temp_dir("designcraft");
+        let dir = temp_dir("pliego");
         let fonts = dir.join(DOCUMENT_FONTS_FOLDER);
         std::fs::write(fonts.join("open.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
         std::fs::write(fonts.join("broken.otf"), b"not a font").unwrap();
-        let path = dir.join("Brochure.designcraft");
+        let path = dir.join("Brochure.pliego");
         write_document(&path, FAMILY);
         assert!(!FontDb::global().has_family(FAMILY));
 
@@ -271,7 +271,7 @@ mod document_fonts_tests {
         // The extension decides (any case), not the bytes: no InDesign-made file is needed.
         let dir = temp_dir("indd");
         let path = dir.join("Brochure.INDD");
-        std::fs::write(&path, b"not a DesignCraft document").unwrap();
+        std::fs::write(&path, b"not a Pliego document").unwrap();
         let mut s = Session::new();
         let e = s.execute("file.open", &json!({"path": path.to_string_lossy()})).unwrap_err().to_string();
         assert!(e.contains("InDesign Markup (IDML)") && !e.contains("expected value"), "{e}");
@@ -306,7 +306,7 @@ mod document_fonts_tests {
         let dir = tempfile::tempdir().unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "cmd::file::open::document_fonts_tests::document_font_paths_child", "--ignored", "--nocapture"])
-            .env("DESIGNCRAFT_TEST_DOCUMENT_FONT_PATHS", "1")
+            .env("PLIEGO_TEST_DOCUMENT_FONT_PATHS", "1")
             .current_dir(dir.path())
             .output()
             .unwrap();
@@ -320,11 +320,11 @@ mod document_fonts_tests {
     #[ignore = "subprocess helper, executed by document_fonts_are_found_for_bare_and_explicit_paths"]
     fn document_font_paths_child() {
         const FAMILY: &str = "DocFont Bare Path Test";
-        assert!(std::env::var_os("DESIGNCRAFT_TEST_DOCUMENT_FONT_PATHS").is_some(), "run through the parent test");
+        assert!(std::env::var_os("PLIEGO_TEST_DOCUMENT_FONT_PATHS").is_some(), "run through the parent test");
         let cwd = std::env::current_dir().unwrap();
         std::fs::create_dir("nested").unwrap();
         std::fs::create_dir("other").unwrap();
-        for extension in ["idml", "designcraft"] {
+        for extension in ["idml", "pliego"] {
             let path = PathBuf::from(format!("t.{extension}"));
             write_document(&cwd.join(&path), FAMILY);
             write_document(&cwd.join("other").join(&path), FAMILY);
@@ -339,7 +339,7 @@ mod document_fonts_tests {
                 // Both spellings exist on case-sensitive file systems; the exact name still wins.
                 assert_eq!(super::document_fonts_folder(Path::new("")), Path::new(".").join(DOCUMENT_FONTS_FOLDER));
             }
-            for extension in ["idml", "designcraft"] {
+            for extension in ["idml", "pliego"] {
                 let name = format!("t.{extension}");
                 for path in [PathBuf::from(&name), Path::new(".").join(&name), Path::new("nested/..").join(&name), cwd.join(&name)] {
                     let mut s = Session::new();
@@ -354,7 +354,7 @@ mod document_fonts_tests {
         // Opening a second document without the folder must not inherit the first one's font.
         let mut s = Session::new();
         assert_eq!(open(&mut s, Path::new("t.idml"))["documentFonts"], 1);
-        assert_eq!(open(&mut s, Path::new("other/t.designcraft"))["documentFonts"], 0);
+        assert_eq!(open(&mut s, Path::new("other/t.pliego"))["documentFonts"], 0);
         assert_eq!(font_entry(&mut s, FAMILY)["missing"], true);
         s.execute("file.activate", &json!({"index": 0})).unwrap();
         assert_eq!(font_entry(&mut s, FAMILY)["source"], "document");
@@ -373,8 +373,8 @@ mod document_fonts_tests {
         let dir = std::env::temp_dir().join(format!("dc-open-docfonts-none-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("Plain.designcraft");
-        write_document(&path, designcraft_fonts::DEFAULT_FAMILY);
+        let path = dir.join("Plain.pliego");
+        write_document(&path, pliego_fonts::DEFAULT_FAMILY);
         let r = Session::new().execute("file.open", &json!({"path": path.to_string_lossy()})).unwrap();
         assert_eq!((r["documentFonts"].clone(), r["warnings"].clone()), (json!(0), json!([])), "{r}");
         let _ = std::fs::remove_dir_all(&dir);
@@ -384,12 +384,12 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Scoped";
         let (a, b) = (temp_dir("scoped-a"), temp_dir("scoped-b"));
         std::fs::write(a.join(DOCUMENT_FONTS_FOLDER).join("scoped.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        write_document(&a.join("A.designcraft"), FAMILY);
-        write_document(&b.join("B.designcraft"), FAMILY);
+        write_document(&a.join("A.pliego"), FAMILY);
+        write_document(&b.join("B.pliego"), FAMILY);
 
         let mut s = Session::new();
-        assert_eq!(open(&mut s, &a.join("A.designcraft"))["documentFonts"], 1);
-        assert_eq!(open(&mut s, &b.join("B.designcraft"))["documentFonts"], 0);
+        assert_eq!(open(&mut s, &a.join("A.pliego"))["documentFonts"], 1);
+        assert_eq!(open(&mut s, &b.join("B.pliego"))["documentFonts"], 0);
         // B, open at the same time, doesn't have A's font.
         assert_eq!(font_entry(&mut s, FAMILY)["missing"], true);
         assert!(glyph_faces(&s).iter().all(|(_, f)| f.family != FAMILY), "{:?}", glyph_faces(&s));
@@ -409,12 +409,12 @@ mod document_fonts_tests {
         std::fs::write(&a_font, font_with(FAMILY, &['a', 'b']).unwrap()).unwrap();
         std::fs::write(&b_font, font_with(FAMILY, &['b']).unwrap()).unwrap();
         // The same words in both: the word cache must not hand one document's shaping to the other.
-        write_document_with(&a.join("A.designcraft"), FAMILY, "ab ab ab");
-        write_document_with(&b.join("B.designcraft"), FAMILY, "ab ab ab");
+        write_document_with(&a.join("A.pliego"), FAMILY, "ab ab ab");
+        write_document_with(&b.join("B.pliego"), FAMILY, "ab ab ab");
 
         let mut s = Session::new();
-        open(&mut s, &a.join("A.designcraft"));
-        open(&mut s, &b.join("B.designcraft"));
+        open(&mut s, &a.join("A.pliego"));
+        open(&mut s, &b.join("B.pliego"));
         // Fallback fonts for the `a` B's font lacks: never A's font.
         s.execute("document.preferences", &json!({"glyphFallback": true})).unwrap();
         let in_b = glyph_faces(&s);
@@ -439,7 +439,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Closed";
         let dir = temp_dir("closed");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("closed.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Closed.designcraft");
+        let path = dir.join("Closed.pliego");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();
@@ -462,7 +462,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Reverted";
         let dir = temp_dir("revert");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("revert.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Revert.designcraft");
+        let path = dir.join("Revert.pliego");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();
@@ -479,7 +479,7 @@ mod document_fonts_tests {
         const FAMILY: &str = "DocFont Linked";
         let dir = temp_dir("linked");
         std::fs::write(dir.join(DOCUMENT_FONTS_FOLDER).join("linked.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
-        let path = dir.join("Linked.designcraft");
+        let path = dir.join("Linked.pliego");
         write_document(&path, FAMILY);
 
         let mut s = Session::new();
@@ -505,7 +505,7 @@ mod open_bytes_tests {
     fn legacy_and_idml_bytes_named_as_indesign_files_open_without_conversion() {
         let mut maker = Session::new();
         maker.execute("file.new", &json!({})).unwrap();
-        let idml = designcraft_idml::export_idml(&maker.doc().unwrap().doc);
+        let idml = pliego_idml::export_idml(&maker.doc().unwrap().doc);
         let base64 = super::super::bytes::base64_encode(&idml);
         let legacy = super::super::bytes::base64_encode(&serde_json::to_vec(&maker.doc().unwrap().doc).unwrap());
         for name in ["Brochure.indd", "Brochure.INDT"] {
@@ -524,29 +524,29 @@ mod open_bytes_tests {
         }
     }
 
-    /// A `.designcraft` file opened from bytes under its file name (a browser or host passes the
+    /// A `.pliego` file opened from bytes under its file name (a browser or host passes the
     /// name it has) is titled without the extension, as an IDML file is, so saving it gives
-    /// `Brochure.designcraft` and not `Brochure.designcraft.designcraft`.
+    /// `Brochure.pliego` and not `Brochure.pliego.pliego`.
     #[test]
     fn open_bytes_titles_a_native_document_without_its_extension() {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let native = s.execute("file.serialize", &json!({})).unwrap();
         for (name, title) in [
-            ("Brochure.designcraft", "Brochure"),
-            ("Brochure.DesignCraft", "Brochure"),
+            ("Brochure.pliego", "Brochure"),
+            ("Brochure.Pliego", "Brochure"),
             ("Brochure", "Brochure"),
             ("Brochure.v2", "Brochure.v2"),
             ("Brochure.indd", "Brochure.indd"),
             ("Brochure.INDT", "Brochure.INDT"),
-            ("Brochure.designcraft.designcraft", "Brochure.designcraft"),
-            (".designcraft", ".designcraft"),
+            ("Brochure.pliego.pliego", "Brochure.pliego"),
+            (".pliego", ".pliego"),
             // Names that aren't ASCII: cutting the extension's length off the end of the last one
             // would land inside its `é`.
-            ("Präsentation.designcraft", "Präsentation"),
-            ("日本.DESIGNCRAFT", "日本"),
+            ("Präsentation.pliego", "Präsentation"),
+            ("日本.PLIEGO", "日本"),
             ("é", "é"),
-            ("édesigncraft", "édesigncraft"),
+            ("épliego", "épliego"),
         ] {
             let r = s.execute("file.openBytes", &json!({"name": name, "base64": native["base64"]})).unwrap();
             let st = &s.documents()[r["index"].as_u64().unwrap() as usize];
@@ -579,15 +579,15 @@ mod recent_tests {
     fn open_and_save_order_the_list_without_duplicates() {
         let dir = temp_dir("order");
         let mut s = Session::new();
-        let a = saved(&mut s, &dir.join("a.designcraft"));
-        let b = saved(&mut s, &dir.join("b.designcraft"));
+        let a = saved(&mut s, &dir.join("a.pliego"));
+        let b = saved(&mut s, &dir.join("b.pliego"));
         assert_eq!(s.prefs.recent_files, [b.clone(), a.clone()]);
         s.execute("file.open", &json!({"path": a})).unwrap();
         assert_eq!(s.prefs.recent_files, [a.clone(), b.clone()], "reopening moves it to the front, once");
-        s.execute("file.saveACopy", &json!({"path": dir.join("copy.designcraft").to_string_lossy()})).unwrap();
+        s.execute("file.saveACopy", &json!({"path": dir.join("copy.pliego").to_string_lossy()})).unwrap();
         assert_eq!(s.prefs.recent_files, [a.clone(), b.clone()], "a copy isn't a recent file");
         let rows = s.execute("file.recentFiles", &json!({})).unwrap();
-        assert_eq!(rows[0], json!({"path": a, "name": "a.designcraft", "exists": true}));
+        assert_eq!(rows[0], json!({"path": a, "name": "a.pliego", "exists": true}));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -595,8 +595,8 @@ mod recent_tests {
     fn open_recent_reopens_and_a_missing_file_is_an_error_that_keeps_it_listed() {
         let dir = temp_dir("open");
         let mut s = Session::new();
-        let a = saved(&mut s, &dir.join("a.designcraft"));
-        let b = saved(&mut s, &dir.join("b.designcraft"));
+        let a = saved(&mut s, &dir.join("a.pliego"));
+        let b = saved(&mut s, &dir.join("b.pliego"));
         let r = s.execute("file.openRecent", &json!({"index": 1})).unwrap();
         assert_eq!(s.documents()[r["index"].as_u64().unwrap() as usize].path.as_deref(), Some(a.as_str()));
         assert_eq!(s.prefs.recent_files, [a.clone(), b.clone()]);
@@ -621,18 +621,18 @@ mod recent_tests {
     fn saved_files_carry_a_first_page_preview() {
         let dir = temp_dir("preview");
         let mut s = Session::new();
-        let a = saved(&mut s, &dir.join("a.designcraft"));
+        let a = saved(&mut s, &dir.join("a.pliego"));
         let p = super::recent_preview(&a).expect("a preview");
         assert_eq!(p.width.max(p.height), super::PREVIEW_PX as u32);
         assert_eq!(p.rgba.len(), (p.width * p.height * 4) as usize);
         assert!(p.rgba.as_chunks::<4>().0.iter().any(|px| px[3] == 255), "the page is drawn, not left transparent");
-        let copy = dir.join("copy.designcraft");
+        let copy = dir.join("copy.pliego");
         s.execute("file.saveACopy", &json!({"path": copy.to_string_lossy()})).unwrap();
         assert!(super::recent_preview(&copy.to_string_lossy()).is_some(), "Save a Copy has one too");
         // Files without one (saved before previews), missing files and other files have none.
-        let old = dir.join("old.designcraft");
+        let old = dir.join("old.pliego");
         std::fs::write(&old, super::to_bytes(&s.doc().unwrap().doc).unwrap()).unwrap();
-        for path in [old, dir.join("gone.designcraft"), dir.clone()] {
+        for path in [old, dir.join("gone.pliego"), dir.clone()] {
             assert!(super::recent_preview(&path.to_string_lossy()).is_none(), "{path:?}");
         }
         let _ = std::fs::remove_dir_all(&dir);
@@ -642,16 +642,16 @@ mod recent_tests {
     fn the_list_keeps_at_most_the_preferred_count() {
         let mut s = Session::new();
         for i in 0..30 {
-            s.prefs.note_recent_file(&format!("/work/{i}.designcraft"));
+            s.prefs.note_recent_file(&format!("/work/{i}.pliego"));
         }
         assert_eq!(s.prefs.recent_files.len(), 20, "default: 20");
-        assert_eq!(s.prefs.recent_files[0], "/work/29.designcraft");
+        assert_eq!(s.prefs.recent_files[0], "/work/29.pliego");
         s.execute("prefs.set", &json!({"recentFilesMax": 3})).unwrap();
-        assert_eq!(s.prefs.recent_files, ["/work/29.designcraft", "/work/28.designcraft", "/work/27.designcraft"]);
+        assert_eq!(s.prefs.recent_files, ["/work/29.pliego", "/work/28.pliego", "/work/27.pliego"]);
         assert_eq!(s.execute("prefs.set", &json!({"recentFilesMax": 4_000_000_000u64})).unwrap()["recentFilesMax"], crate::MAX_RECENT_FILES);
         assert!(s.execute("prefs.set", &json!({"recentFilesMax": -1})).is_err());
         s.execute("prefs.set", &json!({"recentFilesMax": 0})).unwrap();
-        s.prefs.note_recent_file("/work/new.designcraft");
+        s.prefs.note_recent_file("/work/new.pliego");
         assert!(s.prefs.recent_files.is_empty(), "0 keeps no list");
     }
 
@@ -659,10 +659,10 @@ mod recent_tests {
     #[test]
     fn the_list_survives_a_restart() {
         let mut s = Session::new();
-        s.prefs.note_recent_file("/work/a.designcraft");
+        s.prefs.note_recent_file("/work/a.pliego");
         let saved = serde_json::to_vec(&s.prefs).unwrap();
         let back: crate::Prefs = serde_json::from_slice(&saved).unwrap();
-        assert_eq!(back.recent_files, ["/work/a.designcraft"]);
+        assert_eq!(back.recent_files, ["/work/a.pliego"]);
         assert_eq!(back.recent_files_max, 20);
         let old: crate::Prefs = serde_json::from_slice(br#"{"recoveryMinutes": 2.0}"#).unwrap();
         assert!(old.recent_files.is_empty(), "older prefs.json without the list still load");

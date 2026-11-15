@@ -20,14 +20,14 @@ pub(super) fn text_wrap(w: &El) -> TextWrap {
 pub(super) fn margins_of(m: &El) -> (Margins, Columns) {
     let g = |k: &str, d: f64| m.num(k).filter(|v| v.is_finite()).unwrap_or(d);
     let margins = Margins { top: g("Top", 36.0), bottom: g("Bottom", 36.0), inside: g("Left", 36.0), outside: g("Right", 36.0) };
-    let count = g("ColumnCount", 1.0).clamp(1.0, f64::from(designcraft_doc::MAX_COLUMNS)) as u32;
+    let count = g("ColumnCount", 1.0).clamp(1.0, f64::from(pliego_doc::MAX_COLUMNS)) as u32;
     let gutter = g("ColumnGutter", 12.0);
     let positions = m.get("ColumnsPositions").and_then(|s| custom_columns(s, count, gutter));
     (margins, Columns { count, gutter, positions })
 }
 
 /// `ColumnsPositions` when the column guides have been dragged off the even split: `2 × count`
-/// offsets from the margin box's left edge, valid as [`designcraft_doc::valid_column_positions`]
+/// offsets from the margin box's left edge, valid as [`pliego_doc::valid_column_positions`]
 /// over the box they span. InDesign writes the attribute whether or not they have been moved, so
 /// an even set is dropped: `positions` means "custom", and keeping an even copy would freeze the
 /// columns against a later change of count or gutter. Anything malformed is the even split; at
@@ -36,7 +36,7 @@ fn custom_columns(s: &str, count: u32, gutter: f64) -> Option<Vec<f64>> {
     let want = 2 * count as usize;
     let pos = s.split_whitespace().take(want + 1).map(|v| v.parse::<f64>().ok()).collect::<Option<Vec<f64>>>()?;
     let width = *pos.last()?;
-    if !designcraft_doc::valid_column_positions(&pos, count, width) {
+    if !pliego_doc::valid_column_positions(&pos, count, width) {
         return None;
     }
     let even = Columns { count, gutter, positions: None }.edges(width);
@@ -56,8 +56,8 @@ pub(super) fn fit_columns(mut columns: Columns, margins: &Margins, page_width: f
 
 /// A `BaselineFrameGridRelativeOption` value (`TopOfInsetOfBaselineFrameGridRelativeOption`, or a
 /// short form such as `TopOfInset`); unknown values measure from the top of the page.
-pub(super) fn frame_grid_relative(v: &str) -> designcraft_doc::FrameGridRelative {
-    use designcraft_doc::FrameGridRelative as R;
+pub(super) fn frame_grid_relative(v: &str) -> pliego_doc::FrameGridRelative {
+    use pliego_doc::FrameGridRelative as R;
     let v = v.strip_suffix("OfBaselineFrameGridRelativeOption").unwrap_or(v);
     match v {
         "TopOfMargin" | "TopMargin" => R::TopMargin,
@@ -316,9 +316,9 @@ mod frame_preference_safety_tests {
         let o = text_frame_options(&[&local, &base]);
         assert_eq!(o.columns_kind, ColumnsKind::FlexibleWidth);
         assert!(o.balance_columns && o.ignore_wrap && o.column_rule);
-        assert_eq!(o.vertical_justification, designcraft_doc::VerticalJustification::Bottom);
-        assert_eq!(o.first_baseline, designcraft_doc::FirstBaseline::Fixed);
-        assert_eq!(o.auto_size, designcraft_doc::AutoSize::HeightAndWidth);
+        assert_eq!(o.vertical_justification, pliego_doc::VerticalJustification::Bottom);
+        assert_eq!(o.first_baseline, pliego_doc::FirstBaseline::Fixed);
+        assert_eq!(o.auto_size, pliego_doc::AutoSize::HeightAndWidth);
         assert_eq!(o.auto_size_ref, 8);
         let fixed = pref(&[], &[("UseFixedColumnWidth", "true")]);
         assert_eq!(text_frame_options(&[&fixed, &local, &base]).columns_kind, ColumnsKind::FixedWidth);
@@ -442,9 +442,9 @@ mod frame_preference_scalar_tests {
             let expected = text_frame_options(&[&clean]);
             assert_eq!(expected.columns_kind, if fixed { ColumnsKind::FixedWidth } else { ColumnsKind::FlexibleWidth });
             assert!(expected.balance_columns && expected.ignore_wrap && expected.column_rule);
-            assert_eq!(expected.vertical_justification, designcraft_doc::VerticalJustification::Bottom);
-            assert_eq!(expected.first_baseline, designcraft_doc::FirstBaseline::Fixed);
-            assert_eq!(expected.auto_size, designcraft_doc::AutoSize::HeightAndWidth);
+            assert_eq!(expected.vertical_justification, pliego_doc::VerticalJustification::Bottom);
+            assert_eq!(expected.first_baseline, pliego_doc::FirstBaseline::Fixed);
+            assert_eq!(expected.auto_size, pliego_doc::AutoSize::HeightAndWidth);
             assert_eq!(expected.auto_size_ref, 8);
             for properties in [false, true] {
                 let padded = preference(properties, true, fixed);

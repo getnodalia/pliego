@@ -2,9 +2,9 @@ use super::{DesignApp, Value, json};
 use crate::app::file_dialogs::{Bound, with_path};
 
 pub(super) fn download_document(app: &mut DesignApp) -> Result<Value, String> {
-    let name = app.session.active().map(|d| format!("{}.designcraft", d.doc.title)).ok_or("no document")?;
+    let name = app.session.active().map(|d| format!("{}.pliego", d.doc.title)).ok_or("no document")?;
     let ser = app.run("file.serialize", json!({}))?;
-    let bytes = designcraft_engine::cmd::base64_decode(ser["base64"].as_str().unwrap_or_default());
+    let bytes = pliego_engine::cmd::base64_decode(ser["base64"].as_str().unwrap_or_default());
     let download = app.services.download.as_mut().ok_or("no download service")?;
     download(&name, &bytes).map_err(|e| format!("could not download {name}: {e}"))?;
     // Marks the document saved; on the web the engine doesn't touch a file system.
@@ -33,7 +33,7 @@ pub(super) fn export_png(app: &mut DesignApp, p: &Value) -> Result<Value, String
         return ask_then_export(app, &name, q, export_png);
     };
     let scale = p.get("scale").and_then(Value::as_f64).unwrap_or(2.0);
-    let mut r = designcraft_render::Renderer::new();
+    let mut r = pliego_render::Renderer::new();
     let img = r
         .render_page(
             &st.doc,
@@ -41,7 +41,7 @@ pub(super) fn export_png(app: &mut DesignApp, p: &Value) -> Result<Value, String
             page,
             scale,
             false,
-            &designcraft_render::RenderOptions { printing_only: true, rich_black: app.session.prefs.rich_black_output, ..Default::default() },
+            &pliego_render::RenderOptions { printing_only: true, rich_black: app.session.prefs.rich_black_output, ..Default::default() },
         )
         .ok_or("no such page")?;
     let png = img.to_png();
@@ -60,7 +60,7 @@ pub(super) fn export_idml(app: &mut DesignApp, p: &Value) -> Result<Value, Strin
         return ask_then_export(app, &name, p.clone(), export_idml);
     };
     let r = app.run("file.exportIdml", json!({}))?;
-    let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
+    let bytes = pliego_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
     match app.services.write.as_mut() {
         Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len()})),
         None => Err("no writer".into()),
@@ -98,7 +98,7 @@ pub(super) fn export_bytes(app: &mut DesignApp, p: &Value, ext: &str, cmd: &str)
     let r = app.run(cmd, params)?;
     let bytes = match r["text"].as_str() {
         Some(t) => t.as_bytes().to_vec(),
-        None => designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default()),
+        None => pliego_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default()),
     };
     match app.services.write.as_mut() {
         Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len()})),
@@ -179,7 +179,7 @@ pub(crate) fn export_pdf(app: &mut DesignApp, p: &Value) -> Result<Value, String
         }
     }
     let r = app.run("file.exportPdf", params)?;
-    let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
+    let bytes = pliego_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
     match app.services.write.as_mut() {
         Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len(), "pages": r["pages"], "warnings": r["warnings"]})),
         None => Err("no writer".into()),

@@ -2,12 +2,12 @@ use super::caret::{next_char, next_word, prev_char, prev_word, story_of};
 use super::format::{apply_typing_format, format_targets, typing_format};
 use super::{Result, Session, TextSel, Value, bad, bool_or, compose, floor_char_boundary, id_param, json, ok, str_param};
 #[cfg(test)]
-use designcraft_doc::StoryId;
+use pliego_doc::StoryId;
 
 // Each command edits a copy-on-write Story snapshot. Reserving its known final text growth
 // avoids retaining geometric String spare capacity in every independent undo snapshot.
 // General Story insertion keeps its existing amortized-growth policy for mutable builders.
-fn reserve_command_text(st: &mut designcraft_doc::Story, additional: usize) -> Result<()> {
+fn reserve_command_text(st: &mut pliego_doc::Story, additional: usize) -> Result<()> {
     st.text.try_reserve_exact(additional).map_err(|e| crate::EngineError::Other(format!("could not reserve text insertion: {e}")))
 }
 
@@ -27,14 +27,14 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
     let typing = typing_format(s).cloned();
     let result = s.edit(|d, sel| {
         let t = sel.text.ok_or_else(|| bad("text.insert", "no insertion point"))?;
-        let st = d.text_story_mut(t.story, t.cell).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+        let st = d.text_story_mut(t.story, t.cell).ok_or(pliego_doc::DocError::NoStory(t.story))?;
         let r = t.range();
         let mut r = r.start.min(st.len())..r.end.min(st.len());
         // Between a break character and its return is the end of that paragraph: typing there goes
         // to the start of the next one.
         if r.is_empty()
             && st.text.get(r.start..).is_some_and(|t| t.starts_with('\n'))
-            && st.text.get(..r.start).and_then(|t| t.chars().next_back()).is_some_and(designcraft_doc::is_break_char)
+            && st.text.get(..r.start).and_then(|t| t.chars().next_back()).is_some_and(pliego_doc::is_break_char)
         {
             r = r.start + 1..r.start + 1;
         }
@@ -63,8 +63,8 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
         // A column, frame or page break ends its paragraph.
-        let mut text = if text.contains(designcraft_doc::is_break_char) {
-            designcraft_doc::end_paragraphs_at_breaks(&text, st.text.get(r.end..).and_then(|t| t.chars().next()))
+        let mut text = if text.contains(pliego_doc::is_break_char) {
+            pliego_doc::end_paragraphs_at_breaks(&text, st.text.get(r.end..).and_then(|t| t.chars().next()))
         } else {
             text.clone()
         };
@@ -73,7 +73,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
         if t.cell.is_none() && !text.is_empty() && st.table_at(r.start).is_some() {
             let pi = st.para_at(r.start);
             let pr = st.para_ranges()[pi].clone();
-            let anchor_at = pr.start + st.text[pr.clone()].find(designcraft_doc::TABLE_ANCHOR).unwrap_or(0);
+            let anchor_at = pr.start + st.text[pr.clone()].find(pliego_doc::TABLE_ANCHOR).unwrap_or(0);
             if r.start <= anchor_at {
                 if !text.ends_with('\n') {
                     text.push('\n');
@@ -91,7 +91,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
             if let Some(f) = &typing {
                 apply_typing_format(&mut fmt, f);
             }
-            fmt.over.change = Some(designcraft_doc::ChangeMark::Inserted);
+            fmt.over.change = Some(pliego_doc::ChangeMark::Inserted);
             st.insert_with(at, &text, fmt);
             let pos = at + text.len() - trail;
             sel.text = Some(TextSel { anchor: pos, focus: pos, ..t });
@@ -142,13 +142,13 @@ pub(super) fn delete_surrounding(s: &mut Session, p: &Value) -> Result<Value> {
     let before = count("before")?;
     let after = count("after")?;
     let bytes = p.get("bytes").and_then(Value::as_bool).unwrap_or(false);
-    let commit = designcraft_tools::ime_commit_text(p.get("commit").and_then(Value::as_str).unwrap_or(""));
+    let commit = pliego_tools::ime_commit_text(p.get("commit").and_then(Value::as_str).unwrap_or(""));
     // What the request removes, from the committed text as it is now: the ranges exclude the
     // selection and any pre-edit (a pre-edit is only a preview, never in the story).
     let (before_range, after_range, tracking, length_before) = {
         let st = s.doc()?;
         let t = st.selection.text.ok_or_else(|| bad("text.deleteSurrounding", "no text insertion point"))?;
-        let story = st.doc.text_story(t.story, t.cell).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+        let story = st.doc.text_story(t.story, t.cell).ok_or(pliego_doc::DocError::NoStory(t.story))?;
         let (before_range, after_range) = crate::ime_delete_ranges(&story.text, t.anchor, t.focus, before, after, bytes)
             .ok_or_else(|| bad("text.deleteSurrounding", "the IME text selection is not on character boundaries"))?;
         (before_range, after_range, st.doc.settings.track_changes && t.cell.is_none(), story.text.len())
@@ -156,7 +156,7 @@ pub(super) fn delete_surrounding(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit(|d, sel| {
         let t = sel.text.ok_or_else(|| bad("text.deleteSurrounding", "no text insertion point"))?;
         let (shift, after_removed, before_removed) = {
-            let story = d.text_story_mut(t.story, t.cell).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+            let story = d.text_story_mut(t.story, t.cell).ok_or(pliego_doc::DocError::NoStory(t.story))?;
             let after_removed = if !after_range.is_empty() {
                 if tracking {
                     let (_, removed) = crate::cmd::changes::mark_deleted_reporting(story, after_range.clone());
@@ -269,10 +269,10 @@ fn smart_quotes(s: &Session, text: &str) -> String {
 }
 
 /// Typographer's quotes of a language (a name or locale code, see
-/// [`designcraft_doc::language_tag`]): [double open, double close, single open, single close].
+/// [`pliego_doc::language_tag`]): [double open, double close, single open, single close].
 pub fn quote_marks(language: &str) -> [char; 4] {
     const ENGLISH: [char; 4] = ['\u{201C}', '\u{201D}', '\u{2018}', '\u{2019}'];
-    let Some(tag) = designcraft_doc::language_tag(language) else { return ENGLISH };
+    let Some(tag) = pliego_doc::language_tag(language) else { return ENGLISH };
     // Swiss German, French and Italian use guillemets.
     if tag.ends_with("-CH") {
         return ['\u{00AB}', '\u{00BB}', '\u{2039}', '\u{203A}'];
@@ -282,7 +282,7 @@ pub fn quote_marks(language: &str) -> [char; 4] {
         "zh" | "zh-Hant" => return ['\u{300C}', '\u{300D}', '\u{300E}', '\u{300F}'],
         _ => {}
     }
-    match designcraft_doc::language_subtag(tag) {
+    match pliego_doc::language_subtag(tag) {
         "de" | "cs" | "sk" | "bg" | "lt" => ['\u{201E}', '\u{201C}', '\u{201A}', '\u{2018}'],
         "fr" | "ru" | "uk" | "no" | "nb" | "nn" | "el" => ['\u{00AB}', '\u{00BB}', '\u{2039}', '\u{203A}'],
         "es" | "it" | "pt" | "ca" => ['\u{00AB}', '\u{00BB}', '\u{201C}', '\u{201D}'],
@@ -328,7 +328,7 @@ pub(super) fn delete(s: &mut Session, p: &Value) -> Result<Value> {
     let tracking = s.doc()?.doc.settings.track_changes;
     s.edit(|d, sel| {
         let t = sel.text.ok_or_else(|| bad("text.delete", "no text"))?;
-        let st = d.text_story_mut(t.story, t.cell).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+        let st = d.text_story_mut(t.story, t.cell).ok_or(pliego_doc::DocError::NoStory(t.story))?;
         let r = t.range();
         let r = if !r.is_empty() {
             r
@@ -365,10 +365,10 @@ fn with_break_pair(text: &str, r: std::ops::Range<usize>) -> std::ops::Range<usi
     let mut chars = del.chars();
     match (chars.next(), chars.next()) {
         (Some('\n'), None) => match text.get(..r.start).and_then(|t| t.chars().next_back()) {
-            Some(b) if designcraft_doc::is_break_char(b) => r.start.saturating_sub(b.len_utf8())..r.end,
+            Some(b) if pliego_doc::is_break_char(b) => r.start.saturating_sub(b.len_utf8())..r.end,
             _ => r,
         },
-        (Some(b), None) if designcraft_doc::is_break_char(b) && text.get(r.end..).is_some_and(|t| t.starts_with('\n')) => r.start..r.end + 1,
+        (Some(b), None) if pliego_doc::is_break_char(b) && text.get(r.end..).is_some_and(|t| t.starts_with('\n')) => r.start..r.end + 1,
         _ => r,
     }
 }
@@ -437,7 +437,7 @@ pub(crate) fn case_map(src: &str, case: &str) -> Vec<String> {
         let up = |c: char| c.to_uppercase().collect::<String>();
         let low = |c: char| c.to_lowercase().collect::<String>();
         // Title and sentence case capitalize only scripts with initial capitals (not Georgian).
-        let cap = |c: char| if designcraft_doc::capitalizes(c) { up(c) } else { low(c) };
+        let cap = |c: char| if pliego_doc::capitalizes(c) { up(c) } else { low(c) };
         let m = match case {
             "upper" => up(c),
             "lower" => low(c),
@@ -531,7 +531,7 @@ mod autocorrect_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 200], "content": "text", "text": ""})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 0})).unwrap();
         let text = |s: &Session| s.doc().unwrap().doc.stories[&sid].text.clone();
         // Off by default.
@@ -561,7 +561,7 @@ mod break_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 200], "content": "text", "text": "OneTwo\nThree"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let story = |s: &Session| s.doc().unwrap().doc.stories[&sid].clone();
         s.execute("text.select", &json!({"story": sid.0, "anchor": 3, "focus": 3})).unwrap();
         s.execute("text.insert", &json!({"text": "\u{e011}", "raw": true})).unwrap();
@@ -604,7 +604,7 @@ mod language_tests {
         let sid = r["story"].as_u64().unwrap();
         s.execute("type.char", &json!({"attrs": {"language": "German: 2006 Reform"}})).unwrap();
         s.execute("text.insert", &json!({"text": "\"Wort\" ist's"})).unwrap();
-        let text = s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].text.clone();
+        let text = s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].text.clone();
         assert_eq!(text, "\u{201E}Wort\u{201C} ist\u{2019}s");
         // German words aren't English misspellings.
         let st = s.execute("spelling.check", &json!({"story": sid})).unwrap();
@@ -625,7 +625,7 @@ mod language_tests {
         assert_eq!(quote_marks("zh-TW"), ['\u{300C}', '\u{300D}', '\u{300E}', '\u{300F}']);
         assert_eq!(quote_marks("ja_JP"), ['\u{300C}', '\u{300D}', '\u{300E}', '\u{300F}']);
         for l in ["Japanese", "Korean", "Chinese", "Chinese: Simplified", "Chinese: Traditional"] {
-            assert!(!designcraft_compose::is_english(l), "{l}: no English hyphenation or spelling");
+            assert!(!pliego_compose::is_english(l), "{l}: no English hyphenation or spelling");
         }
     }
 
@@ -658,7 +658,7 @@ mod language_tests {
             ("[No Language]", ENGLISH, false),
         ] {
             assert_eq!(quote_marks(language), quotes, "{language}");
-            assert_eq!(designcraft_compose::is_english(language), english, "{language}");
+            assert_eq!(pliego_compose::is_english(language), english, "{language}");
         }
     }
 
@@ -666,13 +666,13 @@ mod language_tests {
     fn idml_language_names_keep_their_spelling_and_pick_the_language() {
         use std::io::Read;
         // A stand-in for Songti SC (first in the Simplified Chinese chain; the real one when installed).
-        designcraft_fonts::FontDb::global().add_font(designcraft_fonts::testing::font_with("Songti SC", &['直']).unwrap());
+        pliego_fonts::FontDb::global().add_font(pliego_fonts::testing::font_with("Songti SC", &['直']).unwrap());
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": "直"})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 3})).unwrap();
         s.execute("type.char", &json!({"attrs": {"language": "Simplified Chinese"}})).unwrap();
-        let idml = designcraft_idml::export_idml(&s.doc().unwrap().doc);
+        let idml = pliego_idml::export_idml(&s.doc().unwrap().doc);
         let mut z = zip::ZipArchive::new(std::io::Cursor::new(idml.clone())).unwrap();
         let stories: String = (0..z.len())
             .map(|i| {
@@ -686,12 +686,12 @@ mod language_tests {
             .collect();
         assert!(stories.contains(r#"AppliedLanguage="$ID/Simplified Chinese""#), "{stories}");
         // The name comes back as written and sets the text as Simplified Chinese.
-        let mut back = designcraft_idml::import_idml(&idml).unwrap();
+        let mut back = pliego_idml::import_idml(&idml).unwrap();
         back.settings.glyph_fallback = true;
         let st = back.stories.values().find(|st| st.text.contains('直')).unwrap();
         let (_, base) = back.styles.resolve_para(&st.paras[0]);
         assert_eq!(back.styles.resolve_char(&base, st.char_format_at(0)).language, "Simplified Chinese");
-        let cs = designcraft_compose::compose_story(&back, st.id, &Default::default());
+        let cs = pliego_compose::compose_story(&back, st.id, &Default::default());
         let face = cs.frames[0].lines[0].glyphs.iter().find(|g| g.byte == 0).unwrap().face;
         assert_eq!(face.family, "Songti SC");
     }
@@ -708,12 +708,12 @@ mod arabic_tests {
         let sid = StoryId(r["story"].as_u64().unwrap());
         let before = s.cache.get(&s.doc().unwrap().doc, sid, None);
         s.execute("story.setDirection", &json!({"story": sid.0, "direction": "rightToLeft"})).unwrap();
-        assert_eq!(s.doc().unwrap().doc.story(sid).unwrap().direction, designcraft_doc::TextDirection::RightToLeft);
+        assert_eq!(s.doc().unwrap().doc.story(sid).unwrap().direction, pliego_doc::TextDirection::RightToLeft);
         let after = s.cache.get(&s.doc().unwrap().doc, sid, None);
         assert!(!std::sync::Arc::ptr_eq(&before, &after));
         assert!(s.execute("story.setDirection", &json!({"story": sid.0, "direction": "unknown"})).is_err());
         s.execute("edit.undo", &json!({})).unwrap();
-        assert_eq!(s.doc().unwrap().doc.story(sid).unwrap().direction, designcraft_doc::TextDirection::LeftToRight);
+        assert_eq!(s.doc().unwrap().doc.story(sid).unwrap().direction, pliego_doc::TextDirection::LeftToRight);
     }
 }
 
@@ -728,7 +728,7 @@ mod korean_breaks_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 200], "content": "text", "text": "한국어 문장"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("type.para", &json!({"attrs": {"koreanCharBreaks": true}})).unwrap();
         assert_eq!(s.doc().unwrap().doc.story(sid).unwrap().paras[0].para.korean_char_breaks, Some(true));
         s.execute("style.paragraph.create", &json!({"name": "Korean", "para": {"koreanCharBreaks": true}})).unwrap();
@@ -753,11 +753,11 @@ mod reserve_tests {
         let error = s
             .edit(|d, sel| {
                 let st = d.story_mut(sid).unwrap();
-                st.format_chars(5..9, |f| f.over.change = Some(designcraft_doc::ChangeMark::Inserted));
+                st.format_chars(5..9, |f| f.over.change = Some(pliego_doc::ChangeMark::Inserted));
                 let at = crate::cmd::changes::mark_deleted(st, 0..9);
                 assert_eq!(at, 5);
                 assert_eq!(st.text, "Keep  text.");
-                assert_eq!(st.format_after(0).over.change, Some(designcraft_doc::ChangeMark::Deleted));
+                assert_eq!(st.format_after(0).over.change, Some(pliego_doc::ChangeMark::Deleted));
                 sel.text = None;
                 reserve_command_text(st, usize::MAX)?;
                 ok()

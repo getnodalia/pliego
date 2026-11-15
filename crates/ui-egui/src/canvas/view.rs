@@ -20,7 +20,7 @@ pub fn fit(app: &mut DesignApp, rect: Rect, what: &str) {
     }
     if what == "selection" {
         // Fit Selection in Window: the selected objects (on their spread's slot).
-        let sel: Vec<designcraft_geom::Rect> = st
+        let sel: Vec<pliego_geom::Rect> = st
             .selection
             .items
             .iter()
@@ -159,7 +159,7 @@ pub struct PageBox {
     pub current: usize,
     /// How many of `names` are pages; the parents follow.
     pub pages: usize,
-    parents: Vec<designcraft_doc::SpreadId>,
+    parents: Vec<pliego_doc::SpreadId>,
 }
 
 impl PageBox {
@@ -217,13 +217,13 @@ fn centre_page(app: &mut DesignApp, abs: usize) {
 }
 
 /// The document's pages by id, in page order.
-fn page_ids(doc: &Document) -> Vec<designcraft_doc::ids::PageId> {
+fn page_ids(doc: &Document) -> Vec<pliego_doc::ids::PageId> {
     doc.spreads.iter().flat_map(|s| s.pages.iter().map(|p| p.id)).collect()
 }
 
 /// The page in view and the view centre's offset from that page's centre. Parent pages have none,
 /// nor has a view still waiting to be fitted (leaving parent pages for a document page).
-pub(crate) fn page_in_view(app: &DesignApp) -> Option<(designcraft_doc::ids::PageId, DVec2)> {
+pub(crate) fn page_in_view(app: &DesignApp) -> Option<(pliego_doc::ids::PageId, DVec2)> {
     let st = app.session.active().filter(|st| !st.editing_parents)?;
     let (v, r) = (app.view().filter(|v| v.fitted)?, app.canvas_rect?);
     let abs = current_page(app)?;

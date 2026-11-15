@@ -68,7 +68,7 @@ fn smart_quotes_and_formatting() {
 /// the Selection tool, and the chosen tool stays.
 #[test]
 fn cmd_held_press_borrows_the_selection_tool_for_one_gesture() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind};
+    use pliego_tools::{Mods, PointerEvent, PointerKind};
     let mut s = session();
     let v = ViewInfo::at_zoom(1.0);
     let r = s.execute("frame.create", &json!({"rect": [100, 100, 300, 200], "content": "text", "text": "Hello"})).unwrap();
@@ -78,12 +78,12 @@ fn cmd_held_press_borrows_the_selection_tool_for_one_gesture() {
     let cmd = Mods { cmd: true, ..Mods::default() };
     // Cmd-press on the frame selects it as an object (no caret) and a Cmd-drag moves it.
     s.pointer(&PointerEvent::new(PointerKind::Down, 150.0, 150.0).with_mods(cmd), v).unwrap();
-    assert_eq!(s.doc().unwrap().selection.items, vec![designcraft_doc::ItemId(fid)]);
+    assert_eq!(s.doc().unwrap().selection.items, vec![pliego_doc::ItemId(fid)]);
     assert!(s.doc().unwrap().selection.text.is_none(), "no caret: the Selection tool was borrowed");
     s.pointer(&PointerEvent::new(PointerKind::Drag, 170.0, 150.0).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 200.0, 150.0).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 200.0, 150.0).with_mods(cmd), v).unwrap();
-    assert_eq!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(fid)).unwrap().bounds().x0, 150.0, "moved by the drag");
+    assert_eq!(s.doc().unwrap().doc.item(pliego_doc::ItemId(fid)).unwrap().bounds().x0, 150.0, "moved by the drag");
     assert_eq!(s.tool_id(), "type", "the chosen tool stays");
     assert!(s.temp_tool.is_none(), "the borrowed tool is gone on release");
     // The next plain press is the Type tool's again: a caret in the frame.
@@ -105,7 +105,7 @@ fn cmd_held_press_borrows_the_selection_tool_for_one_gesture() {
 /// Cmd borrows whichever selection tool was chosen last, whatever the chosen tool is.
 #[test]
 fn cmd_borrows_the_last_used_selection_tool() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind};
+    use pliego_tools::{Mods, PointerEvent, PointerKind};
     let mut s = session();
     let v = ViewInfo::at_zoom(1.0);
     let cmd = Mods { cmd: true, ..Mods::default() };
@@ -131,7 +131,7 @@ fn tool_gesture_creates_one_undo_step() {
     let mut s = session();
     s.set_tool("rectangle");
     let v = ViewInfo::at_zoom(1.0);
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     s.pointer(&PointerEvent::new(PointerKind::Down, 10.0, 10.0), v).unwrap();
     for i in 1..10 {
         s.pointer(&PointerEvent::new(PointerKind::Drag, 10.0 + i as f64 * 10.0, 10.0 + i as f64 * 5.0), v).unwrap();
@@ -140,7 +140,7 @@ fn tool_gesture_creates_one_undo_step() {
     let st = s.doc().unwrap();
     assert_eq!(st.history.undo.len(), 1);
     assert_eq!(st.doc.spreads[0].items.len(), 1);
-    assert_eq!(st.doc.spreads[0].items[0].bounds(), designcraft_geom::Rect::new(10.0, 10.0, 100.0, 55.0));
+    assert_eq!(st.doc.spreads[0].items[0].bounds(), pliego_geom::Rect::new(10.0, 10.0, 100.0, 55.0));
     // Move with the selection tool.
     s.set_tool("selection");
     s.pointer(&PointerEvent::new(PointerKind::Down, 50.0, 30.0), v).unwrap();
@@ -267,13 +267,13 @@ fn a_command_without_an_undo_step_keeps_the_steps_of_those_it_runs() {
 
 #[test]
 fn shift_move_does_not_take_the_other_axis() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     s.execute("frame.create", &json!({"rect": [80.0, 100.0, 140.0, 140.0], "content": "unassigned"})).unwrap();
     s.execute("guide.add", &json!({"orientation": "horizontal", "position": 102.0, "page": 0})).unwrap();
     s.set_tool("selection");
     let v = ViewInfo::at_zoom(1.0);
-    let shift = designcraft_tools::Mods { shift: true, ..Default::default() };
+    let shift = pliego_tools::Mods { shift: true, ..Default::default() };
     s.pointer(&PointerEvent::new(PointerKind::Down, 100.0, 120.0).with_mods(shift), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 160.0, 121.0).with_mods(shift), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 160.0, 121.0).with_mods(shift), v).unwrap();
@@ -284,13 +284,13 @@ fn shift_move_does_not_take_the_other_axis() {
 
 #[test]
 fn cmd_move_does_not_snap() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     s.execute("frame.create", &json!({"rect": [80.0, 100.0, 140.0, 140.0], "content": "unassigned"})).unwrap();
     s.execute("guide.add", &json!({"orientation": "horizontal", "position": 102.0, "page": 0})).unwrap();
     s.set_tool("selection");
     let v = ViewInfo::at_zoom(1.0);
-    let cmd = designcraft_tools::Mods { cmd: true, shift: false, ..Default::default() };
+    let cmd = pliego_tools::Mods { cmd: true, shift: false, ..Default::default() };
     s.pointer(&PointerEvent::new(PointerKind::Down, 110.0, 120.0).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 160.0, 121.0).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 160.0, 121.0).with_mods(cmd), v).unwrap();
@@ -301,7 +301,7 @@ fn cmd_move_does_not_snap() {
 
 #[test]
 fn cmd_resize_still_snaps_to_a_guide() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     // The new guide is selected: the frame created after it is the selection.
     s.execute("guide.add", &json!({"orientation": "vertical", "position": 250.0, "page": 0})).unwrap();
@@ -309,8 +309,8 @@ fn cmd_resize_still_snaps_to_a_guide() {
     s.set_tool("selection");
     let v = ViewInfo::at_zoom(1.0);
     let b0 = s.doc().unwrap().doc.spreads[0].items[0].bounds();
-    let right = s.layout().to_canvas(designcraft_doc::SpreadRef::Doc(0), designcraft_geom::Point::new(b0.x1, b0.center().y));
-    let cmd = designcraft_tools::Mods { cmd: true, ..Default::default() };
+    let right = s.layout().to_canvas(pliego_doc::SpreadRef::Doc(0), pliego_geom::Point::new(b0.x1, b0.center().y));
+    let cmd = pliego_tools::Mods { cmd: true, ..Default::default() };
     s.pointer(&PointerEvent::new(PointerKind::Down, right.x, right.y).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, right.x + 47.0, right.y).with_mods(cmd), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, right.x + 47.0, right.y).with_mods(cmd), v).unwrap();
@@ -324,7 +324,7 @@ fn cmd_resize_still_snaps_to_a_guide() {
 
 #[test]
 fn shift_move_on_a_turned_spread_stays_on_the_line() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     s.execute("frame.create", &json!({"rect": [80.0, 100.0, 140.0, 140.0], "content": "unassigned"})).unwrap();
     s.execute("layout.rotateSpreadView", &json!({"angle": 90})).unwrap();
@@ -333,8 +333,8 @@ fn shift_move_on_a_turned_spread_stays_on_the_line() {
     s.set_tool("selection");
     let v = ViewInfo::at_zoom(1.0);
     let b0 = s.doc().unwrap().doc.spreads[0].items[0].bounds();
-    let c = s.layout().to_canvas(designcraft_doc::SpreadRef::Doc(0), b0.center());
-    let shift = designcraft_tools::Mods { shift: true, ..Default::default() };
+    let c = s.layout().to_canvas(pliego_doc::SpreadRef::Doc(0), b0.center());
+    let shift = pliego_tools::Mods { shift: true, ..Default::default() };
     s.pointer(&PointerEvent::new(PointerKind::Down, c.x, c.y).with_mods(shift), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, c.x + 60.0, c.y + 1.0).with_mods(shift), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, c.x + 60.0, c.y + 1.0).with_mods(shift), v).unwrap();
@@ -391,19 +391,19 @@ fn align_and_distribute() {
     }
     s.execute("object.align", &json!({"ids": ids, "edge": "top"})).unwrap();
     let st = s.doc().unwrap();
-    let tops: Vec<f64> = ids.iter().map(|i| st.doc.item(designcraft_doc::ItemId(*i)).unwrap().bounds().y0).collect();
+    let tops: Vec<f64> = ids.iter().map(|i| st.doc.item(pliego_doc::ItemId(*i)).unwrap().bounds().y0).collect();
     assert!(tops.iter().all(|t| (*t - 51.0).abs() < 1e-9), "{tops:?}");
     s.execute("object.distribute", &json!({"ids": ids, "by": "spacing"})).unwrap();
     let st = s.doc().unwrap();
-    let b: Vec<designcraft_geom::Rect> = ids.iter().map(|i| st.doc.item(designcraft_doc::ItemId(*i)).unwrap().bounds()).collect();
+    let b: Vec<pliego_geom::Rect> = ids.iter().map(|i| st.doc.item(pliego_doc::ItemId(*i)).unwrap().bounds()).collect();
     assert!(((b[1].x0 - b[0].x1) - (b[2].x0 - b[1].x1)).abs() < 1e-9);
     s.execute("object.align", &json!({"ids": [ids[0]], "edge": "left", "to": "margins"})).unwrap();
-    assert_eq!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(ids[0])).unwrap().bounds().x0, 36.0);
+    assert_eq!(s.doc().unwrap().doc.item(pliego_doc::ItemId(ids[0])).unwrap().bounds().x0, 36.0);
 }
 
 #[test]
 fn pen_draws_and_direct_selection_edits() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let v = ViewInfo::at_zoom(1.0);
     s.set_tool("pen");
@@ -433,7 +433,7 @@ fn pen_draws_and_direct_selection_edits() {
     let a = s.doc().unwrap().doc.item(id).unwrap().path.subpaths[0].anchors[0].p;
     // The pen placed this anchor on the baseline at y 96. Dragging toward (90, 80)
     // proposes y 76, and the baseline at 72 is inside the zone, so the anchor lands at (90, 72).
-    assert_eq!(a, designcraft_geom::Point::new(90.0, 72.0));
+    assert_eq!(a, pliego_geom::Point::new(90.0, 72.0));
 }
 
 #[test]
@@ -443,22 +443,22 @@ fn rotate_scale_shear_and_eyedropper() {
     s.execute("object.fill", &json!({"swatch": "C=100 M=0 Y=0 K=0"})).unwrap();
     let b = s.execute("frame.create", &json!({"rect": [300, 100, 340, 140], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     s.execute("transform.rotate", &json!({"ids": [a], "angle": 90})).unwrap();
-    let r = s.doc().unwrap().doc.item(designcraft_doc::ItemId(a)).unwrap().bounds();
+    let r = s.doc().unwrap().doc.item(pliego_doc::ItemId(a)).unwrap().bounds();
     assert!((r.width() - 50.0).abs() < 1e-6 && (r.height() - 100.0).abs() < 1e-6, "{r:?}");
     s.execute("transform.scale", &json!({"ids": [b], "sx": 2.0})).unwrap();
-    let r = s.doc().unwrap().doc.item(designcraft_doc::ItemId(b)).unwrap().bounds();
+    let r = s.doc().unwrap().doc.item(pliego_doc::ItemId(b)).unwrap().bounds();
     assert!((r.width() - 80.0).abs() < 1e-6, "{r:?}");
     s.execute("selection.set", &json!({"ids": [b]})).unwrap();
     s.execute("object.matchAttributes", &json!({"from": a})).unwrap();
-    assert_eq!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(b)).unwrap().fill.swatch, "C=100 M=0 Y=0 K=0");
+    assert_eq!(s.doc().unwrap().doc.item(pliego_doc::ItemId(b)).unwrap().fill.swatch, "C=100 M=0 Y=0 K=0");
     s.execute("transform.shear", &json!({"ids": [b], "angle": 20})).unwrap();
 }
 
 #[test]
 fn place_gun_click_drag_and_into_frame() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
     let b64 = cmd::base64_encode(&png);
     s.execute("place.load", &json!({"base64": b64, "name": "a.png"})).unwrap();
     assert_eq!(s.tool_id(), "placeGun");
@@ -469,14 +469,14 @@ fn place_gun_click_drag_and_into_frame() {
     let st = s.doc().unwrap();
     let it = st.doc.spreads[0].items.last().unwrap();
     // Dragged 80×200 → fit proportionally: 80×40.
-    assert_eq!(it.bounds(), designcraft_geom::Rect::new(100.0, 100.0, 180.0, 140.0));
+    assert_eq!(it.bounds(), pliego_geom::Rect::new(100.0, 100.0, 180.0, 140.0));
     assert_eq!(s.tool_id(), "selection");
     // Into an empty frame.
     let f = s.execute("frame.create", &json!({"rect": [300, 300, 400, 400], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     s.execute("place.load", &json!({"base64": b64})).unwrap();
     s.execute("place.drop", &json!({"frame": f})).unwrap();
-    let graphic_xf = |s: &Session| match &s.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap().content {
-        designcraft_doc::Content::Graphic(g) => g.xf,
+    let graphic_xf = |s: &Session| match &s.doc().unwrap().doc.item(pliego_doc::ItemId(f)).unwrap().content {
+        pliego_doc::Content::Graphic(g) => g.xf,
         _ => panic!("not a graphic"),
     };
     let placed = graphic_xf(&s);
@@ -490,19 +490,19 @@ fn place_gun_click_drag_and_into_frame() {
 /// InDesign does, shows its scale, and places exactly that frame, in any direction.
 #[test]
 fn place_gun_drag_previews_and_places_a_proportional_frame() {
-    use designcraft_tools::{Cursor, Mods, Overlay, PointerEvent, PointerKind};
+    use pliego_tools::{Cursor, Mods, Overlay, PointerEvent, PointerKind};
     let mut s = session();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
     s.execute("place.load", &json!({"base64": cmd::base64_encode(&png), "name": "a.png"})).unwrap();
     let v = ViewInfo::at_zoom(1.0);
-    let p = designcraft_geom::Point::new;
+    let p = pliego_geom::Point::new;
     assert_eq!(s.cursor(p(300.0, 300.0), Mods::default(), v), Cursor::LoadedGraphic);
     // Up and to the left: 80 × 200 holds the 40 × 20 graphic at 200 %, 80 × 40, hanging from the press.
     s.pointer(&PointerEvent::new(PointerKind::Down, 300.0, 300.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 220.0, 100.0), v).unwrap();
     assert_eq!(s.cursor(p(220.0, 100.0), Mods::default(), v), Cursor::Crosshair, "the crosshair while drawing");
     let o = s.overlays(v);
-    assert!(o.iter().any(|o| matches!(o, Overlay::Marquee(r) if *r == designcraft_geom::Rect::new(220.0, 260.0, 300.0, 300.0))), "{o:?}");
+    assert!(o.iter().any(|o| matches!(o, Overlay::Marquee(r) if *r == pliego_geom::Rect::new(220.0, 260.0, 300.0, 300.0))), "{o:?}");
     assert!(
         o.iter().any(|o| matches!(o, Overlay::Measure { text, .. } if text == "X: 200.00%
 Y: 200.00%")),
@@ -510,13 +510,13 @@ Y: 200.00%")),
     );
     s.pointer(&PointerEvent::new(PointerKind::Up, 220.0, 100.0), v).unwrap();
     let it = s.doc().unwrap().doc.spreads[0].items.last().unwrap().clone();
-    assert_eq!(it.bounds(), designcraft_geom::Rect::new(220.0, 260.0, 300.0, 300.0), "the frame previewed");
+    assert_eq!(it.bounds(), pliego_geom::Rect::new(220.0, 260.0, 300.0, 300.0), "the frame previewed");
     // 80 × 1 is past the drag tolerance, but its 2 × 1 proportional frame is too small for
     // `place.drop`, which places at natural size: the preview shows that frame and 100 %.
     s.execute("place.load", &json!({"base64": cmd::base64_encode(&png), "name": "a.png"})).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Down, 100.0, 400.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 180.0, 401.0), v).unwrap();
-    let natural = designcraft_geom::Rect::new(100.0, 400.0, 140.0, 420.0);
+    let natural = pliego_geom::Rect::new(100.0, 400.0, 140.0, 420.0);
     let o = s.overlays(v);
     assert!(o.iter().any(|o| matches!(o, Overlay::Marquee(r) if *r == natural)), "{o:?}");
     assert!(
@@ -536,7 +536,7 @@ Y: 100.00%")),
     assert_eq!(s.cursor(p(102.5, 501.25), Mods::default(), v), Cursor::LoadedGraphic, "the thumbnail stays");
     s.pointer(&PointerEvent::new(PointerKind::Up, 102.5, 501.25), v).unwrap();
     let it = s.doc().unwrap().doc.spreads[0].items.last().unwrap().clone();
-    assert_eq!(it.bounds(), designcraft_geom::Rect::new(100.0, 500.0, 140.0, 520.0), "actual size at the press");
+    assert_eq!(it.bounds(), pliego_geom::Rect::new(100.0, 500.0, 140.0, 520.0), "actual size at the press");
     // With no graphic loaded there's no thumbnail to show: the crosshair, before any press too.
     s.loaded = None;
     s.set_tool("placeGun");
@@ -561,7 +561,7 @@ fn hyperlinks_and_bookmarks_reach_the_pdf() {
     let mut s = Session::new();
     s.execute("file.newSample", &json!({})).unwrap();
     s.execute("selection.set", &json!({"ids": [39]})).unwrap();
-    s.execute("hyperlink.create", &json!({"url": "https://example.com/designcraft"})).unwrap();
+    s.execute("hyperlink.create", &json!({"url": "https://example.com/pliego"})).unwrap();
     let d = s.execute("document.inspect", &json!({})).unwrap();
     let sid = d["stories"][0]["id"].as_u64().unwrap();
     s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 3})).unwrap();
@@ -660,7 +660,7 @@ fn snippets_roundtrip_between_documents() {
     let snip = s.execute("snippet.export", &json!({})).unwrap();
     s.execute("file.new", &json!({})).unwrap();
     let r = s.execute("snippet.place", &json!({"base64": snip["base64"], "x": 36.0, "y": 36.0})).unwrap();
-    let id = designcraft_doc::ItemId(r["ids"][0].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["ids"][0].as_u64().unwrap());
     let st = s.doc().unwrap();
     let it = st.doc.item(id).unwrap();
     assert_eq!(it.bounds().x0, 36.0);
@@ -680,7 +680,7 @@ fn object_styles_create_and_apply() {
     let b = s.execute("frame.create", &json!({"rect": [200, 36, 300, 136], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     s.execute("style.object.apply", &json!({"name": "Magenta Box"})).unwrap();
     let d = &s.doc().unwrap().doc;
-    let (ia, ib) = (d.item(designcraft_doc::ItemId(a)).unwrap(), d.item(designcraft_doc::ItemId(b)).unwrap());
+    let (ia, ib) = (d.item(pliego_doc::ItemId(a)).unwrap(), d.item(pliego_doc::ItemId(b)).unwrap());
     assert_eq!(ia.fill, ib.fill);
     assert_eq!(ib.stroke.weight, 4.0);
     assert_eq!(ib.object_style, "Magenta Box");
@@ -688,7 +688,7 @@ fn object_styles_create_and_apply() {
 
 #[test]
 fn object_style_effects_follow_the_style_until_overridden() {
-    use designcraft_doc::{BASIC_GRAPHICS_FRAME, ItemId};
+    use pliego_doc::{BASIC_GRAPHICS_FRAME, ItemId};
     let mut s = session();
     let frame = |s: &mut Session, x: f64| {
         let r = s.execute("frame.create", &json!({"rect": [x, 36, x + 100.0, 136], "content": "unassigned"})).unwrap();
@@ -738,7 +738,7 @@ fn object_style_effects_follow_the_style_until_overridden() {
     let r = s.execute("style.object.edit", &json!({"name": BASIC_GRAPHICS_FRAME, "feather": 4})).unwrap();
     assert_eq!(r["updated"], 1);
     assert!(item(&s, e).effects.drop_shadow.on && item(&s, e).effects.feather == 0.0);
-    assert_eq!(item(&s, f).effects, designcraft_doc::Effects { feather: 4.0, ..Default::default() });
+    assert_eq!(item(&s, f).effects, pliego_doc::Effects { feather: 4.0, ..Default::default() });
     let g = s.execute("frame.create", &json!({"rect": [36, 300, 136, 400], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     assert_eq!((item(&s, g).object_style.as_str(), item(&s, g).effects.feather), (BASIC_GRAPHICS_FRAME, 4.0));
     s.execute("style.object.edit", &json!({"name": BASIC_GRAPHICS_FRAME, "effects": null})).unwrap();
@@ -754,7 +754,7 @@ fn object_style_effects_follow_the_style_until_overridden() {
 
 #[test]
 fn object_style_effects_reach_grouped_and_anchored_items() {
-    use designcraft_doc::ItemId;
+    use pliego_doc::ItemId;
     let mut s = session();
     let frame = |s: &mut Session, x: f64| {
         s.execute("frame.create", &json!({"rect": [x, 36, x + 50.0, 86], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap()
@@ -861,7 +861,7 @@ fn object_set_flags_and_wrap_invert() {
     let mut s = session();
     let r = s.execute("frame.create", &json!({"rect": [36, 36, 300, 200]})).unwrap();
     let id = r["id"].as_u64().unwrap();
-    let item = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).cloned().unwrap();
+    let item = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).cloned().unwrap();
     s.execute("object.setFlags", &json!({"ids": [id], "hidden": true})).unwrap();
     assert!(item(&s).hidden);
     s.execute("object.setFlags", &json!({"ids": [id], "hidden": false, "locked": true})).unwrap();
@@ -877,7 +877,7 @@ fn object_set_flags_and_wrap_invert() {
     let w = item(&s).wrap;
     assert_eq!(
         (w.mode, w.side, w.contour),
-        (designcraft_doc::WrapMode::Contour, designcraft_doc::WrapSide::LargestArea, designcraft_doc::ContourType::GraphicFrame)
+        (pliego_doc::WrapMode::Contour, pliego_doc::WrapSide::LargestArea, pliego_doc::ContourType::GraphicFrame)
     );
     assert!(s.execute("object.textWrap", &json!({"contour": "detectEdges"})).is_err());
     assert!(s.execute("object.textWrap", &json!({"side": "middle"})).is_err());
@@ -886,34 +886,34 @@ fn object_set_flags_and_wrap_invert() {
 #[test]
 fn text_wrap_on_selected_content_sets_the_graphic_wrap() {
     let mut s = session();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
     let f = s.execute("frame.create", &json!({"rect": [300, 300, 400, 400], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     s.execute("place.load", &json!({"base64": cmd::base64_encode(&png)})).unwrap();
     s.execute("place.drop", &json!({"frame": f})).unwrap();
-    let item = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).cloned().unwrap();
+    let item = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(f)).cloned().unwrap();
     s.execute("selection.set", &json!({"ids": [f], "content": true})).unwrap();
     s.execute("object.textWrap", &json!({"mode": "boundingBox", "offset": 4})).unwrap();
     let it = item(&s);
-    assert_eq!(it.wrap.mode, designcraft_doc::WrapMode::None, "the frame keeps no wrap");
+    assert_eq!(it.wrap.mode, pliego_doc::WrapMode::None, "the frame keeps no wrap");
     let g = it.graphic().unwrap();
-    assert_eq!((g.wrap.mode, g.wrap.offsets), (designcraft_doc::WrapMode::BoundingBox, [4.0; 4]));
+    assert_eq!((g.wrap.mode, g.wrap.offsets), (pliego_doc::WrapMode::BoundingBox, [4.0; 4]));
     // The frame selected: the frame's own wrap.
     s.execute("selection.set", &json!({"ids": [f]})).unwrap();
     s.execute("object.textWrap", &json!({"mode": "jumpObject"})).unwrap();
     let it = item(&s);
-    assert_eq!((it.wrap.mode, it.graphic().unwrap().wrap.mode), (designcraft_doc::WrapMode::JumpObject, designcraft_doc::WrapMode::BoundingBox));
+    assert_eq!((it.wrap.mode, it.graphic().unwrap().wrap.mode), (pliego_doc::WrapMode::JumpObject, pliego_doc::WrapMode::BoundingBox));
 }
 
 #[test]
 fn custom_wrap_path_follows_resize_and_yields_to_offsets() {
     let mut s = session();
     let r = s.execute("frame.create", &json!({"rect": [0, 0, 100, 100]})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     s.execute("selection.set", &json!({"ids": [id.0]})).unwrap();
     s.execute("object.textWrap", &json!({"mode": "boundingBox"})).unwrap();
     let inner = s.doc().unwrap().doc.item(id).unwrap().path.clone();
-    let custom = designcraft_geom::PathData::single(designcraft_geom::SubPath::polyline(
-        &[designcraft_geom::Point::new(0.0, 0.0), designcraft_geom::Point::new(40.0, 0.0), designcraft_geom::Point::new(0.0, 100.0)],
+    let custom = pliego_geom::PathData::single(pliego_geom::SubPath::polyline(
+        &[pliego_geom::Point::new(0.0, 0.0), pliego_geom::Point::new(40.0, 0.0), pliego_geom::Point::new(0.0, 100.0)],
         true,
     ));
     s.edit(|d, _| {
@@ -944,7 +944,7 @@ fn custom_wrap_path_follows_resize_and_yields_to_offsets() {
 
 #[test]
 fn gridify_while_drawing_frames() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+    use pliego_tools::{Mods, PointerEvent, PointerKind, ToolKey};
     let mut s = session();
     let n0 = s.doc().unwrap().doc.spreads[0].items.len();
     s.set_tool("rectangleFrame");
@@ -965,7 +965,7 @@ fn gridify_while_drawing_frames() {
 
 #[test]
 fn gap_tool_drag_moves_the_gap() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let a = s.execute("frame.create", &json!({"rect": [100, 100, 200, 300]})).unwrap()["id"].as_u64().unwrap();
     s.set_tool("gap");
@@ -974,7 +974,7 @@ fn gap_tool_drag_moves_the_gap() {
     s.pointer(&PointerEvent::new(PointerKind::Drag, 270.0, 205.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 270.0, 205.0), v).unwrap();
     // The gap between the frame and the page's right edge: the frame's right side moved 20.
-    let b = s.doc().unwrap().doc.item(designcraft_doc::ItemId(a)).unwrap().bounds();
+    let b = s.doc().unwrap().doc.item(pliego_doc::ItemId(a)).unwrap().bounds();
     assert_eq!(b.x1, 220.0, "{b:?}");
     assert_eq!(s.doc().unwrap().history.undo.len(), 2, "create + one gap move");
 }
@@ -995,7 +995,7 @@ fn commands_take_non_object_params_without_panicking() {
 /// a new frame is threaded there and the overset text flows into it.
 #[test]
 fn threading_with_the_loaded_text_cursor_on_the_sample() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.newSample", &json!({})).unwrap();
     let d = s.doc().unwrap().doc.clone();
@@ -1007,14 +1007,14 @@ fn threading_with_the_loaded_text_cursor_on_the_sample() {
     s.set_tool("selection");
     let v = ViewInfo::at_zoom(1.0);
     let layout = s.layout();
-    let port = designcraft_tools::thread::port_center(&s.doc().unwrap().doc, &layout, first, true, v.zoom).unwrap();
-    let ev = |k, p: designcraft_geom::Point| PointerEvent::new(k, p.x, p.y);
+    let port = pliego_tools::thread::port_center(&s.doc().unwrap().doc, &layout, first, true, v.zoom).unwrap();
+    let ev = |k, p: pliego_geom::Point| PointerEvent::new(k, p.x, p.y);
     s.pointer(&ev(PointerKind::Down, port), v).unwrap();
     s.pointer(&ev(PointerKind::Up, port), v).unwrap();
-    assert_eq!(s.cursor(port + designcraft_geom::Vec2::new(-2000.0, 0.0), Default::default(), v), designcraft_tools::Cursor::LoadedText);
+    assert_eq!(s.cursor(port + pliego_geom::Vec2::new(-2000.0, 0.0), Default::default(), v), pliego_tools::Cursor::LoadedText);
     // On the pasteboard left of the first spread.
     let b = layout.slots[0].bounds;
-    let at = designcraft_geom::Point::new(b.x0 - 300.0, b.y0 + 100.0);
+    let at = pliego_geom::Point::new(b.x0 - 300.0, b.y0 + 100.0);
     let undo = s.doc().unwrap().history.undo.len();
     s.pointer(&ev(PointerKind::Down, at), v).unwrap();
     s.pointer(&ev(PointerKind::Up, at), v).unwrap();
@@ -1027,13 +1027,13 @@ fn threading_with_the_loaded_text_cursor_on_the_sample() {
     let cs = s.cache.get(&s.doc().unwrap().doc, sid, None);
     assert!(cs.frames.iter().any(|f| f.frame == new && !f.range.is_empty()), "the text flows into the new frame");
     let nb = s.doc().unwrap().doc.item(new).unwrap().bounds();
-    assert!((nb.y0 - layout.to_spread(designcraft_doc::SpreadRef::Doc(0), at).y).abs() < 1e-6, "{nb:?}");
+    assert!((nb.y0 - layout.to_spread(pliego_doc::SpreadRef::Doc(0), at).y).abs() < 1e-6, "{nb:?}");
 }
 
 /// Drag a selection handle of item 0 on spread 0 from the edge point `at` by `by` (canvas units).
-fn drag_handle(s: &mut Session, at: designcraft_geom::Point, by: designcraft_geom::Vec2, v: ViewInfo) {
-    use designcraft_tools::{PointerEvent, PointerKind};
-    let p = s.layout().to_canvas(designcraft_doc::SpreadRef::Doc(0), at);
+fn drag_handle(s: &mut Session, at: pliego_geom::Point, by: pliego_geom::Vec2, v: ViewInfo) {
+    use pliego_tools::{PointerEvent, PointerKind};
+    let p = s.layout().to_canvas(pliego_doc::SpreadRef::Doc(0), at);
     s.pointer(&PointerEvent::new(PointerKind::Down, p.x, p.y), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, p.x + by.x / 2.0, p.y + by.y / 2.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, p.x + by.x, p.y + by.y), v).unwrap();
@@ -1042,7 +1042,7 @@ fn drag_handle(s: &mut Session, at: designcraft_geom::Point, by: designcraft_geo
 
 #[test]
 fn text_frame_resize_snaps_to_the_margins() {
-    use designcraft_geom::{Point, Vec2};
+    use pliego_geom::{Point, Vec2};
     for zoom in [1.0, 0.5] {
         let mut s = Session::new();
         s.execute("file.newSample", &json!({})).unwrap();
@@ -1069,13 +1069,13 @@ fn text_frame_resize_snaps_to_the_margins() {
 
 #[test]
 fn type_tool_frames_snap_to_the_margins() {
-    use designcraft_geom::Point;
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_geom::Point;
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let margin = s.doc().unwrap().doc.spreads[0].pages[0].margin_rect();
     s.set_tool("type");
     let v = ViewInfo::at_zoom(1.0);
-    let c = |s: &Session, x: f64, y: f64| s.layout().to_canvas(designcraft_doc::SpreadRef::Doc(0), Point::new(x, y));
+    let c = |s: &Session, x: f64, y: f64| s.layout().to_canvas(pliego_doc::SpreadRef::Doc(0), Point::new(x, y));
     // From 1.5 pt off the top-left margin corner to 1.5 pt off the right margin.
     let a = c(&s, margin.x0 + 1.5, margin.y0 + 1.5);
     let b = c(&s, margin.x1 - 1.5, margin.y0 + 101.5);
@@ -1093,8 +1093,8 @@ fn type_tool_frames_snap_to_the_margins() {
 
 #[test]
 fn preflight_distinguishes_unplaced_stories_and_locates_footnote_overset() {
-    use designcraft_doc::{AnchorPosition, AnchoredObject, ParaFormat, SpreadRef, Story, StoryId};
-    use designcraft_geom::Rect;
+    use pliego_doc::{AnchorPosition, AnchoredObject, ParaFormat, SpreadRef, Story, StoryId};
+    use pliego_geom::Rect;
     let mut s = session();
     let doc = Arc::make_mut(&mut s.doc_mut().unwrap().doc);
     let layer = doc.default_layer();
@@ -1148,7 +1148,7 @@ fn paragraph_style_edit_persists_attrs_and_rename() {
     {
         let st = s.doc().unwrap();
         let style = st.doc.styles.para(&name).expect("style still exists");
-        assert_eq!(style.para.align, Some(designcraft_doc::Align::Center), "edited attribute persisted");
+        assert_eq!(style.para.align, Some(pliego_doc::Align::Center), "edited attribute persisted");
     }
     // Renaming updates the style definition itself, and every place it's referenced.
     s.execute("style.paragraph.edit", &json!({"name": name, "rename": "Body Text"})).unwrap();
@@ -1176,20 +1176,20 @@ fn paragraph_style_delete_reassigns_affected_text() {
     s.execute("style.paragraph.apply", &json!({"name": name})).unwrap();
     {
         let st = s.doc().unwrap();
-        let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).expect("story exists");
+        let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).expect("story exists");
         assert_eq!(story.paras[0].style, name, "style applied before delete");
     }
-    s.execute("style.paragraph.delete", &json!({"name": name, "replaceWith": designcraft_doc::BASIC_PARAGRAPH})).unwrap();
+    s.execute("style.paragraph.delete", &json!({"name": name, "replaceWith": pliego_doc::BASIC_PARAGRAPH})).unwrap();
     let st = s.doc().unwrap();
     assert!(st.doc.styles.para(&name).is_none(), "deleted style is gone");
-    let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).expect("story exists");
-    assert_eq!(story.paras[0].style, designcraft_doc::BASIC_PARAGRAPH, "affected paragraph reassigned to the replacement style");
+    let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).expect("story exists");
+    assert_eq!(story.paras[0].style, pliego_doc::BASIC_PARAGRAPH, "affected paragraph reassigned to the replacement style");
 }
 
 #[test]
 fn paragraph_style_delete_rejects_builtin_styles() {
     let mut s = session();
-    let r = s.execute("style.paragraph.delete", &json!({"name": designcraft_doc::BASIC_PARAGRAPH}));
+    let r = s.execute("style.paragraph.delete", &json!({"name": pliego_doc::BASIC_PARAGRAPH}));
     assert!(r.is_err(), "built-in styles can't be deleted");
 }
 
@@ -1233,38 +1233,38 @@ fn character_style_delete_reassigns_affected_text() {
     s.execute("style.character.apply", &json!({"name": name})).unwrap();
     {
         let st = s.doc().unwrap();
-        let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).expect("story exists");
+        let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).expect("story exists");
         assert_eq!(story.chars[0].format.style, name, "style applied before delete");
     }
-    s.execute("style.character.delete", &json!({"name": name, "replaceWith": designcraft_doc::NO_CHAR_STYLE})).unwrap();
+    s.execute("style.character.delete", &json!({"name": name, "replaceWith": pliego_doc::NO_CHAR_STYLE})).unwrap();
     let st = s.doc().unwrap();
     assert!(st.doc.styles.char_style(&name).is_none(), "deleted style is gone");
-    let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).expect("story exists");
-    assert_eq!(story.chars[0].format.style, designcraft_doc::NO_CHAR_STYLE, "affected run reassigned to the replacement style");
+    let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).expect("story exists");
+    assert_eq!(story.chars[0].format.style, pliego_doc::NO_CHAR_STYLE, "affected run reassigned to the replacement style");
 }
 
 #[test]
 fn character_style_delete_rejects_builtin_styles() {
     let mut s = session();
-    let r = s.execute("style.character.delete", &json!({"name": designcraft_doc::NO_CHAR_STYLE}));
+    let r = s.execute("style.character.delete", &json!({"name": pliego_doc::NO_CHAR_STYLE}));
     assert!(r.is_err(), "built-in styles can't be deleted");
 }
 
 #[test]
 fn direct_selection_drag_and_arrow_keys_move_placed_content() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind, SnapView, ToolKey};
+    use pliego_tools::{Mods, PointerEvent, PointerKind, SnapView, ToolKey};
     let mut s = session();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
     let f = s.execute("frame.create", &json!({"rect": [100, 100, 300, 300], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     s.execute("place.load", &json!({"base64": cmd::base64_encode(&png)})).unwrap();
     s.execute("place.drop", &json!({"frame": f})).unwrap();
     let xfs = |s: &Session| {
-        let it = s.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap().clone();
+        let it = s.doc().unwrap().doc.item(pliego_doc::ItemId(f)).unwrap().clone();
         (it.xf, it.graphic().unwrap().xf.translation())
     };
     let (frame0, g0) = xfs(&s);
     let v = ViewInfo { snap: SnapView::OFF, ..ViewInfo::at_zoom(1.0) };
-    let at = s.layout().to_canvas(designcraft_doc::SpreadRef::Doc(0), designcraft_geom::Point::new(150.0, 150.0));
+    let at = s.layout().to_canvas(pliego_doc::SpreadRef::Doc(0), pliego_geom::Point::new(150.0, 150.0));
     s.set_tool("directSelection");
     s.pointer(&PointerEvent::new(PointerKind::Down, at.x, at.y), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, at.x + 20.0, at.y + 10.0), v).unwrap();
@@ -1273,7 +1273,7 @@ fn direct_selection_drag_and_arrow_keys_move_placed_content() {
     assert!(s.doc().unwrap().selection.content);
     let (frame1, g1) = xfs(&s);
     assert_eq!(frame1, frame0, "the frame stays");
-    assert_eq!(g1 - g0, designcraft_geom::Vec2::new(30.0, 10.0));
+    assert_eq!(g1 - g0, pliego_geom::Vec2::new(30.0, 10.0));
     s.execute("edit.undo", &json!({})).unwrap();
     assert_eq!(xfs(&s).1, g0, "one undo step");
     // Arrow keys nudge the selected content; Shift nudges ten times as far.
@@ -1282,7 +1282,7 @@ fn direct_selection_drag_and_arrow_keys_move_placed_content() {
     s.tool_key(ToolKey::Down, Mods { shift: true, ..Default::default() }, v).unwrap();
     let (frame2, g2) = xfs(&s);
     assert_eq!(frame2, frame0);
-    assert_eq!(g2 - g0, designcraft_geom::Vec2::new(1.0, 10.0));
+    assert_eq!(g2 - g0, pliego_geom::Vec2::new(1.0, 10.0));
 }
 
 #[test]
@@ -1291,9 +1291,7 @@ fn preflight_notes_an_assumed_mojikumi_base_set_without_calling_the_table_unappl
     s.execute("frame.create", &json!({"rect": [36, 36, 300, 300], "content": "text", "text": "中文 A1"})).unwrap();
     let story = s.doc().unwrap().doc.stories.keys().next().unwrap().0;
     let d = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc);
-    std::sync::Arc::make_mut(&mut d.styles)
-        .mojikumi_tables
-        .push(designcraft_doc::cjk::MojikumiTable { name: "Baseless".into(), ..Default::default() });
+    std::sync::Arc::make_mut(&mut d.styles).mojikumi_tables.push(pliego_doc::cjk::MojikumiTable { name: "Baseless".into(), ..Default::default() });
     s.execute("text.select", &json!({"story": story, "anchor": 0, "focus": 1})).unwrap();
     s.execute("type.para", &json!({"attrs": {"mojikumi": "MojikumiTable/Baseless"}})).unwrap();
     let result = s.execute("preflight.run", &json!({})).unwrap();
@@ -1305,8 +1303,8 @@ fn preflight_notes_an_assumed_mojikumi_base_set_without_calling_the_table_unappl
 
 #[test]
 fn live_corner_gestures_are_one_undo_step_each() {
-    use designcraft_geom::corners::CornerShape;
-    use designcraft_tools::{Mods, PointerEvent, PointerKind};
+    use pliego_geom::corners::CornerShape;
+    use pliego_tools::{Mods, PointerEvent, PointerKind};
     let mut s = session();
     s.execute("frame.create", &json!({"rect": [100, 100, 300, 250], "content": "graphic"})).unwrap();
     let id = s.doc().unwrap().doc.spreads[0].items[0].id;
@@ -1344,8 +1342,8 @@ fn live_corner_gestures_are_one_undo_step_each() {
 
 #[test]
 fn alt_arrows_kern_at_the_caret_and_track_a_selection() {
-    use designcraft_doc::{Kerning, StoryId};
-    use designcraft_tools::{Mods, ToolKey};
+    use pliego_doc::{Kerning, StoryId};
+    use pliego_tools::{Mods, ToolKey};
     let mut s = session();
     let r = s.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "text", "text": "Hello world"})).unwrap();
     let sid = r["story"].as_u64().unwrap();
@@ -1460,11 +1458,11 @@ fn character_style_delete_reassigns_every_kind_of_reference() {
 
 #[test]
 fn page_tool_selects_a_page_and_its_handles_preview_or_resize_it() {
-    use designcraft_tools::{CanvasLayout, Mods, PointerEvent, PointerKind};
+    use pliego_tools::{CanvasLayout, Mods, PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 612, "height": 792, "facingPages": false})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [400, 100, 500, 200]})).unwrap()["id"].as_u64().unwrap();
-    let frame = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+    let frame = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
     let width = |s: &Session| s.doc().unwrap().doc.spreads[0].pages[0].width;
     // The page on the canvas (a single page is centred on the spine).
     let page = |s: &Session| {
@@ -1494,7 +1492,7 @@ fn page_tool_selects_a_page_and_its_handles_preview_or_resize_it() {
         // Scale keeps proportions: only wider, so the frame is centred on the wider page.
         assert_eq!(frame(s).x0, 706.0, "the Scale rule in the preview: {:?}", frame(s));
     });
-    assert_eq!((width(&s), frame(&s)), (612.0, designcraft_geom::Rect::new(400.0, 100.0, 500.0, 200.0)), "sprung back");
+    assert_eq!((width(&s), frame(&s)), (612.0, pliego_geom::Rect::new(400.0, 100.0, 500.0, 200.0)), "sprung back");
     assert_eq!(s.doc().unwrap().history.undo.len(), undo, "nothing to undo");
     // Alt-drag resizes; with the rule off the frame stays where it is.
     s.execute("liquid.pageRule", &json!({"rule": "off"})).unwrap();
@@ -1519,10 +1517,10 @@ fn page_size_keeps_objects_by_its_anchor() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400, "facingPages": false})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [100, 100, 200, 200]})).unwrap()["id"].as_u64().unwrap();
-    let frame = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+    let frame = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
     // Bottom-right stays put: 100 wider and 50 taller moves the frame 100 right and 50 down.
     s.execute("layout.pageSize", &json!({"pages": [1], "width": 500, "height": 450, "anchor": 8})).unwrap();
-    assert_eq!(frame(&s), designcraft_geom::Rect::new(200.0, 150.0, 300.0, 250.0));
+    assert_eq!(frame(&s), pliego_geom::Rect::new(200.0, 150.0, 300.0, 250.0));
     // The centre: half of it.
     s.execute("layout.pageSize", &json!({"pages": [1], "width": 700, "height": 450, "anchor": 4})).unwrap();
     assert_eq!(frame(&s).x0, 300.0);
@@ -1536,11 +1534,11 @@ fn controlled_by_parent_takes_the_parent_pages_rule() {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 400, "height": 400, "facingPages": false})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [100, 100, 200, 200]})).unwrap()["id"].as_u64().unwrap();
-    let frame = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+    let frame = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
     // The page follows its parent; the parent page re-centres.
     s.execute("liquid.pageRule", &json!({"rule": "controlledByParent", "pages": [1]})).unwrap();
     s.edit(|d, _| {
-        std::sync::Arc::make_mut(&mut d.parents[0]).pages[0].liquid = designcraft_doc::LiquidRule::ReCenter;
+        std::sync::Arc::make_mut(&mut d.parents[0]).pages[0].liquid = pliego_doc::LiquidRule::ReCenter;
         Ok(())
     })
     .unwrap();
@@ -1558,7 +1556,7 @@ fn controlled_by_parent_takes_the_parent_pages_rule() {
 
 #[test]
 fn page_tool_pins_and_locks_objects_on_object_based_pages() {
-    use designcraft_tools::{CanvasLayout, Mods, PointerEvent, PointerKind};
+    use pliego_tools::{CanvasLayout, Mods, PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 612, "height": 792, "facingPages": false})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [256, 72, 356, 132]})).unwrap()["id"].as_u64().unwrap();
@@ -1566,50 +1564,44 @@ fn page_tool_pins_and_locks_objects_on_object_based_pages() {
     s.execute("edit.deselectAll", &json!({})).unwrap();
     s.set_tool("page");
     let v = ViewInfo::at_zoom(1.0);
-    let ev =
-        |kind, p: designcraft_geom::Point, alt: bool| PointerEvent { mods: Mods { alt, ..Default::default() }, ..PointerEvent::new(kind, p.x, p.y) };
+    let ev = |kind, p: pliego_geom::Point, alt: bool| PointerEvent { mods: Mods { alt, ..Default::default() }, ..PointerEvent::new(kind, p.x, p.y) };
     let canvas = |s: &Session| {
         let d = &s.doc().unwrap().doc;
         let l = CanvasLayout::new(d, false);
-        (
-            l.page_rect(d, 0).unwrap(),
-            l.xf(designcraft_doc::SpreadRef::Doc(0)).transform_rect_bbox(d.item(designcraft_doc::ItemId(id)).unwrap().bounds()),
-        )
+        (l.page_rect(d, 0).unwrap(), l.xf(pliego_doc::SpreadRef::Doc(0)).transform_rect_bbox(d.item(pliego_doc::ItemId(id)).unwrap().bounds()))
     };
-    let click = |s: &mut Session, p: designcraft_geom::Point| {
+    let click = |s: &mut Session, p: pliego_geom::Point| {
         s.pointer(&ev(PointerKind::Down, p, false), v).unwrap();
         s.pointer(&ev(PointerKind::Up, p, false), v).unwrap();
     };
-    let liquid = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().liquid;
+    let liquid = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().liquid;
     // A click on the object selects it with its page; its pins and locks show.
     let (_, o) = canvas(&s);
     click(&mut s, o.center());
     let sel = s.doc().unwrap().selection.clone();
-    assert_eq!((sel.page, sel.items.clone()), (Some(0), vec![designcraft_doc::ItemId(id)]));
+    assert_eq!((sel.page, sel.items.clone()), (Some(0), vec![pliego_doc::ItemId(id)]));
     assert!(
-        s.overlays(v)
-            .iter()
-            .any(|o| matches!(o, designcraft_tools::Overlay::LiquidPins { pins: [false, false, false, false], resize: [true, true], .. }))
+        s.overlays(v).iter().any(|o| matches!(o, pliego_tools::Overlay::LiquidPins { pins: [false, false, false, false], resize: [true, true], .. }))
     );
     // The right pin (14 px outside the right edge) and the width lock (10 px right of the centre).
-    click(&mut s, designcraft_geom::Point::new(o.x1 + 14.0, o.center().y));
-    click(&mut s, designcraft_geom::Point::new(o.center().x + 10.0, o.center().y));
+    click(&mut s, pliego_geom::Point::new(o.x1 + 14.0, o.center().y));
+    click(&mut s, pliego_geom::Point::new(o.center().x + 10.0, o.center().y));
     let l = liquid(&s).unwrap();
     assert!(l.pin_right && !l.resize_width && l.resize_height && !l.pin_left, "{l:?}");
     // Alt-drag the page 100 pt wider: the pinned, width-locked frame keeps its size by the right edge.
     let (p, _) = canvas(&s);
-    let right = designcraft_geom::Point::new(p.x1, p.center().y);
+    let right = pliego_geom::Point::new(p.x1, p.center().y);
     s.pointer(&ev(PointerKind::Down, right, true), v).unwrap();
-    s.pointer(&ev(PointerKind::Drag, right + designcraft_geom::Vec2::new(100.0, 0.0), true), v).unwrap();
-    s.pointer(&ev(PointerKind::Up, right + designcraft_geom::Vec2::new(100.0, 0.0), true), v).unwrap();
+    s.pointer(&ev(PointerKind::Drag, right + pliego_geom::Vec2::new(100.0, 0.0), true), v).unwrap();
+    s.pointer(&ev(PointerKind::Up, right + pliego_geom::Vec2::new(100.0, 0.0), true), v).unwrap();
     let d = &s.doc().unwrap().doc;
-    let (pg, b) = (&d.spreads[0].pages[0], d.item(designcraft_doc::ItemId(id)).unwrap().bounds());
+    let (pg, b) = (&d.spreads[0].pages[0], d.item(pliego_doc::ItemId(id)).unwrap().bounds());
     assert_eq!(pg.width, 712.0);
     assert!((b.width() - 100.0).abs() < 1e-6 && (pg.x + pg.width - b.x1 - 256.0).abs() < 1e-6, "{b:?}");
     // Hovering a pin shows its tooltip.
     let (_, o) = canvas(&s);
-    s.pointer(&ev(PointerKind::Move, designcraft_geom::Point::new(o.x1 + 14.0, o.center().y), false), v).unwrap();
-    assert!(s.overlays(v).iter().any(|o| matches!(o, designcraft_tools::Overlay::Tip { text, .. } if text.starts_with("Object is pinned"))));
+    s.pointer(&ev(PointerKind::Move, pliego_geom::Point::new(o.x1 + 14.0, o.center().y), false), v).unwrap();
+    assert!(s.overlays(v).iter().any(|o| matches!(o, pliego_tools::Overlay::Tip { text, .. } if text.starts_with("Object is pinned"))));
 }
 
 #[test]
@@ -1655,7 +1647,7 @@ fn duplicating_a_page_keeps_its_own_size_rule_guides_and_objects() {
     let d = s.doc().unwrap().doc.clone();
     let (si, pi) = d.page_loc(2).unwrap();
     let pg = &d.spreads[si].pages[pi];
-    assert_eq!((pg.width, pg.height, pg.liquid), (612.0, 792.0, designcraft_doc::LiquidRule::Scale));
+    assert_eq!((pg.width, pg.height, pg.liquid), (612.0, 792.0, pliego_doc::LiquidRule::Scale));
     assert_eq!(pg.guides.len(), 1);
     assert_eq!(d.spreads[si].items.len(), 1);
     // At the end of the document (the New Page button): the business card, not the last page's size.
@@ -1670,7 +1662,7 @@ fn duplicating_a_page_keeps_its_own_size_rule_guides_and_objects() {
 fn the_type_tool_draws_a_text_frame_over_a_locked_frame() {
     // Adobe's "Set up a modern magazine layout" (4:03): with the page frame locked (Cmd+L), the
     // Type tool draws text frames on top of it; the locked frame stays an empty frame.
-    use designcraft_tools::{PointerEvent, PointerKind, SnapView};
+    use pliego_tools::{PointerEvent, PointerKind, SnapView};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 612, "height": 792, "facingPages": false})).unwrap();
     let big = s.execute("frame.create", &json!({"rect": [36, 36, 576, 756], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
@@ -1680,15 +1672,15 @@ fn the_type_tool_draws_a_text_frame_over_a_locked_frame() {
     s.set_tool("type");
     let v = ViewInfo { snap: SnapView::OFF, ..ViewInfo::at_zoom(1.0) };
     let layout = s.layout();
-    let at = |x: f64, y: f64| layout.to_canvas(designcraft_doc::SpreadRef::Doc(0), designcraft_geom::Point::new(x, y));
+    let at = |x: f64, y: f64| layout.to_canvas(pliego_doc::SpreadRef::Doc(0), pliego_geom::Point::new(x, y));
     let (a, b) = (at(100.0, 100.0), at(300.0, 200.0));
     s.pointer(&PointerEvent::new(PointerKind::Down, a.x, a.y), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 200.0 + a.x - 100.0, a.y + 50.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, b.x, b.y), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, b.x, b.y), v).unwrap();
     let d = &s.doc().unwrap().doc;
-    let it = d.item(designcraft_doc::ItemId(big)).unwrap();
-    assert!(matches!(it.content, designcraft_doc::Content::Unassigned), "the locked frame stays empty");
+    let it = d.item(pliego_doc::ItemId(big)).unwrap();
+    assert!(matches!(it.content, pliego_doc::Content::Unassigned), "the locked frame stays empty");
     let frames: Vec<_> = d.spreads[0].items.iter().filter(|i| i.is_text_frame()).collect();
     assert_eq!(frames.len(), 1, "a new text frame");
     let r = frames[0].bounds();
@@ -1698,7 +1690,7 @@ fn the_type_tool_draws_a_text_frame_over_a_locked_frame() {
     // Unlocked, a press inside converts it, as before.
     s.execute("object.unlockAll", &json!({})).unwrap();
     s.execute("text.placeCaret", &json!({"frame": big, "point": [300, 400]})).unwrap();
-    assert!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(big)).unwrap().is_text_frame());
+    assert!(s.doc().unwrap().doc.item(pliego_doc::ItemId(big)).unwrap().is_text_frame());
 }
 
 /// A line is set when its baseline fits in the frame; its descenders may hang below the frame, as
@@ -1723,7 +1715,7 @@ fn a_line_fits_when_its_baseline_does() {
 
 #[test]
 fn parent_resize_tool_previews_cancels_commits_and_undoes_on_the_selected_spread() {
-    use designcraft_tools::{Mods, Overlay, PointerEvent, PointerKind};
+    use pliego_tools::{Mods, Overlay, PointerEvent, PointerKind};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width":400,"height":600,"pages":3,"facingPages":true})).unwrap();
     s.execute("layout.parents.new", &json!({"prefix":"B"})).unwrap();
@@ -1733,7 +1725,7 @@ fn parent_resize_tool_previews_cancels_commits_and_undoes_on_the_selected_spread
     let before = s.doc().unwrap().doc.clone();
     for si in 0..2 {
         for pi in 0..2 {
-            let sr = designcraft_doc::SpreadRef::Parent(si);
+            let sr = pliego_doc::SpreadRef::Parent(si);
             let rect = |s: &Session| s.layout().spread_page_rect(&s.doc().unwrap().doc, sr, pi).unwrap();
             let c = rect(&s).center();
             s.pointer(&PointerEvent::new(PointerKind::Down, c.x, c.y), v).unwrap();
@@ -1745,7 +1737,7 @@ fn parent_resize_tool_previews_cancels_commits_and_undoes_on_the_selected_spread
                 let original = s.doc().unwrap().doc.clone();
                 let undo = s.doc().unwrap().history.undo.len();
                 let r = rect(&s);
-                let p = designcraft_geom::Point::new(r.x1, r.center().y);
+                let p = pliego_geom::Point::new(r.x1, r.center().y);
                 let ev = |kind, x| PointerEvent::new(kind, x, p.y).with_mods(Mods { alt, ..Default::default() });
                 s.pointer(&ev(PointerKind::Down, p.x), v).unwrap();
                 s.pointer(&ev(PointerKind::Drag, p.x + 80.0), v).unwrap();
@@ -1821,7 +1813,7 @@ fn paragraph_style_references_must_name_styles() {
 /// catch a press, as in InDesign.
 #[test]
 fn direct_selection_drags_only_the_handles_around_the_selected_anchor() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let v = ViewInfo::at_zoom(1.0);
     let id = s.execute("frame.create", &json!({"rect": [100, 300, 300, 500], "shape": "ellipse"})).unwrap()["id"].as_u64().unwrap();
@@ -1830,13 +1822,13 @@ fn direct_selection_drags_only_the_handles_around_the_selected_anchor() {
     // Each anchor and its two handles, in the spread.
     let anchors = |s: &Session| {
         let st = s.doc().unwrap();
-        let it = st.doc.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = st.doc.item(pliego_doc::ItemId(id)).unwrap();
         it.path.subpaths[0].anchors.iter().map(|a| (it.xf * a.p, it.xf * a.h_in, it.xf * a.h_out)).collect::<Vec<_>>()
     };
     let before = anchors(&s);
     let lowest = |f: &dyn Fn(f64) -> f64| (0..before.len()).min_by(|a, b| f(before[*a].0.y).total_cmp(&f(before[*b].0.y))).unwrap();
     let (bottom, top) = (lowest(&|y| -y), lowest(&|y| y));
-    let press = |s: &mut Session, from: designcraft_geom::Point, to: designcraft_geom::Point| {
+    let press = |s: &mut Session, from: pliego_geom::Point, to: pliego_geom::Point| {
         s.pointer(&PointerEvent::new(PointerKind::Down, from.x, from.y), v).unwrap();
         s.pointer(&PointerEvent::new(PointerKind::Drag, (from.x + to.x) / 2.0, (from.y + to.y) / 2.0), v).unwrap();
         s.pointer(&PointerEvent::new(PointerKind::Drag, to.x, to.y), v).unwrap();
@@ -1845,15 +1837,15 @@ fn direct_selection_drags_only_the_handles_around_the_selected_anchor() {
     // Select the bottom anchor.
     let b = before[bottom].0;
     press(&mut s, b, b);
-    assert_eq!(s.doc().unwrap().selection.anchors, [(designcraft_doc::ItemId(id), 0, bottom)]);
+    assert_eq!(s.doc().unwrap().selection.anchors, [(pliego_doc::ItemId(id), 0, bottom)]);
     // Its handle drags: the handle moves.
     let h = before[bottom].2;
-    press(&mut s, h, h + designcraft_geom::Vec2::new(30.0, 0.0));
+    press(&mut s, h, h + pliego_geom::Vec2::new(30.0, 0.0));
     let after = anchors(&s);
     assert!((after[bottom].2 - before[bottom].2).hypot() > 20.0, "the bottom handle moved: {:?} → {:?}", before[bottom], after[bottom]);
     // The top anchor's handle isn't shown, so a press on it doesn't take it.
     let t = before[top].2;
-    press(&mut s, t, t + designcraft_geom::Vec2::new(0.0, -30.0));
+    press(&mut s, t, t + pliego_geom::Vec2::new(0.0, -30.0));
     let after2 = anchors(&s);
     assert!((after2[top].2 - before[top].2).hypot() < 1e-6, "the top handle stays: {:?} → {:?}", before[top], after2[top]);
 }
@@ -1863,7 +1855,7 @@ fn direct_selection_drags_only_the_handles_around_the_selected_anchor() {
 /// parallelograms).
 #[test]
 fn direct_selection_moves_the_points_of_several_frames_at_once() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind};
+    use pliego_tools::{Mods, PointerEvent, PointerKind};
     let mut s = session();
     let v = ViewInfo::at_zoom(1.0);
     let a = s.execute("frame.create", &json!({"rect": [100, 300, 200, 400]})).unwrap()["id"].as_u64().unwrap();
@@ -1875,14 +1867,14 @@ fn direct_selection_moves_the_points_of_several_frames_at_once() {
     s.pointer(&PointerEvent::new(PointerKind::Up, 320.0, 320.0), v).unwrap();
     let sel = s.doc().unwrap().selection.clone();
     assert_eq!(sel.anchors.len(), 4, "{:?}", sel.anchors);
-    assert!(sel.items.contains(&designcraft_doc::ItemId(a)) && sel.items.contains(&designcraft_doc::ItemId(b)));
+    assert!(sel.items.contains(&pliego_doc::ItemId(a)) && sel.items.contains(&pliego_doc::ItemId(b)));
     let shift = Mods { shift: true, ..Default::default() };
     s.pointer(&PointerEvent::new(PointerKind::Down, 100.0, 300.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, 136.0, 302.0).with_mods(shift), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 136.0, 302.0).with_mods(shift), v).unwrap();
     let corners = |s: &Session, id: u64| -> Vec<(f64, f64)> {
         let st = s.doc().unwrap();
-        let it = st.doc.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = st.doc.item(pliego_doc::ItemId(id)).unwrap();
         it.path.subpaths[0].anchors.iter().map(|an| ((it.xf * an.p).x.round(), (it.xf * an.p).y.round())).collect()
     };
     // Both frames: top points 36 pt to the right, bottom points where they were.
@@ -1901,7 +1893,7 @@ fn selected_points_follow_their_path() {
     s.execute("selection.set", &json!({"anchors": [[a, 0, 1], [b, 0, 2]]})).unwrap();
     // Shift-clicking a frame off the selection drops its points too.
     s.execute("selection.toggle", &json!({"id": a})).unwrap();
-    let id = |n| designcraft_doc::ItemId(n);
+    let id = |n| pliego_doc::ItemId(n);
     assert_eq!(s.doc().unwrap().selection.anchors, vec![(id(b), 0, 2)]);
     // A point added before the first one: the selected point keeps pointing at the same anchor.
     let l = s.execute("path.create", &json!({"anchors": [{"p": [100, 100]}, {"p": [200, 100]}, {"p": [300, 150]}]})).unwrap()["id"].as_u64().unwrap();
@@ -1910,7 +1902,7 @@ fn selected_points_follow_their_path() {
     let st = s.doc().unwrap();
     let (_, si, ai) = st.selection.anchors[0];
     let it = st.doc.item(id(l)).unwrap();
-    assert_eq!((it.xf * it.path.subpaths[si].anchors[ai].p).round(), designcraft_geom::Point::new(200.0, 100.0));
+    assert_eq!((it.xf * it.path.subpaths[si].anchors[ai].p).round(), pliego_geom::Point::new(200.0, 100.0));
     // `points` that isn't a list is refused, even with an `id` beside it.
     for bad in [json!("x"), json!({"0": 1}), json!(5)] {
         assert!(s.execute("path.moveAnchors", &json!({"points": bad, "id": l, "anchors": [[0, 0]], "dx": 5})).is_err(), "points {bad}");
@@ -1925,21 +1917,21 @@ fn selected_points_follow_their_path() {
 fn direct_selection_pulls_one_corner_of_an_unselected_frame() {
     // Chris Nielsen's "The Adobe InDesign Toolbox" (10:10): with the White Arrow, click outside,
     // then press on a frame's corner and pull it: only that corner moves (a triangle, nearly).
-    use designcraft_tools::{PointerEvent, PointerKind, SnapView};
+    use pliego_tools::{PointerEvent, PointerKind, SnapView};
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 612, "height": 792, "facingPages": false})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [156, 219, 455, 569], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
     s.execute("edit.deselectAll", &json!({})).unwrap();
     let corners = |s: &Session| {
         let d = &s.doc().unwrap().doc;
-        let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = d.item(pliego_doc::ItemId(id)).unwrap();
         it.path.subpaths[0].anchors.iter().map(|a| it.xf * a.p).collect::<Vec<_>>()
     };
     let before = corners(&s);
     s.set_tool("directSelection");
     let v = ViewInfo { snap: SnapView::OFF, ..ViewInfo::at_zoom(1.0) };
     let layout = s.layout();
-    let at = |x: f64, y: f64| layout.to_canvas(designcraft_doc::SpreadRef::Doc(0), designcraft_geom::Point::new(x, y));
+    let at = |x: f64, y: f64| layout.to_canvas(pliego_doc::SpreadRef::Doc(0), pliego_geom::Point::new(x, y));
     let (a, b) = (at(455.0, 219.0), at(455.0, 150.0));
     s.pointer(&PointerEvent::new(PointerKind::Down, a.x, a.y), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Drag, a.x, a.y - 30.0), v).unwrap();
@@ -1948,8 +1940,8 @@ fn direct_selection_pulls_one_corner_of_an_unselected_frame() {
     let after = corners(&s);
     let moved: Vec<_> = before.iter().zip(&after).filter(|(p, q)| (**p - **q).hypot() > 1e-6).collect();
     assert_eq!(moved.len(), 1, "one corner moved: {before:?} → {after:?}");
-    assert!((*moved[0].1 - designcraft_geom::Point::new(455.0, 150.0)).hypot() < 1e-6, "{after:?}");
-    assert_eq!(s.doc().unwrap().selection.items, [designcraft_doc::ItemId(id)], "the frame is selected");
+    assert!((*moved[0].1 - pliego_geom::Point::new(455.0, 150.0)).hypot() < 1e-6, "{after:?}");
+    assert_eq!(s.doc().unwrap().selection.items, [pliego_doc::ItemId(id)], "the frame is selected");
     // One undo step puts the corner back.
     s.execute("edit.undo", &json!({})).unwrap();
     assert_eq!(corners(&s), before);
@@ -1965,10 +1957,10 @@ fn direct_selection_pulls_one_corner_of_an_unselected_frame() {
 
 #[test]
 fn direct_selection_on_a_selected_frame_deletes_only_its_image() {
-    use designcraft_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+    use pliego_tools::{Mods, PointerEvent, PointerKind, ToolKey};
     let dir = tempfile::tempdir().unwrap();
     let png = dir.path().join("photo.png");
-    std::fs::write(&png, designcraft_render::Rendered { width: 100, height: 100, pixels: vec![40u8; 100 * 100 * 4] }.to_png()).unwrap();
+    std::fs::write(&png, pliego_render::Rendered { width: 100, height: 100, pixels: vec![40u8; 100 * 100 * 4] }.to_png()).unwrap();
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let frame = s.execute("frame.create", &json!({"rect": [100, 100, 200, 200]})).unwrap()["id"].as_u64().unwrap();
@@ -1988,9 +1980,9 @@ fn direct_selection_on_a_selected_frame_deletes_only_its_image() {
     assert!(s.doc().unwrap().selection.content, "Direct Selection selects the image inside the selected frame");
     assert!(s.tool_key(ToolKey::Delete, Mods::default(), v).unwrap());
     let st = s.doc().unwrap();
-    let it = st.doc.item(designcraft_doc::ItemId(frame)).expect("the frame stays");
-    assert!(matches!(it.content, designcraft_doc::Content::Unassigned), "{:?}", it.content);
-    assert_eq!(st.selection.items, vec![designcraft_doc::ItemId(frame)]);
+    let it = st.doc.item(pliego_doc::ItemId(frame)).expect("the frame stays");
+    assert!(matches!(it.content, pliego_doc::Content::Unassigned), "{:?}", it.content);
+    assert_eq!(st.selection.items, vec![pliego_doc::ItemId(frame)]);
     // A frame holding pasted-in items: the click selects them too, so arrow keys move them.
     let inner = s.execute("frame.create", &json!({"rect": [320, 120, 360, 160]})).unwrap()["id"].as_u64().unwrap();
     s.execute("selection.set", &json!({"ids": [inner]})).unwrap();
@@ -2001,20 +1993,20 @@ fn direct_selection_on_a_selected_frame_deletes_only_its_image() {
     s.set_tool("selection");
     s.pointer(&PointerEvent::new(PointerKind::Down, 340.0, 140.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 340.0, 140.0), v).unwrap();
-    assert_eq!(s.doc().unwrap().selection.items, vec![designcraft_doc::ItemId(holder)]);
+    assert_eq!(s.doc().unwrap().selection.items, vec![pliego_doc::ItemId(holder)]);
     assert!(!s.doc().unwrap().selection.content);
     s.set_tool("directSelection");
     s.pointer(&PointerEvent::new(PointerKind::Down, 340.0, 140.0), v).unwrap();
     s.pointer(&PointerEvent::new(PointerKind::Up, 340.0, 140.0), v).unwrap();
     let st = s.doc().unwrap();
-    assert!(st.selection.content && st.selection.items == [designcraft_doc::ItemId(holder)], "the pasted-in items are selected: {:?}", st.selection);
+    assert!(st.selection.content && st.selection.items == [pliego_doc::ItemId(holder)], "the pasted-in items are selected: {:?}", st.selection);
 }
 
 /// Issue #1637: with several objects selected, a click on one of them (no drag) makes it the key
 /// object, and Align to Key Object leaves it in place. A second click on it drops the key.
 #[test]
 fn a_click_in_the_selection_makes_the_key_object() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let a = s.execute("frame.create", &json!({"rect": [50.0, 100.0, 100.0, 150.0], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     let b = s.execute("frame.create", &json!({"rect": [200.0, 120.0, 300.0, 170.0], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
@@ -2030,12 +2022,12 @@ fn a_click_in_the_selection_makes_the_key_object() {
     assert_eq!(s.doc().unwrap().selection.items.len(), 2, "the click keeps both selected");
     // The key is the right-hand object, so aligning left edges to the selection would move it.
     s.execute("object.align", &json!({"edge": "left", "to": "keyObject"})).unwrap();
-    let x0 = |s: &Session, id: u64| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds().x0;
+    let x0 = |s: &Session, id: u64| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds().x0;
     assert!((x0(&s, b) - 200.0).abs() < 1e-6, "the key object moved to {}", x0(&s, b));
     assert!((x0(&s, a) - 200.0).abs() < 1e-6, "the other object is at {}", x0(&s, a));
     // The Align panel and the Control panel send no target: the key object is the default one.
     s.execute("object.align", &json!({"edge": "top"})).unwrap();
-    let y0 = |s: &Session, id: u64| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds().y0;
+    let y0 = |s: &Session, id: u64| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds().y0;
     assert!((y0(&s, b) - 120.0).abs() < 1e-6, "the key object moved to {}", y0(&s, b));
     assert!((y0(&s, a) - 120.0).abs() < 1e-6, "the other object is at {}", y0(&s, a));
     click(&mut s);
@@ -2045,7 +2037,7 @@ fn a_click_in_the_selection_makes_the_key_object() {
 /// Dragging one of several selected objects moves them all and makes no key object.
 #[test]
 fn dragging_the_selection_makes_no_key_object() {
-    use designcraft_tools::{PointerEvent, PointerKind};
+    use pliego_tools::{PointerEvent, PointerKind};
     let mut s = session();
     let a = s.execute("frame.create", &json!({"rect": [50.0, 100.0, 100.0, 150.0], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     let b = s.execute("frame.create", &json!({"rect": [200.0, 100.0, 260.0, 150.0], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
@@ -2066,7 +2058,7 @@ fn deselecting_the_key_object_drops_the_key() {
     let b = s.execute("frame.create", &json!({"rect": [200.0, 100.0, 260.0, 150.0]})).unwrap()["id"].as_u64().unwrap();
     s.execute("selection.set", &json!({"ids": [a, b]})).unwrap();
     s.execute("selection.key", &json!({"id": b})).unwrap();
-    assert_eq!(s.doc().unwrap().selection.key, Some(designcraft_doc::ItemId(b)));
+    assert_eq!(s.doc().unwrap().selection.key, Some(pliego_doc::ItemId(b)));
     s.execute("selection.toggle", &json!({"id": b})).unwrap();
     assert_eq!(s.doc().unwrap().selection.key, None);
 }
@@ -2097,7 +2089,7 @@ fn a_lone_key_object_aligns_to_the_page() {
     s.execute("selection.toggle", &json!({"id": a})).unwrap();
     assert_eq!(s.doc().unwrap().selection.key, None);
     s.execute("object.align", &json!({"edge": "left"})).unwrap();
-    let x0 = s.doc().unwrap().doc.item(designcraft_doc::ItemId(b)).unwrap().bounds().x0;
+    let x0 = s.doc().unwrap().doc.item(pliego_doc::ItemId(b)).unwrap().bounds().x0;
     assert!(x0.abs() < 1e-6, "the object is at {x0}, not at the page's left edge");
 }
 
@@ -2111,7 +2103,7 @@ fn aligning_the_key_object_alone_takes_the_page() {
     s.execute("selection.set", &json!({"ids": [a, b]})).unwrap();
     s.execute("selection.key", &json!({"id": b})).unwrap();
     s.execute("object.align", &json!({"edge": "left", "ids": [b]})).unwrap();
-    let x0 = s.doc().unwrap().doc.item(designcraft_doc::ItemId(b)).unwrap().bounds().x0;
+    let x0 = s.doc().unwrap().doc.item(pliego_doc::ItemId(b)).unwrap().bounds().x0;
     assert!(x0.abs() < 1e-6, "the object is at {x0}, not at the page's left edge");
 }
 

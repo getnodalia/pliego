@@ -1,6 +1,6 @@
 use super::*;
 
-fn frame(s: &mut Session, text: &str) -> designcraft_doc::StoryId {
+fn frame(s: &mut Session, text: &str) -> pliego_doc::StoryId {
     let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": text})).unwrap();
     s.doc().unwrap().doc.item(ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story
 }
@@ -151,7 +151,7 @@ fn formatted_copy_paste_and_plain_paste() {
     // A footnote inside the copied range travels with it.
     s.execute("text.select", &json!({"story": a.0, "anchor": 4, "focus": 4})).unwrap();
     s.execute("footnote.insert", &json!({"text": "n"})).unwrap();
-    let fl = designcraft_doc::FOOTNOTE_REF.len_utf8();
+    let fl = pliego_doc::FOOTNOTE_REF.len_utf8();
     s.execute("text.select", &json!({"story": a.0, "anchor": 0, "focus": 10 + fl})).unwrap();
     let r = s.execute("edit.copy", &json!({})).unwrap();
     assert_eq!(r["text"], "Bold words");
@@ -159,7 +159,7 @@ fn formatted_copy_paste_and_plain_paste() {
     s.execute("text.select", &json!({"story": b.0, "anchor": 8, "focus": 8})).unwrap();
     s.execute("edit.paste", &json!({"text": "Bold words"})).unwrap();
     let st = s.doc().unwrap().doc.story(b).unwrap().clone();
-    assert_eq!(st.text, format!("Target: Bold{} words.", designcraft_doc::FOOTNOTE_REF));
+    assert_eq!(st.text, format!("Target: Bold{} words.", pliego_doc::FOOTNOTE_REF));
     assert_eq!(st.char_format_at(9).over.font_style.as_deref(), Some("Bold"));
     assert_eq!(st.notes.len(), 1);
     assert_eq!(st.notes[0].text.text, "n");
@@ -179,7 +179,7 @@ fn formatted_copy_paste_and_plain_paste() {
     s.doc().unwrap().doc.check().unwrap();
 }
 
-fn note_clipboard_session() -> (Session, designcraft_doc::StoryId) {
+fn note_clipboard_session() -> (Session, pliego_doc::StoryId) {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let source = frame(&mut s, "aéz");
@@ -195,9 +195,9 @@ fn note_clipboard_session() -> (Session, designcraft_doc::StoryId) {
 
 fn assert_child_note_paste(
     s: &mut Session,
-    source: designcraft_doc::StoryId,
-    parent: designcraft_doc::StoryId,
-    cell: designcraft_doc::CellAddr,
+    source: pliego_doc::StoryId,
+    parent: pliego_doc::StoryId,
+    cell: pliego_doc::CellAddr,
     endpoints: (usize, usize),
 ) {
     let before = s.doc().unwrap().doc.clone();
@@ -216,7 +216,7 @@ fn assert_child_note_paste(
     assert_eq!(child.text, "LaézR", "root-only note markers must not enter child text");
     assert_eq!(child.len(), 6);
     assert_eq!(result, json!({"pos": 5, "formatted": true}));
-    assert_eq!(s.doc().unwrap().selection, Selection::text(designcraft_doc::TextSel { anchor: 5, focus: 5, ..selected }));
+    assert_eq!(s.doc().unwrap().selection, Selection::text(pliego_doc::TextSel { anchor: 5, focus: 5, ..selected }));
     assert!(child.endnotes.is_empty() && child.editorial.is_empty());
     for pos in [1, 2, 4] {
         let (_, format) = child.runs().find(|(range, _)| range.contains(&pos)).unwrap();
@@ -263,7 +263,7 @@ fn formatted_child_paste_filters_endnotes_and_editorial_in_cells() {
         s.execute("text.move", &json!({"dir": "right", "extend": true})).unwrap();
     }
     let before_table = s.doc().unwrap().doc.story(parent).unwrap().tables[&table_id].clone();
-    let cell = designcraft_doc::CellAddr { table: table_id, row: 0, col: 0 };
+    let cell = pliego_doc::CellAddr { table: table_id, row: 0, col: 0 };
     assert_child_note_paste(&mut s, source, parent, cell, (1, 5));
     let table = &s.doc().unwrap().doc.story(parent).unwrap().tables[&table_id];
     assert_eq!(table.cell(0, 1).unwrap().text.text, "NEIGHBOR");
@@ -290,7 +290,7 @@ fn formatted_child_paste_filters_endnotes_and_editorial_in_footnotes() {
         s.execute("text.move", &json!({"dir": "left", "extend": true})).unwrap();
     }
     let before = s.doc().unwrap().doc.story(parent).unwrap().clone();
-    assert_child_note_paste(&mut s, source, parent, designcraft_doc::CellAddr::footnote(target), (5, 1));
+    assert_child_note_paste(&mut s, source, parent, pliego_doc::CellAddr::footnote(target), (5, 1));
     let after = s.doc().unwrap().doc.story(parent).unwrap();
     assert_eq!(after.note(neighbor).unwrap().text.text, "NEIGHBOR");
     assert_eq!(after.note(neighbor), before.note(neighbor));

@@ -1,15 +1,15 @@
 use super::{Result, Session, Value, bad, json};
 
-/// A start page number parameter: a whole number in 1..=[`designcraft_doc::MAX_PAGE_NUMBER`].
+/// A start page number parameter: a whole number in 1..=[`pliego_doc::MAX_PAGE_NUMBER`].
 pub(super) fn start_number(cmd: &str, key: &str, v: &Value) -> Result<u32> {
     v.as_u64()
         .and_then(|n| u32::try_from(n).ok())
-        .filter(|n| (1..=designcraft_doc::MAX_PAGE_NUMBER).contains(n))
-        .ok_or_else(|| bad(cmd, format!("`{key}` must be a whole number from 1 to {}", designcraft_doc::MAX_PAGE_NUMBER)))
+        .filter(|n| (1..=pliego_doc::MAX_PAGE_NUMBER).contains(n))
+        .ok_or_else(|| bad(cmd, format!("`{key}` must be a whole number from 1 to {}", pliego_doc::MAX_PAGE_NUMBER)))
 }
 
 /// The largest chapter number (as for page numbers).
-const MAX_CHAPTER: u64 = designcraft_doc::MAX_PAGE_NUMBER as u64;
+const MAX_CHAPTER: u64 = pliego_doc::MAX_PAGE_NUMBER as u64;
 
 /// A `layout.section` edit, checked before the document changes.
 pub(super) struct SectionEdit {
@@ -18,7 +18,7 @@ pub(super) struct SectionEdit {
     remove: bool,
     /// Some(None): continue from the previous section.
     start_number: Option<Option<u32>>,
-    style: Option<designcraft_doc::NumberStyle>,
+    style: Option<pliego_doc::NumberStyle>,
     prefix: Option<String>,
     include_prefix: Option<bool>,
     marker: Option<String>,
@@ -43,7 +43,7 @@ impl SectionEdit {
         let style = match p.get("style") {
             None => None,
             Some(v) => match serde_json::from_value(v.clone()) {
-                Ok(designcraft_doc::NumberStyle::Symbols) => return Err(bad(cmd, "symbols don't number pages")),
+                Ok(pliego_doc::NumberStyle::Symbols) => return Err(bad(cmd, "symbols don't number pages")),
                 Ok(style) => Some(style),
                 Err(e) => return Err(bad(cmd, e.to_string())),
             },
@@ -59,7 +59,7 @@ impl SectionEdit {
         })
     }
 
-    pub(super) fn apply(&self, d: &mut designcraft_doc::Document) {
+    pub(super) fn apply(&self, d: &mut pliego_doc::Document) {
         let start = self.start;
         // Page 1 always starts a section.
         if self.remove && start != 0 {
@@ -74,7 +74,7 @@ impl SectionEdit {
             d.repaginate();
             return;
         }
-        let mut sec = d.sections.iter().find(|x| x.start == start).cloned().unwrap_or(designcraft_doc::Section {
+        let mut sec = d.sections.iter().find(|x| x.start == start).cloned().unwrap_or(pliego_doc::Section {
             start,
             start_number: None,
             style: Default::default(),
@@ -108,24 +108,23 @@ impl SectionEdit {
 
 /// A `layout.chapterNumbering` edit, checked before the document changes.
 pub(super) struct ChapterEdit {
-    style: Option<designcraft_doc::NumberStyle>,
-    source: Option<designcraft_doc::ChapterSource>,
+    style: Option<pliego_doc::NumberStyle>,
+    source: Option<pliego_doc::ChapterSource>,
     start: Option<u32>,
 }
 
 impl ChapterEdit {
     pub(super) fn parse(cmd: &str, p: &Value) -> Result<Self> {
         let style = match p.get("style") {
-            Some(v) => match serde_json::from_value::<designcraft_doc::NumberStyle>(v.clone()) {
-                Ok(designcraft_doc::NumberStyle::Symbols) | Err(_) => return Err(bad(cmd, format!("unknown chapter style {v}"))),
+            Some(v) => match serde_json::from_value::<pliego_doc::NumberStyle>(v.clone()) {
+                Ok(pliego_doc::NumberStyle::Symbols) | Err(_) => return Err(bad(cmd, format!("unknown chapter style {v}"))),
                 Ok(style) => Some(style),
             },
             None => None,
         };
         let mut source = match p.get("source") {
             Some(v) => Some(
-                serde_json::from_value::<designcraft_doc::ChapterSource>(v.clone())
-                    .map_err(|_| bad(cmd, format!("unknown chapter number source {v}")))?,
+                serde_json::from_value::<pliego_doc::ChapterSource>(v.clone()).map_err(|_| bad(cmd, format!("unknown chapter number source {v}")))?,
             ),
             None => None,
         };
@@ -138,12 +137,12 @@ impl ChapterEdit {
         };
         // A start number alone means Start Chapter Numbering at.
         if start.is_some() && source.is_none() {
-            source = Some(designcraft_doc::ChapterSource::UserDefined);
+            source = Some(pliego_doc::ChapterSource::UserDefined);
         }
         Ok(ChapterEdit { style, source, start })
     }
 
-    pub(super) fn apply(&self, d: &mut designcraft_doc::Document) {
+    pub(super) fn apply(&self, d: &mut pliego_doc::Document) {
         if let Some(style) = self.style {
             d.settings.chapter_style = style;
         }
@@ -188,9 +187,9 @@ mod section_side_tests {
                     .iter()
                     .map(|p| {
                         let side = match p.side {
-                            designcraft_doc::PageSide::Left => 'L',
-                            designcraft_doc::PageSide::Right => 'R',
-                            designcraft_doc::PageSide::Single => 'S',
+                            pliego_doc::PageSide::Left => 'L',
+                            pliego_doc::PageSide::Right => 'R',
+                            pliego_doc::PageSide::Single => 'S',
                         };
                         abs += 1;
                         (d.page_name(abs - 1), side)
@@ -216,7 +215,7 @@ mod section_side_tests {
             .unwrap();
         let page_of = |s: &Session| {
             let d = &s.doc().unwrap().doc;
-            d.page_of_item(designcraft_doc::ItemId(id)).unwrap()
+            d.page_of_item(pliego_doc::ItemId(id)).unwrap()
         };
         assert_eq!(page_of(&s), 8, "page 9, the right page of the spread 8–9");
         let before = spreads(&s);

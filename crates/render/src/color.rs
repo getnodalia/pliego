@@ -8,17 +8,17 @@ const CMYK_N: usize = 17;
 /// sample it with [`cmyk_in`]. Fetch it once for many pixels.
 pub(crate) fn cmyk_table() -> std::sync::Arc<Vec<[f32; 4]>> {
     const N: usize = CMYK_N;
-    type Lut = (designcraft_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 4]>>);
+    type Lut = (pliego_color::cms::ColorSettings, std::sync::Arc<Vec<[f32; 4]>>);
     static LUT: std::sync::Mutex<Option<Lut>> = std::sync::Mutex::new(None);
-    let settings = designcraft_color::cms::active_settings();
+    let settings = pliego_color::cms::active_settings();
     let mut g = LUT.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     match g.as_ref() {
         Some((s, t)) if *s == settings => t.clone(),
         _ => {
-            let cms = designcraft_color::cms::active();
+            let cms = pliego_color::cms::active();
             let step = |i: usize| i as f32 / (N - 1) as f32;
             let t: Vec<[f32; 4]> = (0..N * N * N)
-                .map(|i| cms.srgb_to_cmyk([step(i / (N * N)), step(i / N % N), step(i % N)], designcraft_color::cms::Intent::RelativeColorimetric))
+                .map(|i| cms.srgb_to_cmyk([step(i / (N * N)), step(i / N % N), step(i % N)], pliego_color::cms::Intent::RelativeColorimetric))
                 .collect();
             let t = std::sync::Arc::new(t);
             *g = Some((settings, t.clone()));
@@ -53,11 +53,11 @@ pub(crate) fn plate_pixmap(pm: &std::sync::Arc<vello_cpu::Pixmap>, plate: u8) ->
     // Keep source allocations alive (their addresses are keys), invalidate on colour settings,
     // and cap derived raster memory rather than merely counting differently sized images.
     type Entry = (std::sync::Arc<vello_cpu::Pixmap>, std::sync::Arc<vello_cpu::Pixmap>);
-    type Cache = (designcraft_color::cms::ColorSettings, std::collections::HashMap<(usize, u8), Entry>, usize);
+    type Cache = (pliego_color::cms::ColorSettings, std::collections::HashMap<(usize, u8), Entry>, usize);
     const BUDGET: usize = 64 << 20;
     static CACHE: std::sync::Mutex<Option<Cache>> = std::sync::Mutex::new(None);
     let key = (std::sync::Arc::as_ptr(pm) as usize, plate);
-    let settings = designcraft_color::cms::active_settings();
+    let settings = pliego_color::cms::active_settings();
     {
         let mut guard = CACHE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((previous, map, _)) = guard.as_ref() {
@@ -126,14 +126,14 @@ pub(crate) fn screen_color(rgb: [u8; 3], alpha: u8) -> peniko::Color {
         return peniko::Color::from_rgba8(rgb[0], rgb[1], rgb[2], alpha);
     }
     let [c, m, y, k] = cmyk_in(&cmyk_table(), rgb.map(|v| v as f32 / 255.0));
-    color_of(&designcraft_color::Color::Cmyk { c, m, y, k }, alpha as f32 / 255.0)
+    color_of(&pliego_color::Color::Cmyk { c, m, y, k }, alpha as f32 / 255.0)
 }
 
-pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
+pub fn color_of(c: &pliego_color::Color, alpha: f32) -> peniko::Color {
     if let Some(p) = PLATE.with(std::cell::Cell::get) {
         let cmyk = match *c {
-            designcraft_color::Color::Cmyk { c, m, y, k } => [c, m, y, k],
-            _ => c.to_cmyk_managed(designcraft_color::cms::Intent::RelativeColorimetric),
+            pliego_color::Color::Cmyk { c, m, y, k } => [c, m, y, k],
+            _ => c.to_cmyk_managed(pliego_color::cms::Intent::RelativeColorimetric),
         };
         let a = (alpha.clamp(0.0, 1.0) * 255.0).round() as u8;
         let ink = |i: usize| ((1.0 - cmyk[i].clamp(0.0, 1.0)) * 255.0).round() as u8;
@@ -144,7 +144,7 @@ pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
         return peniko::Color::from_rgba8(v, v, v, a);
     }
     if RICH_BLACK.with(std::cell::Cell::get)
-        && let designcraft_color::Color::Cmyk { c: cc, m, y, k } = *c
+        && let pliego_color::Color::Cmyk { c: cc, m, y, k } = *c
         && cc <= 1e-3
         && m <= 1e-3
         && y <= 1e-3
@@ -157,9 +157,9 @@ pub fn color_of(c: &designcraft_color::Color, alpha: f32) -> peniko::Color {
 }
 
 /// Set a swatch fill (solid or gradient) as the paint. Returns false for [None]/unknown.
-pub(crate) fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &designcraft_doc::Fill, bounds: Rect) -> bool {
+pub(crate) fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &pliego_doc::Fill, bounds: Rect) -> bool {
     let (swatch, tint) = (fill.swatch.as_str(), fill.tint);
-    if let Some(g) = designcraft_color::swatch::resolve_gradient(&doc.swatches, swatch) {
+    if let Some(g) = pliego_color::swatch::resolve_gradient(&doc.swatches, swatch) {
         // Sampled so process colours blend as inks, as InDesign shows them (and as the PDF's CMYK
         // shading prints).
         let stops: Vec<peniko::ColorStop> = g.display_stops().iter().map(|(o, c, a)| peniko::ColorStop::from((*o, color_of(c, *a)))).collect();
@@ -168,7 +168,7 @@ pub(crate) fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &des
         }
         let grad = match g.kind {
             // Radial: a circle stretched into the object's ellipse (the paint transform).
-            designcraft_color::GradientKind::Radial => {
+            pliego_color::GradientKind::Radial => {
                 let (c, rx, ry) = fill.radial_ellipse(bounds);
                 let rx = rx.max(1e-3);
                 ctx.set_paint_transform(Affine::translate(c.to_vec2()) * Affine::scale_non_uniform(1.0, ry / rx) * Affine::translate(-c.to_vec2()));
@@ -194,16 +194,16 @@ pub(crate) fn set_fill_paint(ctx: &mut RenderContext, doc: &Document, fill: &des
 /// Overprint Preview: does this paint overprint (its own flag, or 100% [Black], which
 /// overprints by default)? It's then multiplied over what's beneath.
 pub(crate) fn overprints(f: &Frame, swatch: &str, tint: f32, flag: bool) -> bool {
-    f.opts.overprint_preview && (flag || (f.doc.settings.overprint_black && swatch == designcraft_color::swatch::BLACK && tint >= 0.999))
+    f.opts.overprint_preview && (flag || (f.doc.settings.overprint_black && swatch == pliego_color::swatch::BLACK && tint >= 0.999))
 }
 
 /// Does any item on the spread, or on the parent pages it shows, use a blend mode other than
 /// Normal (groups and pasted-in items included)?
-pub(crate) fn spread_blends(doc: &Document, sp: &designcraft_doc::Spread) -> bool {
+pub(crate) fn spread_blends(doc: &Document, sp: &pliego_doc::Spread) -> bool {
     let blends = |it: &Item| {
         let mut any = false;
         // A screened glow or a shadow with a blend mode blends with the objects below too, not the paper.
-        let fx_blends = |e: &designcraft_doc::Effects| {
+        let fx_blends = |e: &pliego_doc::Effects| {
             (e.outer_glow.on && e.outer_glow.mode != Default::default()) || (e.drop_shadow.on && e.drop_shadow.mode != Default::default())
         };
         it.walk(&mut |i| any |= i.blend != Default::default() || fx_blends(&i.effects));
@@ -237,8 +237,8 @@ pub fn blend_mode(b: DcBlend) -> BlendMode {
 
 /// View › Proof Colors: simulate the proof target (a press, another RGB space, colour-vision
 /// deficiencies) through the active colour settings' proof table.
-pub fn proof_view(img: &mut Rendered, setup: &designcraft_color::cms::ProofSetup) {
-    let lut = designcraft_color::cms::active().proof_lut(setup);
+pub fn proof_view(img: &mut Rendered, setup: &pliego_color::cms::ProofSetup) {
+    let lut = pliego_color::cms::active().proof_lut(setup);
     for px in img.pixels.as_chunks_mut::<4>().0 {
         let a = px[3];
         if a == 0 {
@@ -257,8 +257,8 @@ pub fn proof_view(img: &mut Rendered, setup: &designcraft_color::cms::ProofSetup
 /// A CMYK transparency blend space on screen: the pixels of `area` (device space) through the
 /// working CMYK profile and back, as a spread composited in that space looks.
 pub(crate) fn blend_space_view(img: &mut Rendered, area: Rect) {
-    use designcraft_color::cms::{ProofSetup, ProofTarget};
-    let lut = designcraft_color::cms::active().proof_lut(&ProofSetup { target: ProofTarget::WorkingCmyk, ..Default::default() });
+    use pliego_color::cms::{ProofSetup, ProofTarget};
+    let lut = pliego_color::cms::active().proof_lut(&ProofSetup { target: ProofTarget::WorkingCmyk, ..Default::default() });
     let (w, h) = (img.width as i64, img.height as i64);
     let (x0, y0) = ((area.x0.floor() as i64).clamp(0, w), (area.y0.floor() as i64).clamp(0, h));
     let (x1, y1) = ((area.x1.ceil() as i64).clamp(0, w), (area.y1.ceil() as i64).clamp(0, h));

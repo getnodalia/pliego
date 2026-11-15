@@ -90,7 +90,7 @@ impl<'a> Ex<'a> {
     }
 }
 
-pub(super) fn margin_el(pg: &designcraft_doc::Page) -> El {
+pub(super) fn margin_el(pg: &pliego_doc::Page) -> El {
     let m = pg.margin_rect();
     // Dragged column guides that still fit the margin box are written as they stand, so they
     // survive the round trip; otherwise the even split, which InDesign writes for unmoved columns.
@@ -107,7 +107,7 @@ pub(super) fn margin_el(pg: &designcraft_doc::Page) -> El {
 }
 
 /// The page's ruler guides, measured from the ruler origin written in the preferences.
-fn push_page_guides(d: &Document, sp: &Spread, pg: &designcraft_doc::Page, pe: &mut El, page_index: usize) {
+fn push_page_guides(d: &Document, sp: &Spread, pg: &pliego_doc::Page, pe: &mut El, page_index: usize) {
     let facing = d.settings.facing_pages;
     // Ruler guides, measured from the ruler origin written in the preferences: the
     // spread's top left, the page's, or the spine (the import reads them the same way).
@@ -116,12 +116,12 @@ fn push_page_guides(d: &Document, sp: &Spread, pg: &designcraft_doc::Page, pe: &
     let spine = sp.pages.iter().map(|p| p.x - left).filter(|x| *x > 1e-6).fold(f64::INFINITY, f64::min);
     let spine = if spine.is_finite() && facing { spine } else { 0.0 };
     let origin_x = match d.settings.ruler_origin {
-        designcraft_doc::RulerOrigin::Spread => left,
-        designcraft_doc::RulerOrigin::Page => pg.x,
-        designcraft_doc::RulerOrigin::Spine => left + spine,
+        pliego_doc::RulerOrigin::Spread => left,
+        pliego_doc::RulerOrigin::Page => pg.x,
+        pliego_doc::RulerOrigin::Spine => left + spine,
     };
     for g in &pg.guides {
-        let vertical = g.orientation == designcraft_doc::Orientation::Vertical;
+        let vertical = g.orientation == pliego_doc::Orientation::Vertical;
         let mut ge = El::new("Guide")
             .attr("Self", format!("{}g{}", uid(pg.id.0), pe.elements().count()))
             .attr("Orientation", if vertical { "Vertical" } else { "Horizontal" })

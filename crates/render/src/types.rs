@@ -31,7 +31,7 @@ pub struct RenderOptions {
     /// Skip non-printing items and layers (Preview mode, export).
     pub printing_only: bool,
     /// Items not to draw (live drag previews).
-    pub hidden: Vec<designcraft_doc::ItemId>,
+    pub hidden: Vec<pliego_doc::ItemId>,
     /// Draw text smaller than this many pixels as grey bars ("greeking"); 0 = never.
     pub greek_below_px: f64,
     /// Drop shadow on pages (screen view).
@@ -119,7 +119,7 @@ pub fn default_threads() -> u16 {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        if let Some(n) = std::env::var("DESIGNCRAFT_RENDER_THREADS").ok().and_then(|v| v.parse().ok()) {
+        if let Some(n) = std::env::var("PLIEGO_RENDER_THREADS").ok().and_then(|v| v.parse().ok()) {
             return n;
         }
         std::thread::available_parallelism().map(|n| (n.get().saturating_sub(1)).clamp(0, 8) as u16).unwrap_or(0)

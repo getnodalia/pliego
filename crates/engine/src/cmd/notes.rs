@@ -1,6 +1,6 @@
 //! Type › Insert Footnote, Document Footnote Options, footnote inspection and editing.
 
-use designcraft_doc::{CellAddr, FootnoteOptions, ParaFormat, StoryId, TextSel};
+use pliego_doc::{CellAddr, FootnoteOptions, ParaFormat, StoryId, TextSel};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc};
@@ -62,12 +62,12 @@ fn insert(s: &mut Session, p: &Value) -> Result<Value> {
     let r = s.edit(|d, sel| {
         let t = sel.text.ok_or_else(|| bad("footnote.insert", "no insertion point"))?;
         let para = ParaFormat { style: d.footnote_options.para_style.clone(), ..Default::default() };
-        let st = d.story_mut(t.story).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+        let st = d.story_mut(t.story).ok_or(pliego_doc::DocError::NoStory(t.story))?;
         let r = t.range();
         let r = r.start.min(st.len())..r.end.min(st.len());
         st.delete(r.clone());
         let id = st.insert_note(r.start, &text, para).ok_or_else(|| bad("footnote.insert", "the story's footnotes don't match their references"))?;
-        d.adjust_text_ranges(t.story, r, designcraft_doc::FOOTNOTE_REF.len_utf8());
+        d.adjust_text_ranges(t.story, r, pliego_doc::FOOTNOTE_REF.len_utf8());
         sel.text = Some(TextSel { story: t.story, anchor: text.len(), focus: text.len(), frame: t.frame, cell: Some(CellAddr::footnote(id)) });
         Ok(json!({"story": t.story.0, "id": id}))
     })?;
@@ -120,7 +120,7 @@ fn note_id(p: &Value, cmd: &str) -> Result<u64> {
 
 /// Moves a caret or selection in story `sid`'s own text (not a cell or note) back by the length of `range` when it lies
 /// after `range.start`, or to `range.start` when it lies inside `range`.
-pub(super) fn follow_delete(sel: &mut designcraft_doc::Selection, sid: StoryId, range: std::ops::Range<usize>) {
+pub(super) fn follow_delete(sel: &mut pliego_doc::Selection, sid: StoryId, range: std::ops::Range<usize>) {
     if let Some(t) = sel.text.as_mut().filter(|t| t.story == sid && t.cell.is_none()) {
         let back = |i: usize| if i > range.start { i - (i - range.start).min(range.len()) } else { i };
         t.anchor = back(t.anchor);
@@ -145,7 +145,7 @@ fn set_text(s: &mut Session, p: &Value) -> Result<Value> {
     let id = note_id(p, "footnote.setText")?;
     let text = super::text_param(p, "text");
     s.edit(|d, sel| {
-        let st = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+        let st = d.story_mut(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
         let n = st.note_mut(id).ok_or_else(|| bad("footnote.setText", format!("no footnote {id}")))?;
         let len = n.text.len();
         n.text.replace(0..len, &text);
@@ -161,9 +161,9 @@ fn delete(s: &mut Session, p: &Value) -> Result<Value> {
     let sid = story_id(p, "footnote.delete")?;
     let id = note_id(p, "footnote.delete")?;
     let moved = s.edit(|d, sel| {
-        let st = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+        let st = d.story_mut(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
         let at = st.note_anchor(id).ok_or_else(|| bad("footnote.delete", format!("no footnote {id}")))?;
-        let len = designcraft_doc::FOOTNOTE_REF.len_utf8();
+        let len = pliego_doc::FOOTNOTE_REF.len_utf8();
         follow_delete(sel, sid, at..at + len);
         st.delete(at..at + len);
         d.adjust_text_ranges(sid, at..at + len, 0);
@@ -184,7 +184,7 @@ fn go_to_reference(s: &mut Session, _: &Value) -> Result<Value> {
     let t = st.selection.text.ok_or_else(|| bad("footnote.goToReference", "no caret"))?;
     let id = t.cell.and_then(|c| c.footnote_id()).ok_or_else(|| bad("footnote.goToReference", "not in footnote text"))?;
     let at = st.doc.story(t.story).and_then(|x| x.note_anchor(id)).ok_or_else(|| bad("footnote.goToReference", "footnote not found"))?;
-    let pos = at + designcraft_doc::FOOTNOTE_REF.len_utf8();
+    let pos = at + pliego_doc::FOOTNOTE_REF.len_utf8();
     st.selection.text = Some(TextSel { anchor: pos, focus: pos, cell: None, ..t });
     st.bump_revision();
     s.typing_format = None;
@@ -199,7 +199,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({"pages": 1})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 400], "content": "text", "text": "Body text with a note here."})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         (s, sid)
     }
 
@@ -214,14 +214,14 @@ mod tests {
         let st = s.doc().unwrap().doc.story(sid).unwrap().clone();
         assert_eq!(st.notes.len(), 1);
         assert_eq!(st.notes[0].text.text, "A source.");
-        assert_eq!(st.text.matches(designcraft_doc::FOOTNOTE_REF).count(), 1);
+        assert_eq!(st.text.matches(pliego_doc::FOOTNOTE_REF).count(), 1);
         // The footnote is laid out in the frame.
         let d = s.doc().unwrap().doc.clone();
         let cs = s.cache.get(&d, sid, None);
         assert_eq!(cs.frames[0].notes.len(), 1);
         // Back to the reference.
         let r = s.execute("footnote.goToReference", &json!({})).unwrap();
-        assert_eq!(r["pos"], json!(16 + designcraft_doc::FOOTNOTE_REF.len_utf8()));
+        assert_eq!(r["pos"], json!(16 + pliego_doc::FOOTNOTE_REF.len_utf8()));
         // Listing, editing, options.
         let l = s.execute("footnote.list", &json!({})).unwrap();
         assert_eq!(l[0]["text"], "A source.");
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn deleting_a_footnote_keeps_the_caret_on_its_character() {
-        let n = designcraft_doc::FOOTNOTE_REF.len_utf8();
+        let n = pliego_doc::FOOTNOTE_REF.len_utf8();
         // (anchor, focus) in the story text before the delete, then after it.
         for (before, after) in [((17 + n, 21 + n), (17, 21)), ((5, 21 + n), (5, 21)), ((5, 5), (5, 5)), ((16 + n, 16 + n), (16, 16))] {
             let (mut s, sid) = session_with_text();

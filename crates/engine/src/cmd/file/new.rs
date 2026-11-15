@@ -29,7 +29,7 @@ fn new_document_settings(s: &Session, p: &Value) -> Result<NewDocument> {
 /// which is why `ParaProps` keeps the IDML defaults (on).
 fn new_document(nd: &NewDocument) -> Document {
     let mut d = Document::new(nd);
-    if let Some(st) = Arc::make_mut(&mut d.styles).para_mut(designcraft_doc::BASIC_PARAGRAPH) {
+    if let Some(st) = Arc::make_mut(&mut d.styles).para_mut(pliego_doc::BASIC_PARAGRAPH) {
         st.para.hyph_capitalized = Some(false);
         st.para.hyph_last_word = Some(false);
         st.para.hyph_across_column = Some(false);
@@ -179,7 +179,7 @@ fn apply_settings(nd: &mut NewDocument, p: &Value) {
     nd.gutter = p.get("gutter").and_then(Value::as_f64).filter(|g| g.is_finite()).unwrap_or(nd.gutter).max(0.0);
     nd.primary_text_frame = p.get("primaryTextFrame").and_then(Value::as_bool).unwrap_or(nd.primary_text_frame);
     match p.get("margins") {
-        Some(Value::Number(n)) => nd.margins = designcraft_doc::Margins::uniform(n.as_f64().unwrap_or(36.0)),
+        Some(Value::Number(n)) => nd.margins = pliego_doc::Margins::uniform(n.as_f64().unwrap_or(36.0)),
         Some(v @ Value::Object(_)) => {
             if let Ok(m) = serde_json::from_value(v.clone()) {
                 nd.margins = m;
@@ -235,7 +235,7 @@ mod new_document_tests {
         let d = &s.doc().unwrap().doc;
         assert_eq!(d.page_count(), 4);
         assert!(!d.settings.facing_pages && d.settings.primary_text_frame);
-        assert_eq!(d.settings.horizontal_units, designcraft_geom::Unit::Millimeters);
+        assert_eq!(d.settings.horizontal_units, pliego_geom::Unit::Millimeters);
         assert_eq!(d.settings.bleed, [9.0, 9.0, 0.0, 9.0]);
         assert_eq!(d.page(0).unwrap().margins.outside, 50.0);
         assert!(d.title.starts_with("Untitled-"), "the preset's name isn't the document's");
@@ -270,8 +270,8 @@ mod new_document_tests {
         let p = json!({"preset": "A4", "intent": "web", "units": "pixels", "startPage": 4, "bleed": [9, 0, 3, 6], "slug": 18});
         s.execute("file.new", &p).unwrap();
         let d = &s.doc().unwrap().doc;
-        assert_eq!(d.settings.intent, designcraft_doc::Intent::Web);
-        assert_eq!(d.settings.horizontal_units, designcraft_geom::Unit::Pixels);
+        assert_eq!(d.settings.intent, pliego_doc::Intent::Web);
+        assert_eq!(d.settings.horizontal_units, pliego_geom::Unit::Pixels);
         assert_eq!(d.settings.bleed, [9.0, 0.0, 3.0, 6.0]);
         assert_eq!(d.settings.slug, [18.0; 4]);
         assert_eq!(d.page_name(0), "4");
@@ -329,14 +329,14 @@ mod new_document_tests {
 mod hyphenation_default_tests {
     use std::sync::Arc;
 
-    use designcraft_doc::BASIC_PARAGRAPH;
-    use designcraft_doc::build::NewDocument;
+    use pliego_doc::BASIC_PARAGRAPH;
+    use pliego_doc::build::NewDocument;
     use serde_json::json;
 
     use crate::Session;
 
-    fn hyph_flags(d: &designcraft_doc::Document) -> (bool, bool, bool) {
-        let (pp, _) = d.styles.resolve_para(&designcraft_doc::ParaFormat::default());
+    fn hyph_flags(d: &pliego_doc::Document) -> (bool, bool, bool) {
+        let (pp, _) = d.styles.resolve_para(&pliego_doc::ParaFormat::default());
         (pp.hyph_capitalized, pp.hyph_last_word, pp.hyph_across_column)
     }
 
@@ -346,12 +346,12 @@ mod hyphenation_default_tests {
         s.execute("file.new", &json!({})).unwrap();
         assert_eq!(hyph_flags(&s.doc().unwrap().doc), (false, false, false));
 
-        let mut d = designcraft_doc::Document::new(&NewDocument::default());
+        let mut d = pliego_doc::Document::new(&NewDocument::default());
         let st = Arc::make_mut(&mut d.styles).para_mut(BASIC_PARAGRAPH).unwrap();
         st.para.hyph_capitalized = Some(true);
         st.para.hyph_last_word = Some(true);
         st.para.hyph_across_column = Some(true);
-        let b64 = super::base64_encode(&designcraft_idml::export_idml(&d));
+        let b64 = super::base64_encode(&pliego_idml::export_idml(&d));
         s.execute("file.openIdml", &json!({"base64": b64, "name": "in.idml"})).unwrap();
         assert_eq!(hyph_flags(&s.doc().unwrap().doc), (true, true, true));
     }

@@ -204,7 +204,7 @@ mod tests {
         s.execute("layout.createAlternate", &json!({"name": "Wide", "width": 900, "height": 600})).unwrap();
         let mut sent = Vec::new();
         let r = print_with(&mut s, &json!({"layouts": ["Wide"]}), |pdf, job| {
-            sent.push((designcraft_render::pdf_page_count(pdf), job.title.clone()));
+            sent.push((pliego_render::pdf_page_count(pdf), job.title.clone()));
             Ok(String::new())
         })
         .unwrap();
@@ -212,7 +212,7 @@ mod tests {
         assert_eq!(sent, [(Some(2), "Mag".to_string())]);
         sent.clear();
         let r = print_with(&mut s, &json!({"layouts": [], "separateJobs": true}), |pdf, job| {
-            sent.push((designcraft_render::pdf_page_count(pdf), job.title.clone()));
+            sent.push((pliego_render::pdf_page_count(pdf), job.title.clone()));
             Ok(String::new())
         })
         .unwrap();

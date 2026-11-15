@@ -11,8 +11,8 @@
 
 use std::sync::Arc;
 
-use designcraft_color::{Color, cms::Cms};
 use image::RgbaImage;
+use pliego_color::{Color, cms::Cms};
 
 pub use craft_cms::{Builtin, ColorSpace, Intent, Profile, Transform, TransformOptions};
 
@@ -50,7 +50,7 @@ impl DisplayColour {
     /// The active colour settings (Edit → Color Settings): working CMYK space, intent and black
     /// point compensation.
     pub fn active() -> Self {
-        Self::of(&designcraft_color::cms::active())
+        Self::of(&pliego_color::cms::active())
     }
 
     pub fn of(cms: &Cms) -> Self {

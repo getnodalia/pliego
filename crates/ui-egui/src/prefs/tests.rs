@@ -4,7 +4,7 @@ use craft_ui::docking::{Column, Node, Side};
 use serde_json::json;
 
 fn populated() -> UiState {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
     app.run("window.panel.move", json!({"panel":"swatches", "anchor":"layers", "zone":"top"})).unwrap();
     app.run("window.panel.close", json!({"panel":"properties"})).unwrap();
     app.ui.ui_scale = 1.5;
@@ -225,7 +225,7 @@ fn floating_windows_and_hidden_places_survive_the_migration() {
     assert_eq!(ui.floating, [("tabs".to_string(), [10.0, 20.0])], "the layout holds the floating dock panels");
     assert!(ui.docking_hidden.contains_key("color") && !layout.contains(&"color".to_string()), "a closed panel stays closed");
     assert!(columns[1].groups.iter().all(|g| g.panels != ["glyphs"]));
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
     app.ui = ui;
     app.run("window.panel", json!({"panel": "color"})).unwrap();
     assert!(app.ui.docking.as_ref().unwrap().contains(&"color".to_string()));
@@ -298,7 +298,7 @@ fn hidden_panels_keyed_by_panel_load_as_the_workspace_list() {
     let workspace: craft_ui::docking::Workspace<String> =
         serde_json::from_value(json!({"layout": {"root": null, "floating": []}, "hidden": written["dockingHidden"]})).unwrap();
     assert_eq!(workspace.hidden, ui.docking_hidden.0, "the same shape as craft-ui's Workspace::hidden");
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
     app.ui = ui;
     app.run("window.panel", json!({"panel": "color"})).unwrap();
     assert!(app.ui.docking.as_ref().unwrap().contains(&"color".to_string()));

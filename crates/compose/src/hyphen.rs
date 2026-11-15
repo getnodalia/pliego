@@ -84,14 +84,14 @@ pub enum Lang {
 }
 
 impl Lang {
-    /// The hyphenator for a language name or locale code (see [`designcraft_doc::language_tag`]).
+    /// The hyphenator for a language name or locale code (see [`pliego_doc::language_tag`]).
     /// None when the language has no bundled hyphenation.
     pub fn for_language(language: &str) -> Option<Lang> {
         if language.starts_with("English") {
             return Some(Lang::English);
         }
-        let tag = designcraft_doc::language_tag(language)?;
-        let sub = designcraft_doc::language_subtag(tag);
+        let tag = pliego_doc::language_tag(language)?;
+        let sub = pliego_doc::language_subtag(tag);
         // language_tag deliberately drops spelling variants for shaping and quotes. Hyphenation
         // must retain that distinction: the 2006 patterns are wrong for traditional ck/st breaks.
         if sub == "de" && !german_2006_language(language) {
@@ -489,7 +489,7 @@ mod tests {
             "de_AT_1996",
             "de_DE_2099",
         ] {
-            assert_eq!(designcraft_doc::language_subtag(designcraft_doc::language_tag(name).unwrap()), "de", "{name}");
+            assert_eq!(pliego_doc::language_subtag(pliego_doc::language_tag(name).unwrap()), "de", "{name}");
             assert_eq!(Lang::for_language(name), None, "{name}: do not use 2006 ck/st breaks for unsupported spelling variants");
         }
     }

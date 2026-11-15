@@ -1004,7 +1004,7 @@ dependencies = [
 [[package]]
 name = "craft-atomic"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "rustix 1.1.5",
 ]
@@ -1012,7 +1012,7 @@ dependencies = [
 [[package]]
 name = "craft-cms"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "rayon",
 ]
@@ -1020,7 +1020,7 @@ dependencies = [
 [[package]]
 name = "craft-dialogs"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=1a11a4897865f7410c40d25ca6e452ce399a1a2c#1a11a4897865f7410c40d25ca6e452ce399a1a2c"
+source = "git+https://github.com/getnodalia/foundation?rev=1a11a4897865f7410c40d25ca6e452ce399a1a2c#1a11a4897865f7410c40d25ca6e452ce399a1a2c"
 dependencies = [
  "block2 0.6.2",
  "objc2 0.6.5",
@@ -1033,17 +1033,17 @@ dependencies = [
 [[package]]
 name = "craft-docpath"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 
 [[package]]
 name = "craft-fonts-build"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 
 [[package]]
 name = "craft-i18n"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "fixed_decimal",
  "icu_decimal",
@@ -1066,7 +1066,7 @@ dependencies = [
 [[package]]
 name = "craft-keymap"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "craft-i18n",
  "craft-ui",
@@ -1078,7 +1078,7 @@ dependencies = [
 [[package]]
 name = "craft-pdf"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "bytemuck",
  "hayro",
@@ -1091,7 +1091,7 @@ dependencies = [
 [[package]]
 name = "craft-prepress"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "craft-cms",
  "craft-pdf",
@@ -1104,7 +1104,7 @@ dependencies = [
 [[package]]
 name = "craft-print"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "craft-winprint-gdi",
  "miniz_oxide 0.9.1",
@@ -1117,7 +1117,7 @@ dependencies = [
 [[package]]
 name = "craft-ui"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "craft-fonts-build",
  "craft-i18n",
@@ -1138,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "craft-update"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=1b34eba41e62138fc2438d2734523b302840b45d#1b34eba41e62138fc2438d2734523b302840b45d"
+source = "git+https://github.com/getnodalia/foundation?rev=1b34eba41e62138fc2438d2734523b302840b45d#1b34eba41e62138fc2438d2734523b302840b45d"
 dependencies = [
  "chrono",
  "dunce",
@@ -1164,7 +1164,7 @@ dependencies = [
 [[package]]
 name = "craft-window"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "egui",
  "objc2 0.6.5",
@@ -1305,14 +1305,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft"
+name = "pliego"
 version = "0.17.0"
 dependencies = [
  "arboard",
  "craft-update",
  "craft-window",
- "designcraft-engine",
- "designcraft-ui-egui",
+ "pliego-engine",
+ "pliego-ui-egui",
  "eframe",
  "egui",
  "fmv-macos-events",
@@ -1330,24 +1330,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-cli"
+name = "pliego-cli"
 version = "0.17.0"
 dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-engine",
- "designcraft-format",
- "designcraft-geom",
- "designcraft-mcp",
- "designcraft-pdf",
- "designcraft-render",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-engine",
+ "pliego-format",
+ "pliego-geom",
+ "pliego-mcp",
+ "pliego-pdf",
+ "pliego-render",
  "image",
  "serde_json",
 ]
 
 [[package]]
-name = "designcraft-color"
+name = "pliego-color"
 version = "0.17.0"
 dependencies = [
  "craft-cms",
@@ -1359,13 +1359,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-compose"
+name = "pliego-compose"
 version = "0.17.0"
 dependencies = [
- "designcraft-color",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
+ "pliego-color",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
  "fancy-regex",
  "hypher",
  "log",
@@ -1379,12 +1379,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-doc"
+name = "pliego-doc"
 version = "0.17.0"
 dependencies = [
  "chrono",
- "designcraft-color",
- "designcraft-geom",
+ "pliego-color",
+ "pliego-geom",
  "proptest",
  "serde",
  "serde_json",
@@ -1392,7 +1392,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-engine"
+name = "pliego-engine"
 version = "0.17.0"
 dependencies = [
  "caseless",
@@ -1400,20 +1400,20 @@ dependencies = [
  "craft-docpath",
  "craft-prepress",
  "craft-print",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-epub",
- "designcraft-fonts",
- "designcraft-format",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-images",
- "designcraft-pdf",
- "designcraft-pptx",
- "designcraft-render",
- "designcraft-textimport",
- "designcraft-tools",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-epub",
+ "pliego-fonts",
+ "pliego-format",
+ "pliego-geom",
+ "pliego-idml",
+ "pliego-images",
+ "pliego-pdf",
+ "pliego-pptx",
+ "pliego-render",
+ "pliego-textimport",
+ "pliego-tools",
  "hayro-cmap",
  "hayro-interpret",
  "hayro-syntax",
@@ -1432,17 +1432,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-epub"
+name = "pliego-epub"
 version = "0.17.0"
 dependencies = [
  "chrono",
- "designcraft-color",
- "designcraft-doc",
+ "pliego-color",
+ "pliego-doc",
  "zip 3.0.0",
 ]
 
 [[package]]
-name = "designcraft-fonts"
+name = "pliego-fonts"
 version = "0.17.0"
 dependencies = [
  "core-text",
@@ -1455,11 +1455,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-format"
+name = "pliego-format"
 version = "0.17.0"
 dependencies = [
- "designcraft-doc",
- "designcraft-images",
+ "pliego-doc",
+ "pliego-images",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -1467,7 +1467,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-geom"
+name = "pliego-geom"
 version = "0.17.0"
 dependencies = [
  "flo_curves",
@@ -1480,14 +1480,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-idml"
+name = "pliego-idml"
 version = "0.17.0"
 dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
- "designcraft-images",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-geom",
+ "pliego-images",
  "log",
  "quick-xml 0.41.0",
  "thiserror 2.0.21",
@@ -1495,12 +1495,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-images"
+name = "pliego-images"
 version = "0.17.0"
 dependencies = [
  "craft-cms",
- "designcraft-color",
- "designcraft-fonts",
+ "pliego-color",
+ "pliego-fonts",
  "flate2",
  "image",
  "log",
@@ -1513,32 +1513,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-mcp"
+name = "pliego-mcp"
 version = "0.17.0"
 dependencies = [
- "designcraft-engine",
- "designcraft-geom",
- "designcraft-render",
- "designcraft-tools",
+ "pliego-engine",
+ "pliego-geom",
+ "pliego-render",
+ "pliego-tools",
  "image",
  "log",
  "serde_json",
 ]
 
 [[package]]
-name = "designcraft-pdf"
+name = "pliego-pdf"
 version = "0.17.0"
 dependencies = [
  "chrono",
  "craft-cms",
  "craft-pdf",
  "craft-prepress",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
  "flate2",
  "hayro-cmap",
  "hayro-interpret",
@@ -1552,16 +1552,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-pptx"
+name = "pliego-pptx"
 version = "0.17.0"
 dependencies = [
  "chrono",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
  "image",
  "quick-xml 0.41.0",
  "skrifa 0.47.0",
@@ -1570,16 +1570,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-render"
+name = "pliego-render"
 version = "0.17.0"
 dependencies = [
  "craft-pdf",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
  "image",
  "log",
  "serde",
@@ -1589,28 +1589,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-textimport"
+name = "pliego-textimport"
 version = "0.17.0"
 dependencies = [
- "designcraft-doc",
+ "pliego-doc",
  "quick-xml 0.41.0",
  "zip 3.0.0",
 ]
 
 [[package]]
-name = "designcraft-tools"
+name = "pliego-tools"
 version = "0.17.0"
 dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-geom",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "designcraft-ui-egui"
+name = "pliego-ui-egui"
 version = "0.17.0"
 dependencies = [
  "craft-dialogs",
@@ -1619,16 +1619,16 @@ dependencies = [
  "craft-ui",
  "craft-update",
  "craft-window",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-engine",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-render",
- "designcraft-textimport",
- "designcraft-tools",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-engine",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-idml",
+ "pliego-render",
+ "pliego-textimport",
+ "pliego-tools",
  "egui",
  "egui_extras",
  "egui_kittest",
@@ -1644,12 +1644,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft-web"
+name = "pliego-web"
 version = "0.17.0"
 dependencies = [
- "designcraft-engine",
- "designcraft-format",
- "designcraft-ui-egui",
+ "pliego-engine",
+ "pliego-format",
+ "pliego-ui-egui",
  "eframe",
  "egui",
  "form_urlencoded",
@@ -1753,7 +1753,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 [[package]]
 name = "ecolor"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "bytemuck",
  "emath",
@@ -1762,7 +1762,7 @@ dependencies = [
 [[package]]
 name = "eframe"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1797,7 +1797,7 @@ dependencies = [
 [[package]]
 name = "egui"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "accesskit",
  "ahash",
@@ -1816,7 +1816,7 @@ dependencies = [
 [[package]]
 name = "egui-wgpu"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1835,7 +1835,7 @@ dependencies = [
 [[package]]
 name = "egui-winit"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "accesskit_winit",
  "arboard",
@@ -1861,7 +1861,7 @@ dependencies = [
 [[package]]
 name = "egui_extras"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "ahash",
  "egui",
@@ -1874,7 +1874,7 @@ dependencies = [
 [[package]]
 name = "egui_glow"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "bytemuck",
  "egui",
@@ -1887,7 +1887,7 @@ dependencies = [
 [[package]]
 name = "egui_kittest"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "dify",
  "eframe",
@@ -1913,7 +1913,7 @@ checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
 [[package]]
 name = "emath"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "bytemuck",
 ]
@@ -1982,7 +1982,7 @@ dependencies = [
 [[package]]
 name = "epaint"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -2008,7 +2008,7 @@ dependencies = [
 [[package]]
 name = "epaint_default_fonts"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 
 [[package]]
 name = "equivalent"
@@ -2690,7 +2690,7 @@ dependencies = [
 [[package]]
 name = "hayro"
 version = "0.7.1"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "bytemuck",
  "hayro-interpret",
@@ -2710,7 +2710,7 @@ checksum = "9f4d0e94ddd48749f06bbe4e5389fb9799a0c45bcaf00495042076ef05e3241a"
 [[package]]
 name = "hayro-cmap"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "brotli",
  "hayro-postscript",
@@ -2719,7 +2719,7 @@ dependencies = [
 [[package]]
 name = "hayro-interpret"
 version = "0.7.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "bitflags 2.13.2",
  "hayro-cmap",
@@ -2737,7 +2737,7 @@ dependencies = [
 [[package]]
 name = "hayro-jbig2"
 version = "0.3.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "fearless_simd",
  "hayro-ccitt",
@@ -2755,12 +2755,12 @@ dependencies = [
 [[package]]
 name = "hayro-postscript"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 
 [[package]]
 name = "hayro-syntax"
 version = "0.7.2"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "flate2",
  "hayro-ccitt",
@@ -3355,7 +3355,7 @@ dependencies = [
 [[package]]
 name = "krilla"
 version = "0.8.2"
-source = "git+https://github.com/storytold/craft-libs?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
+source = "git+https://github.com/getnodalia/foundation?rev=92d392cff132eaf53e13afff77f38b5c11b73aa0#92d392cff132eaf53e13afff77f38b5c11b73aa0"
 dependencies = [
  "base64 0.22.1",
  "bumpalo",
@@ -7405,7 +7405,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 [[package]]
 name = "winit"
 version = "0.30.13"
-source = "git+https://github.com/storytold/winit.git?rev=a517b3846ee8457d84ee4975110bfda6797c44dc#a517b3846ee8457d84ee4975110bfda6797c44dc"
+source = "git+https://github.com/getnodalia/foundation?rev=a517b3846ee8457d84ee4975110bfda6797c44dc#a517b3846ee8457d84ee4975110bfda6797c44dc"
 dependencies = [
  "ahash",
  "android-activity",
@@ -8030,14 +8030,14 @@ dependencies = [
 [[patch.unused]]
 name = "egui_demo_lib"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 
 [[patch.unused]]
 name = "egui_inspection"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
 
 [[patch.unused]]
 name = "egui_system_font_provider"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
+source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"

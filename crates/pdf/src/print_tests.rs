@@ -1,13 +1,13 @@
 //! CMYK print output, read back from the exported PDF: blending spaces, the output intent,
 //! overprint and knockout groups.
 
-use designcraft_color::cms::{self, Cms, ColorSettings};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{BlendSpace, Document, Fill, Item, ItemId, SpreadRef};
-use designcraft_geom::Rect;
 use hayro_syntax::Pdf;
 use hayro_syntax::object::{Array, Dict, Name, Object, Stream};
+use pliego_color::cms::{self, Cms, ColorSettings};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{BlendSpace, Document, Fill, Item, ItemId, SpreadRef};
+use pliego_geom::Rect;
 
 use crate::{PdfOptions, export_pdf};
 
@@ -15,7 +15,7 @@ use crate::{PdfOptions, export_pdf};
 fn add_box(d: &mut Document, r: Rect, swatch: &str, edit: impl FnOnce(&mut Item)) -> ItemId {
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut b = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+    let mut b = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
     b.fill = Fill::swatch(swatch);
     edit(&mut b);
     d.insert_item(SpreadRef::Doc(0), b, None).unwrap();
@@ -189,7 +189,7 @@ fn overprint_attributes_are_written() {
     assert!(!overprint_states(&stroke).is_empty());
     let gap = exported(&one_box(CYAN, |b| {
         stroked(b);
-        b.stroke.kind = designcraft_doc::StrokeType::Dashed { pattern: vec![12.0, 6.0] };
+        b.stroke.kind = pliego_doc::StrokeType::Dashed { pattern: vec![12.0, 6.0] };
         b.stroke.gap_swatch = "C=0 M=0 Y=100 K=0".into();
         b.stroke.gap_overprint = true;
     }));
@@ -206,7 +206,7 @@ fn overprint_attributes_are_written() {
 /// it and other colors don't.
 #[test]
 fn black_overprints_with_the_preference() {
-    let black = designcraft_color::swatch::BLACK;
+    let black = pliego_color::swatch::BLACK;
     let mut on = one_box(black, |_| {});
     on.settings.overprint_black = true;
     assert_eq!(overprint_states(&exported(&on)), [(true, false, 1)]);
@@ -214,7 +214,7 @@ fn black_overprints_with_the_preference() {
     tint.settings.overprint_black = true;
     assert_eq!(overprint_states(&exported(&tint)), []);
     assert_eq!(overprint_states(&exported(&one_box(black, |_| {}))), [], "off in the preferences");
-    let mut stroke = one_box(designcraft_color::swatch::NONE, |b| {
+    let mut stroke = one_box(pliego_color::swatch::NONE, |b| {
         b.stroke.swatch = black.into();
         b.stroke.weight = 2.0;
     });
@@ -237,7 +237,7 @@ fn black_overprints_with_the_preference() {
 /// Ruby with Overprint Fill on overprints.
 #[test]
 fn ruby_overprint_fill_is_written() {
-    use designcraft_doc::cjk_settings::AdornmentOverprint;
+    use pliego_doc::cjk_settings::AdornmentOverprint;
     let mut d = Document::new(&NewDocument::default());
     d.settings.overprint_black = false;
     let lid = d.default_layer();
@@ -260,7 +260,7 @@ fn knockout_and_isolation_are_group_attributes() {
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         let child = |d: &mut Document, r: Rect, swatch: &str| {
-            let mut b = Item::new(ItemId(d.alloc()), lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+            let mut b = Item::new(ItemId(d.alloc()), lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
             b.fill = Fill::swatch(swatch);
             std::sync::Arc::new(b)
         };
@@ -268,13 +268,8 @@ fn knockout_and_isolation_are_group_attributes() {
             child(&mut d, Rect::new(36.0, 36.0, 136.0, 136.0), "C=100 M=0 Y=0 K=0"),
             child(&mut d, Rect::new(86.0, 86.0, 186.0, 186.0), "C=0 M=100 Y=0 K=0"),
         ];
-        let mut g = Item::new(
-            ItemId(d.alloc()),
-            lid,
-            designcraft_doc::Shape::Group,
-            designcraft_geom::shapes::rectangle(Rect::new(36.0, 36.0, 186.0, 186.0)),
-        );
-        g.content = designcraft_doc::Content::Group { items };
+        let mut g = Item::new(ItemId(d.alloc()), lid, pliego_doc::Shape::Group, pliego_geom::shapes::rectangle(Rect::new(36.0, 36.0, 186.0, 186.0)));
+        g.content = pliego_doc::Content::Group { items };
         g.knockout = knockout;
         g.isolate = isolate;
         d.insert_item(SpreadRef::Doc(0), g, None).unwrap();

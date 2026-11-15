@@ -2,10 +2,10 @@
 //! sections per selection state — `plan/indesign/11-observed-ui.md` §4.1) and small
 //! single-purpose panels (Stroke, Character, Paragraph, Text Wrap, Align, Links, Info).
 
-use designcraft_doc::{Align, Arrowhead, Cap, Join, StrokeAlign, StrokeType};
-use designcraft_geom::corners::CornerShape;
-use designcraft_geom::{Unit, units};
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use pliego_doc::{Align, Arrowhead, Cap, Join, StrokeAlign, StrokeType};
+use pliego_geom::corners::CornerShape;
+use pliego_geom::{Unit, units};
 use serde_json::{Value, json};
 
 use super::{SelInfo, sel_info, text_attrs};
@@ -221,7 +221,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
                 .active()
                 .and_then(|st| st.selection.items.first().and_then(|id| st.doc.item(*id)))
                 .and_then(|it| it.graphic())
-                .is_some_and(|g| g.auto_fit != designcraft_doc::Fitting::None);
+                .is_some_and(|g| g.auto_fit != pliego_doc::Fitting::None);
             if widgets::checkbox(ui, &mut auto, crate::i18n::tr(&app.ui.language, "Auto-Fit")).changed() {
                 let _ = app.run("object.fittingOptions", json!({"autoFit": auto}));
             }

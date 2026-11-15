@@ -5,8 +5,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use designcraft_doc::{CharAttrs, Document, Story};
-use designcraft_fonts::FontSource;
+use pliego_doc::{CharAttrs, Document, Story};
+use pliego_fonts::FontSource;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, bad, cmd, has_doc, str_param};
@@ -41,9 +41,9 @@ pub fn specs() -> Vec<CommandSpec> {
 /// Fonts installed, edited or removed while the app runs (#328, #547): the font database reads
 /// them again, then every open document is composed again with what is installed now.
 fn reload(s: &mut Session, _: &Value) -> Result<Value> {
-    let reloaded = designcraft_fonts::FontDb::global().reload_fonts();
+    let reloaded = pliego_fonts::FontDb::global().reload_fonts();
     // A new cache: render jobs still holding the old one can't bring back the old fonts' layout.
-    s.cache = Arc::new(designcraft_compose::Cache::new());
+    s.cache = Arc::new(pliego_compose::Cache::new());
     for st in &mut s.docs {
         st.bump_revision();
     }
@@ -143,7 +143,7 @@ pub(super) fn used_fonts(d: &Document) -> Vec<UsedFont> {
 /// The tallied fonts as this document's fonts resolve them: missing, a substitute style, or the
 /// face itself (missing ones first).
 pub(super) fn describe_fonts(d: &Document, used: FontTally) -> Vec<UsedFont> {
-    let db = designcraft_fonts::FontDb::global().scoped(d.font_scope);
+    let db = pliego_fonts::FontDb::global().scoped(d.font_scope);
     let mut out: Vec<UsedFont> = used
         .into_iter()
         .map(|((family, style), (n, characters))| {
@@ -210,7 +210,7 @@ fn replace(s: &mut Session, p: &Value) -> Result<Value> {
     let style = str_param(p, "style").map(str::to_string);
     let to_family = str_param(p, "toFamily").ok_or_else(|| bad("font.replace", "missing toFamily"))?.to_string();
     let to_style = str_param(p, "toStyle").map(str::to_string);
-    let db = designcraft_fonts::FontDb::global().scoped(s.doc()?.doc.font_scope);
+    let db = pliego_fonts::FontDb::global().scoped(s.doc()?.doc.font_scope);
     if family.trim().is_empty() || to_family.trim().is_empty() || !db.has_family(&to_family) {
         return Err(bad("font.replace", "Choose an available replacement font family"));
     }
@@ -337,21 +337,20 @@ mod tests {
     /// refuse a face whose licence doesn't allow the export it is about to make.
     #[test]
     fn font_list_reports_the_embedding_licence_bits() {
-        use designcraft_fonts::testing::{font_with, with_fs_type, with_table_len};
+        use pliego_fonts::testing::{font_with, with_fs_type, with_table_len};
         const FAMILY: &str = "DocFont List FsType";
         const FS_TYPES: [u16; 3] = [0x0002, 0x0108, 0x0204];
         for fs_type in FS_TYPES {
-            designcraft_fonts::FontDb::global()
-                .add_font(with_fs_type(font_with(&format!("{FAMILY} {fs_type:04x}"), &['W']).unwrap(), fs_type).unwrap());
+            pliego_fonts::FontDb::global().add_font(with_fs_type(font_with(&format!("{FAMILY} {fs_type:04x}"), &['W']).unwrap(), fs_type).unwrap());
         }
         // An OS/2 table cut to nothing can't be read: as if the font had none.
-        designcraft_fonts::FontDb::global().add_font(with_table_len(font_with(&format!("{FAMILY} no OS/2"), &['W']).unwrap(), b"OS/2", 0).unwrap());
+        pliego_fonts::FontDb::global().add_font(with_table_len(font_with(&format!("{FAMILY} no OS/2"), &['W']).unwrap(), b"OS/2", 0).unwrap());
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         // "W W W W Plain Gone": each W in one of the fonts above, Plain in the default (bundled)
         // font, Gone in a family that isn't available.
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "W W W W Plain Gone"})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         let set = |s: &mut Session, at: usize, end: usize, family: &str| {
             s.execute("text.select", &json!({"story": sid.0, "anchor": at, "focus": end})).unwrap();
             s.execute("type.char", &json!({"fontFamily": family, "fontStyle": "Regular"})).unwrap();
@@ -387,7 +386,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Some text here."})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 4})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Nonexistent Sans", "fontStyle": "Bold"})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();
@@ -414,7 +413,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Some text here."})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 15})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Source Serif 4 (OTF)", "fontStyle": "Bold"})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();
@@ -449,7 +448,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Text"})).unwrap();
-        let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+        let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 4})).unwrap();
         s.execute("type.char", &json!({"fontFamily": "Source Serif 4", "fontStyle": "Regular "})).unwrap();
         let l = s.execute("font.list", &json!({})).unwrap();
@@ -464,14 +463,14 @@ mod tests {
 #[cfg(test)]
 mod composite_tests {
     use super::*;
-    use designcraft_doc::{
+    use pliego_doc::{
         ParaFormat,
         cjk::{CompositeFont, CompositeFontEntry},
     };
 
     #[test]
     fn inventory_resolves_composites_in_nested_cell_notes() {
-        use designcraft_doc::{StoryId, Table, build::NewDocument};
+        use pliego_doc::{StoryId, Table, build::NewDocument};
         let mut d = Document::new(&NewDocument::default());
         d.styles_mut().composite_fonts.push(CompositeFont {
             name: "Mixed".into(),

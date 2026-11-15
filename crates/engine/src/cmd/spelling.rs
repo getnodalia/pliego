@@ -1,8 +1,8 @@
 //! Edit → Spelling: check spelling against the bundled US English word list (the public-domain
 //! Moby list used for hyphenation) plus the document's user dictionary; suggestions by edit distance.
 
-use designcraft_compose::hyphen::Dictionary;
-use designcraft_doc::StoryId;
+use pliego_compose::hyphen::Dictionary;
+use pliego_doc::StoryId;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, str_param};
@@ -74,7 +74,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let to = str_param(p, "to").unwrap_or("").to_string();
             s.edit(|d, _| {
                 let r = {
-                    let st = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+                    let st = d.story_mut(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
                     let r = a.min(st.len())..b.min(st.len());
                     st.replace(r.clone(), &to);
                     r
@@ -244,7 +244,7 @@ pub fn suggest(dict: &Dictionary, w: &str) -> Vec<String> {
 }
 
 /// Misspelled words of a story: byte ranges (acronyms skipped; the user dictionary counts).
-pub fn misspellings(doc: &designcraft_doc::Document, story: &designcraft_doc::Story, user: &[String]) -> Vec<std::ops::Range<usize>> {
+pub fn misspellings(doc: &pliego_doc::Document, story: &pliego_doc::Story, user: &[String]) -> Vec<std::ops::Range<usize>> {
     // Text in other languages isn't checked against the English dictionary.
     let foreign: Vec<std::ops::Range<usize>> = {
         story
@@ -252,7 +252,7 @@ pub fn misspellings(doc: &designcraft_doc::Document, story: &designcraft_doc::St
             .filter(|(r, f)| {
                 let pi = story.para_at(r.start.min(story.len()));
                 let base = doc.styles.resolve_para(&story.paras[pi.min(story.paras.len().saturating_sub(1))]).1;
-                !designcraft_compose::is_english(&doc.styles.resolve_char(&base, f).language)
+                !pliego_compose::is_english(&doc.styles.resolve_char(&base, f).language)
             })
             .map(|(r, _)| r)
             .collect()
@@ -322,7 +322,7 @@ mod tests {
         assert!(!known(d, &[], "typograpy"));
         assert!(suggest(d, "typograpy").contains(&"typography".to_string()));
         assert!(suggest(d, "emial").contains(&"email".to_string()), "words in COMMON are suggested too");
-        assert!(known(d, &["designcraft".into()], "designcraft"));
+        assert!(known(d, &["pliego".into()], "pliego"));
     }
 
     #[test]
@@ -331,7 +331,7 @@ mod tests {
         s.execute("file.new", &serde_json::json!({})).unwrap();
         s.execute("spelling.setWords", &serde_json::json!({"words": ["Zorbo", " zorbo", "", "Quux"]})).unwrap();
         assert_eq!(s.execute("spelling.words", &serde_json::json!({})).unwrap(), serde_json::json!(["quux", "zorbo"]));
-        let mut story = designcraft_doc::Story::new(designcraft_doc::StoryId(1));
+        let mut story = pliego_doc::Story::new(pliego_doc::StoryId(1));
         story.insert(0, "zorbo qwzx");
         let bad = misspellings(&s.doc().unwrap().doc, &story, &s.doc().unwrap().doc.user_words);
         assert_eq!(bad, vec![6..10]);
@@ -405,7 +405,7 @@ mod hyphenation_exception_tests {
 
     use crate::Session;
 
-    fn first_line(s: &Session, sid: designcraft_doc::StoryId) -> String {
+    fn first_line(s: &Session, sid: pliego_doc::StoryId) -> String {
         let d = &s.doc().unwrap().doc;
         let cs = s.cache.get(d, sid, None);
         let l = &cs.frames[0].lines[0];
@@ -421,7 +421,7 @@ mod hyphenation_exception_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 172, 400], "content": "text", "text": "a internationalization"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
         s.execute("type.para", &json!({"hyphenate": true, "hyphLastWord": true})).unwrap();
         s.execute("hyphenation.addException", &json!({"word": "in~ternationalization"})).unwrap();

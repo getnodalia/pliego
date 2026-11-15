@@ -15,7 +15,7 @@ pub(super) fn corners(e: &El, prefix: &str) -> Option<[Corner; 4]> {
     }
     let mut out = [Corner::default(); 4];
     for (c, (shape, size)) in out.iter_mut().zip(shapes.iter().zip(sizes)) {
-        c.shape = shape.as_deref().map_or(designcraft_geom::corners::CornerShape::None, |s| names::corner_in(s.trim()));
+        c.shape = shape.as_deref().map_or(pliego_geom::corners::CornerShape::None, |s| names::corner_in(s.trim()));
         c.size = size.filter(|v| v.is_finite()).map_or(12.0, |v| v.max(0.0));
     }
     Some(out)
@@ -111,9 +111,9 @@ impl<'r> Importer<'r> {
                 size: ds.num("Size").unwrap_or(def.size),
                 spread: ds.num("Spread").unwrap_or(def.spread),
                 global_light: false,
-                // Without the attribute (earlier DesignCraft exports) the shadow stays Normal, as it
+                // Without the attribute (earlier Pliego exports) the shadow stays Normal, as it
                 // rendered then; a new shadow's default is Multiply.
-                mode: ds.get("BlendMode").map_or(designcraft_color::BlendMode::Normal, names::blend_in),
+                mode: ds.get("BlendMode").map_or(pliego_color::BlendMode::Normal, names::blend_in),
             };
         }
         if let Some(f) = t.find("FeatherSetting")
@@ -122,9 +122,9 @@ impl<'r> Importer<'r> {
             fx.feather = f.num("Width").unwrap_or(9.0);
             fx.feather_options.choke = finite(f.num("ChokeAmount")).unwrap_or(0.0).clamp(0.0, 100.0);
             fx.feather_options.corners = match f.get("CornerType") {
-                Some("Sharp") => designcraft_doc::FeatherCorners::Sharp,
-                Some("Rounded") => designcraft_doc::FeatherCorners::Rounded,
-                _ => designcraft_doc::FeatherCorners::Diffused,
+                Some("Sharp") => pliego_doc::FeatherCorners::Sharp,
+                Some("Rounded") => pliego_doc::FeatherCorners::Rounded,
+                _ => pliego_doc::FeatherCorners::Diffused,
             };
         }
         if let Some(g) = t.find("GradientFeatherSetting")

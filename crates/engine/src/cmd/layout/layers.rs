@@ -94,7 +94,7 @@ mod layer_tests {
         s.execute("layer.merge", &json!({"ids": [l4, l2]})).unwrap();
         let d = &s.doc().unwrap().doc;
         assert_eq!(d.layers.len(), 1);
-        assert_eq!(d.item(designcraft_doc::ItemId(f)).unwrap().layer.0, l4);
+        assert_eq!(d.item(pliego_doc::ItemId(f)).unwrap().layer.0, l4);
     }
 }
 
@@ -111,12 +111,12 @@ mod layer_options_tests {
         let all = json!({"id": id, "name": "  Artwork ", "color": "Gold", "visible": false, "locked": true, "printable": false,
             "showGuides": false, "suppressWrapWhenHidden": true});
         s.execute("layer.set", &all).unwrap();
-        let l = s.doc().unwrap().doc.layer(designcraft_doc::LayerId(id)).cloned().unwrap();
+        let l = s.doc().unwrap().doc.layer(pliego_doc::LayerId(id)).cloned().unwrap();
         assert_eq!(l.name, "Artwork");
         assert_eq!(l.color, [255, 153, 0]);
         assert!(!l.visible && l.locked && !l.printable && !l.show_guides && l.suppress_wrap_when_hidden);
         s.execute("edit.undo", &json!({})).unwrap();
-        assert_eq!(s.doc().unwrap().doc.layer(designcraft_doc::LayerId(id)).unwrap().name, "Art", "one undo step");
+        assert_eq!(s.doc().unwrap().doc.layer(pliego_doc::LayerId(id)).unwrap().name, "Art", "one undo step");
         let first_name = s.doc().unwrap().doc.layers.iter().find(|l| l.id.0 == first).unwrap().name.clone();
         let before = s.doc().unwrap().doc.layers.clone();
         for p in [

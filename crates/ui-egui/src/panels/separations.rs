@@ -18,8 +18,8 @@ fn ink_color(ink: &Ink) -> egui::Color32 {
         Ink::Process(Process::Black) => egui::Color32::from_rgb(35, 31, 32),
         Ink::Spot(s) => {
             let rgb = match s.alternate {
-                Alternate::Lab([l, a, b]) => designcraft_color::cms::lab::lab_to_srgb(designcraft_color::cms::Lab { l, a, b }),
-                Alternate::Cmyk([c, m, y, k]) => designcraft_color::Color::Cmyk { c, m, y, k }.to_rgb(),
+                Alternate::Lab([l, a, b]) => pliego_color::cms::lab::lab_to_srgb(pliego_color::cms::Lab { l, a, b }),
+                Alternate::Cmyk([c, m, y, k]) => pliego_color::Color::Cmyk { c, m, y, k }.to_rgb(),
             };
             let [r, g, b] = rgb.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8);
             egui::Color32::from_rgb(r, g, b)
@@ -64,7 +64,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
         return;
     };
     ui.separator();
-    let Some(designcraft_doc::SpreadRef::Doc(si)) = crate::canvas::current_spread(app) else { return };
+    let Some(pliego_doc::SpreadRef::Doc(si)) = crate::canvas::current_spread(app) else { return };
     let sheet = match app.canvas.separations.sheet(si) {
         None => {
             ui.label(egui::RichText::new(tr(&lang, "Separating…")).size(11.0).color(t.text_dim));

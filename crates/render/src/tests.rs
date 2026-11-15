@@ -1,6 +1,6 @@
 use super::*;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Fill, ParaFormat};
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Fill, ParaFormat};
 
 #[test]
 fn eps_source_decodes_like_its_preview() {
@@ -17,7 +17,7 @@ fn eps_source_decodes_like_its_preview() {
     dos.extend_from_slice(source);
     dos.extend_from_slice(&tiff);
     for source in [source.as_slice(), dos.as_slice()] {
-        let proxy = designcraft_images::eps_proxy(source).unwrap().0;
+        let proxy = pliego_images::eps_proxy(source).unwrap().0;
         let actual = decode_pixmap(source).unwrap();
         let expected = decode_pixmap(&proxy).unwrap();
         assert_eq!((actual.width(), actual.height()), (expected.width(), expected.height()));
@@ -32,13 +32,12 @@ fn eps_source_decodes_like_its_preview() {
 
 #[test]
 fn footnote_vector_objects_are_painted() {
-    use designcraft_doc::{AnchorPosition, AnchoredObject, ItemId, Shape, SpreadRef};
+    use pliego_doc::{AnchorPosition, AnchoredObject, ItemId, Shape, SpreadRef};
     let mut d = Document::new(&NewDocument::default());
     let (_, sid) =
         d.add_text_frame(SpreadRef::Doc(0), Rect::new(20.0, 20.0, 300.0, 300.0), d.default_layer(), "Body", ParaFormat::default()).unwrap();
-    let mut item =
-        Item::new(ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(0.0, 0.0, 12.0, 12.0)));
-    item.fill = Fill::swatch(designcraft_color::swatch::BLACK);
+    let mut item = Item::new(ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(0.0, 0.0, 12.0, 12.0)));
+    item.fill = Fill::swatch(pliego_color::swatch::BLACK);
     // Open contours with a fill are implicitly closed for painting. A single
     // open contour must not hide the whole compound glyph.
     item.path.subpaths[0].closed = false;
@@ -49,7 +48,7 @@ fn footnote_vector_objects_are_painted() {
     let cs = cache.get(&d, sid, None);
     let note = &cs.frames[0].notes[0];
     let object = &note.text.frames[0].objects[0];
-    let centre = note.origin + object.origin.to_vec2() + designcraft_geom::Vec2::new(6.0, 6.0);
+    let centre = note.origin + object.origin.to_vec2() + pliego_geom::Vec2::new(6.0, 6.0);
     let image = Renderer::new().render_page(&d, &cache, 0, 1.0, false, &RenderOptions::default()).unwrap();
     let pixel = image.pixel(centre.x as u32, centre.y as u32);
     assert!(pixel[0] < 80 && pixel[1] < 80 && pixel[2] < 80, "{pixel:?}");
@@ -83,7 +82,7 @@ fn to_png_survives_a_mismatched_buffer() {
 
 #[test]
 fn proof_view_simulates_the_target() {
-    use designcraft_color::cms::{ProofSetup, ProofTarget};
+    use pliego_color::cms::{ProofSetup, ProofTarget};
     let red = |a: u8| Rendered { width: 1, height: 1, pixels: vec![a, 0, 0, a] };
     let mut img = red(255);
     proof_view(&mut img, &ProofSetup { target: ProofTarget::Protanopia, ..Default::default() });
@@ -102,9 +101,9 @@ fn proof_view_simulates_the_target() {
 fn renders_page_with_text_and_fill() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let (fid, _) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 576.0, 300.0), lid, "Hello DesignCraft", ParaFormat::default()).unwrap();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut box_ = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(36.0, 400.0, 136.0, 500.0)));
+    let (fid, _) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 576.0, 300.0), lid, "Hello Pliego", ParaFormat::default()).unwrap();
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut box_ = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(36.0, 400.0, 136.0, 500.0)));
     box_.fill = Fill::swatch("C=100 M=0 Y=0 K=0");
     d.insert_item(SpreadRef::Doc(0), box_, None).unwrap();
     let cache = Cache::new();
@@ -128,15 +127,11 @@ fn renders_page_with_text_and_fill() {
 fn inside_strokes_are_inset_by_half_the_weight() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)));
-    it.stroke = designcraft_doc::Stroke {
-        swatch: designcraft_color::swatch::BLACK.into(),
-        weight: 10.0,
-        align: designcraft_doc::StrokeAlign::Inside,
-        ..Default::default()
-    };
-    it.corners = designcraft_geom::corners::CornerOptions::uniform(designcraft_geom::corners::CornerShape::Rounded, 20.0);
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)));
+    it.stroke =
+        pliego_doc::Stroke { swatch: pliego_color::swatch::BLACK.into(), weight: 10.0, align: pliego_doc::StrokeAlign::Inside, ..Default::default() };
+    it.corners = pliego_geom::corners::CornerOptions::uniform(pliego_geom::corners::CornerShape::Rounded, 20.0);
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let cache = Cache::new();
     let mut r = Renderer::new();
@@ -156,24 +151,24 @@ fn inside_strokes_are_inset_by_half_the_weight() {
 fn arrowheads_draw_at_line_ends() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let path = designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 400.0), designcraft_geom::Point::new(400.0, 400.0));
-    let mut line = Item::new(id, lid, designcraft_doc::Shape::GraphicLine, path);
-    line.stroke = designcraft_doc::Stroke {
-        swatch: designcraft_color::swatch::BLACK.into(),
+    let id = pliego_doc::ItemId(d.alloc());
+    let path = pliego_geom::shapes::line(pliego_geom::Point::new(100.0, 400.0), pliego_geom::Point::new(400.0, 400.0));
+    let mut line = Item::new(id, lid, pliego_doc::Shape::GraphicLine, path);
+    line.stroke = pliego_doc::Stroke {
+        swatch: pliego_color::swatch::BLACK.into(),
         weight: 2.0,
-        end: designcraft_doc::Arrowhead::TriangleWide,
+        end: pliego_doc::Arrowhead::TriangleWide,
         ..Default::default()
     };
     d.insert_item(SpreadRef::Doc(0), line, None).unwrap();
     // A dashed line with a gap colour: the gaps are painted.
-    let id = designcraft_doc::ItemId(d.alloc());
-    let path = designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 500.0), designcraft_geom::Point::new(400.0, 500.0));
-    let mut dashed = Item::new(id, lid, designcraft_doc::Shape::GraphicLine, path);
-    dashed.stroke = designcraft_doc::Stroke {
-        swatch: designcraft_color::swatch::BLACK.into(),
+    let id = pliego_doc::ItemId(d.alloc());
+    let path = pliego_geom::shapes::line(pliego_geom::Point::new(100.0, 500.0), pliego_geom::Point::new(400.0, 500.0));
+    let mut dashed = Item::new(id, lid, pliego_doc::Shape::GraphicLine, path);
+    dashed.stroke = pliego_doc::Stroke {
+        swatch: pliego_color::swatch::BLACK.into(),
         weight: 4.0,
-        kind: designcraft_doc::StrokeType::Dashed { pattern: vec![12.0, 4.0] },
+        kind: pliego_doc::StrokeType::Dashed { pattern: vec![12.0, 4.0] },
         gap_swatch: "C=100 M=0 Y=0 K=0".into(),
         ..Default::default()
     };
@@ -197,9 +192,8 @@ fn overprint_preview_mixes_inks() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     for (sw, op) in [("C=0 M=0 Y=100 K=0", false), ("C=0 M=100 Y=0 K=0", true)] {
-        let id = designcraft_doc::ItemId(d.alloc());
-        let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+        let id = pliego_doc::ItemId(d.alloc());
+        let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
         it.fill = Fill { overprint: op, ..Fill::swatch(sw) };
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     }
@@ -218,10 +212,10 @@ fn overprint_preview_mixes_inks() {
 #[test]
 fn cmyk_blend_space_shows_transparent_spreads_in_cmyk() {
     let mut d = Document::new(&NewDocument::default());
-    d.swatches.push(designcraft_color::swatch::Swatch::color("Green", designcraft_color::Color::rgb8(0, 255, 0)));
+    d.swatches.push(pliego_color::swatch::Swatch::color("Green", pliego_color::Color::rgb8(0, 255, 0)));
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
     it.fill = Fill::swatch("Green");
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let cache = Cache::new();
@@ -236,7 +230,7 @@ fn cmyk_blend_space_shows_transparent_spreads_in_cmyk() {
     d.item_mut(id).unwrap().opacity = 0.99;
     let cmyk = px(&d, &mut r);
     assert!(cmyk[0] > 20 || cmyk[1] < 240, "{cmyk:?}");
-    d.settings.blend_space = designcraft_doc::BlendSpace::Rgb;
+    d.settings.blend_space = pliego_doc::BlendSpace::Rgb;
     let rgb = px(&d, &mut r);
     assert!(rgb[1] > 245 && rgb[0] < 10, "{rgb:?}");
 }
@@ -247,17 +241,17 @@ fn blend_modes_blend_in_cmyk_on_screen_in_a_cmyk_blend_space() {
     // in Color Dodge: in CMYK the black clears the lilac's inks (white), over the paper it
     // shows as it is; in RGB, dodging with black changes nothing.
     let mut d = Document::new(&NewDocument::default());
-    d.swatches.push(designcraft_color::swatch::Swatch::color("Lilac", designcraft_color::Color::rgb8(171, 154, 227)));
+    d.swatches.push(pliego_color::swatch::Swatch::color("Lilac", pliego_color::Color::rgb8(171, 154, 227)));
     let lid = d.default_layer();
     let rect = |d: &mut Document, r: Rect, fill: &str| {
-        let id = designcraft_doc::ItemId(d.alloc());
-        let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+        let id = pliego_doc::ItemId(d.alloc());
+        let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
         it.fill = Fill::swatch(fill);
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
         id
     };
     rect(&mut d, Rect::new(100.0, 100.0, 300.0, 200.0), "Lilac");
-    let black = rect(&mut d, Rect::new(150.0, 150.0, 250.0, 250.0), designcraft_color::swatch::BLACK);
+    let black = rect(&mut d, Rect::new(150.0, 150.0, 250.0, 250.0), pliego_color::swatch::BLACK);
     d.item_mut(black).unwrap().blend = DcBlend::ColorDodge;
     let cache = Cache::new();
     let mut r = Renderer::new();
@@ -272,9 +266,9 @@ fn blend_modes_blend_in_cmyk_on_screen_in_a_cmyk_blend_space() {
     let lilac = px(&d, &mut r, 120, 150);
     assert!(lilac[2] > lilac[1] + 25, "the lilac beside it: {lilac:?}");
     // Inside a group, the group's blend mode.
-    let g = designcraft_doc::ItemId(d.alloc());
+    let g = pliego_doc::ItemId(d.alloc());
     let it = d.remove_item(black).unwrap();
-    let mut grp = Item::new(g, lid, designcraft_doc::Shape::Group, Default::default());
+    let mut grp = Item::new(g, lid, pliego_doc::Shape::Group, Default::default());
     let mut inner = (*it).clone();
     inner.blend = DcBlend::Normal;
     grp.content = Content::Group { items: vec![Arc::new(inner)] };
@@ -284,7 +278,7 @@ fn blend_modes_blend_in_cmyk_on_screen_in_a_cmyk_blend_space() {
     assert!(grouped[..3].iter().all(|v| *v > 235), "{grouped:?}");
     // An RGB blend space: still lilac under the black (lightened a little: [Black] shows as a
     // dark grey in RGB).
-    d.settings.blend_space = designcraft_doc::BlendSpace::Rgb;
+    d.settings.blend_space = pliego_doc::BlendSpace::Rgb;
     let rgb = px(&d, &mut r, 200, 175);
     assert!(rgb[2] > rgb[1] + 25 && rgb[1] < 220, "{rgb:?}");
 }
@@ -295,16 +289,15 @@ fn knockout_group_hides_its_own_objects() {
     let lid = d.default_layer();
     let mut kids = Vec::new();
     for (sw, x) in [("C=0 M=0 Y=100 K=0", 100.0), ("C=0 M=100 Y=0 K=0", 150.0)] {
-        let id = designcraft_doc::ItemId(d.alloc());
-        let mut it =
-            Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(x, 100.0, x + 100.0, 200.0)));
+        let id = pliego_doc::ItemId(d.alloc());
+        let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(x, 100.0, x + 100.0, 200.0)));
         it.fill = Fill::swatch(sw);
         it.opacity = 0.5;
         kids.push(std::sync::Arc::new(it));
     }
-    let gid = designcraft_doc::ItemId(d.alloc());
-    let mut g = Item::new(gid, lid, designcraft_doc::Shape::Group, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
-    g.content = designcraft_doc::Content::Group { items: kids };
+    let gid = pliego_doc::ItemId(d.alloc());
+    let mut g = Item::new(gid, lid, pliego_doc::Shape::Group, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 250.0, 200.0)));
+    g.content = pliego_doc::Content::Group { items: kids };
     d.insert_item(SpreadRef::Doc(0), g, None).unwrap();
     let cache = Cache::new();
     let mut r = Renderer::new();
@@ -325,10 +318,10 @@ fn black_overprints_only_with_the_preference() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     for (sw, r) in
-        [("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)), (designcraft_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0))]
+        [("C=100 M=0 Y=0 K=0", Rect::new(100.0, 100.0, 200.0, 200.0)), (pliego_color::swatch::BLACK, Rect::new(150.0, 100.0, 250.0, 200.0))]
     {
-        let id = designcraft_doc::ItemId(d.alloc());
-        let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+        let id = pliego_doc::ItemId(d.alloc());
+        let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
         it.fill = Fill::swatch(sw);
         d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     }
@@ -348,9 +341,9 @@ fn black_overprints_only_with_the_preference() {
 fn appearance_of_black_on_screen() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-    it.fill = Fill::swatch(designcraft_color::swatch::BLACK);
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+    it.fill = Fill::swatch(pliego_color::swatch::BLACK);
     d.insert_item(SpreadRef::Doc(0), it, None).unwrap();
     let cache = Cache::new();
     let mut r = Renderer::new();
@@ -369,10 +362,10 @@ fn display_performance_fast_draws_grey_boxes() {
     // A 4×4 red PNG placed at 100,100 (100×100 pt).
     let mut png = Vec::new();
     image::RgbaImage::from_pixel(4, 4, image::Rgba([255, 0, 0, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-    let aid = designcraft_doc::AssetId(d.alloc());
+    let aid = pliego_doc::AssetId(d.alloc());
     d.assets.insert(
         aid,
-        Arc::new(designcraft_doc::Asset {
+        Arc::new(pliego_doc::Asset {
             id: aid,
             name: "red.png".into(),
             mime: "image/png".into(),
@@ -381,9 +374,9 @@ fn display_performance_fast_draws_grey_boxes() {
             ..Default::default()
         }),
     );
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-    it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+    it.content = pliego_doc::Content::Graphic(pliego_doc::Graphic {
         layer_options: None,
         asset: aid,
         size: (100.0, 100.0),
@@ -413,10 +406,10 @@ fn clipping_path_hides_the_image_outside_it() {
     let lid = d.default_layer();
     let mut png = Vec::new();
     image::RgbaImage::from_pixel(4, 4, image::Rgba([255, 0, 0, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-    let aid = designcraft_doc::AssetId(d.alloc());
+    let aid = pliego_doc::AssetId(d.alloc());
     d.assets.insert(
         aid,
-        Arc::new(designcraft_doc::Asset {
+        Arc::new(pliego_doc::Asset {
             page: 0,
             id: aid,
             name: "red.png".into(),
@@ -428,14 +421,14 @@ fn clipping_path_hides_the_image_outside_it() {
         }),
     );
     // A 100 pt image at 100,100 clipped by a triangle with its apex at the top middle.
-    let triangle = designcraft_geom::PathData::single(designcraft_geom::path::SubPath::polyline(
-        &[designcraft_geom::Point::new(0.0, 100.0), designcraft_geom::Point::new(50.0, 0.0), designcraft_geom::Point::new(100.0, 100.0)],
+    let triangle = pliego_geom::PathData::single(pliego_geom::path::SubPath::polyline(
+        &[pliego_geom::Point::new(0.0, 100.0), pliego_geom::Point::new(50.0, 0.0), pliego_geom::Point::new(100.0, 100.0)],
         true,
     ));
-    let mut clip = designcraft_doc::ClippingPath::new(designcraft_doc::ClippingKind::PhotoshopPath, triangle);
-    let id = designcraft_doc::ItemId(d.alloc());
-    let mut it = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
-    it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
+    let mut clip = pliego_doc::ClippingPath::new(pliego_doc::ClippingKind::PhotoshopPath, triangle);
+    let id = pliego_doc::ItemId(d.alloc());
+    let mut it = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 200.0, 200.0)));
+    it.content = pliego_doc::Content::Graphic(pliego_doc::Graphic {
         layer_options: None,
         asset: aid,
         size: (100.0, 100.0),
@@ -456,7 +449,7 @@ fn clipping_path_hides_the_image_outside_it() {
     assert_eq!(page.pixel(110, 110)[..3], [255, 255, 255], "inside the frame, outside the triangle: paper");
     // Inverted: the corners show and the triangle is paper.
     clip.invert = true;
-    if let Some(designcraft_doc::Content::Graphic(g)) = d.item_mut(id).map(|it| &mut it.content) {
+    if let Some(pliego_doc::Content::Graphic(g)) = d.item_mut(id).map(|it| &mut it.content) {
         g.clip = Some(Arc::new(clip));
     }
     let cache = Cache::new();
@@ -492,13 +485,13 @@ fn table_edges_paint_gap_colour_between_dashes_and_stripes() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 400.0), lid, "", ParaFormat::default()).unwrap();
-    let mut t = designcraft_doc::Table::new(1, 1, 1, 0, 0, 200.0);
+    let mut t = pliego_doc::Table::new(1, 1, 1, 0, 0, 200.0);
     t.rows[0].height = 60.0;
-    t.rows[0].mode = designcraft_doc::RowHeightMode::Exactly;
-    let gap = |kind| designcraft_doc::CellStroke { weight: 8.0, kind, gap_color: "C=100 M=0 Y=0 K=0".into(), ..Default::default() };
+    t.rows[0].mode = pliego_doc::RowHeightMode::Exactly;
+    let gap = |kind| pliego_doc::CellStroke { weight: 8.0, kind, gap_color: "C=100 M=0 Y=0 K=0".into(), ..Default::default() };
     let cell = t.cell_mut(0, 0).unwrap();
-    cell.strokes[0] = gap(designcraft_doc::StrokeType::Dashed { pattern: vec![12.0, 6.0] });
-    cell.strokes[2] = gap(designcraft_doc::StrokeType::ThickThin);
+    cell.strokes[0] = gap(pliego_doc::StrokeType::Dashed { pattern: vec![12.0, 6.0] });
+    cell.strokes[2] = gap(pliego_doc::StrokeType::ThickThin);
     cell.border_overrides = [true; 4];
     cell.stroke_defined = [true; 4];
     d.story_mut(sid).unwrap().insert_table(0, t);
@@ -519,23 +512,23 @@ fn table_edges_paint_gap_colour_between_dashes_and_stripes() {
 
 #[test]
 fn degenerate_dash_patterns_draw_solid_and_fill_types_close_table_corners() {
-    let fine = designcraft_doc::StrokeType::Dashed { pattern: vec![1e-6, 1e-6] };
+    let fine = pliego_doc::StrokeType::Dashed { pattern: vec![1e-6, 1e-6] };
     // Expanding these would take ~10^8 dashes per edge.
     assert!(text::cell_stroke(&fine, 4.0, 200.0).dash_pattern.is_empty());
-    assert!(text::cell_stroke(&designcraft_doc::StrokeType::Dotted, 1e-6, 200.0).dash_pattern.is_empty());
-    assert!(!text::cell_stroke(&designcraft_doc::StrokeType::Dashed { pattern: vec![3.0, 2.0] }, 1.0, 200.0).dash_pattern.is_empty());
+    assert!(text::cell_stroke(&pliego_doc::StrokeType::Dotted, 1e-6, 200.0).dash_pattern.is_empty());
+    assert!(!text::cell_stroke(&pliego_doc::StrokeType::Dashed { pattern: vec![3.0, 2.0] }, 1.0, 200.0).dash_pattern.is_empty());
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     let (fid, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 400.0), lid, "", ParaFormat::default()).unwrap();
-    d.item_mut(fid).unwrap().stroke = designcraft_doc::Stroke { weight: 2.0, kind: fine.clone(), ..Default::default() };
-    let mut t = designcraft_doc::Table::new(1, 2, 2, 0, 0, 200.0);
+    d.item_mut(fid).unwrap().stroke = pliego_doc::Stroke { weight: 2.0, kind: fine.clone(), ..Default::default() };
+    let mut t = pliego_doc::Table::new(1, 2, 2, 0, 0, 200.0);
     for r in 0..2 {
         t.rows[r].height = 60.0;
-        t.rows[r].mode = designcraft_doc::RowHeightMode::Exactly;
+        t.rows[r].mode = pliego_doc::RowHeightMode::Exactly;
     }
-    let stroke = |kind| designcraft_doc::CellStroke { weight: 8.0, kind, gap_color: "C=100 M=0 Y=0 K=0".into(), ..Default::default() };
+    let stroke = |kind| pliego_doc::CellStroke { weight: 8.0, kind, gap_color: "C=100 M=0 Y=0 K=0".into(), ..Default::default() };
     for cell in &mut t.cells {
-        cell.strokes = std::array::from_fn(|_| stroke(designcraft_doc::StrokeType::ThickThin));
+        cell.strokes = std::array::from_fn(|_| stroke(pliego_doc::StrokeType::ThickThin));
         cell.border_overrides = [true; 4];
         cell.stroke_defined = [true; 4];
     }
@@ -555,28 +548,28 @@ fn degenerate_dash_patterns_draw_solid_and_fill_types_close_table_corners() {
     // Outside the table's top-left corner, inside both edges' reach.
     let corner = img.pixel((top.x0 - 3.0) as u32, (top.y0 - 3.0) as u32);
     assert!(ink(corner), "corner closed: {corner:?}");
-    let edge = frag.strokes.iter().find(|s| s.a == designcraft_geom::Point::new(top.x0, top.y0) && s.a.y == s.b.y).unwrap();
+    let edge = frag.strokes.iter().find(|s| s.a == pliego_geom::Point::new(top.x0, top.y0) && s.a.y == s.b.y).unwrap();
     let (a, b) = frag.corner_capped(edge);
-    assert_eq!((a, b), (designcraft_geom::Point::new(top.x0 - 4.0, top.y0), edge.b), "only table corners extend");
+    assert_eq!((a, b), (pliego_geom::Point::new(top.x0 - 4.0, top.y0), edge.b), "only table corners extend");
 }
 
 #[test]
 fn table_gradient_fill_is_continuous_across_cells() {
     let mut d = Document::new(&NewDocument::default());
-    let mut gradient = designcraft_color::Gradient::default();
-    gradient.stops[0].color = designcraft_color::Color::rgb(1.0, 0.0, 0.0);
-    gradient.stops[1].color = designcraft_color::Color::rgb(0.0, 0.0, 1.0);
-    d.swatches.push(designcraft_color::Swatch {
+    let mut gradient = pliego_color::Gradient::default();
+    gradient.stops[0].color = pliego_color::Color::rgb(1.0, 0.0, 0.0);
+    gradient.stops[1].color = pliego_color::Color::rgb(0.0, 0.0, 1.0);
+    d.swatches.push(pliego_color::Swatch {
         name: "Table gradient".into(),
-        value: designcraft_color::SwatchValue::Gradient { gradient },
+        value: pliego_color::SwatchValue::Gradient { gradient },
         locked: false,
         named: true,
         hidden: false,
     });
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 300.0), d.default_layer(), "", ParaFormat::default()).unwrap();
-    let mut t = designcraft_doc::Table::new(1, 1, 2, 0, 0, 200.0);
+    let mut t = pliego_doc::Table::new(1, 1, 2, 0, 0, 200.0);
     t.rows[0].height = 40.0;
-    t.rows[0].mode = designcraft_doc::RowHeightMode::Exactly;
+    t.rows[0].mode = pliego_doc::RowHeightMode::Exactly;
     for cell in &mut t.cells {
         cell.fill = "Table gradient".into();
     }
@@ -601,7 +594,7 @@ fn renders_tables() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 336.0, 400.0), lid, "", ParaFormat::default()).unwrap();
-    let mut t = designcraft_doc::Table::new(5, 3, 3, 1, 0, 300.0);
+    let mut t = pliego_doc::Table::new(5, 3, 3, 1, 0, 300.0);
     for c in 0..3 {
         let cell = t.cell_mut(0, c).unwrap();
         cell.fill = "C=100 M=0 Y=0 K=0".into();
@@ -663,7 +656,7 @@ fn content_crop_box_is_measured_without_rendering_the_page() {
     // y 100 from x 400 to 500, butt capped. Clipped away: a rectangle off to the left.
     let pdf = one_page_pdf("0 0 0 rg 100 532 200 60 re f 10 w 400 100 m 500 100 l S q 0 0 50 50 re W n 100 0 10 10 re f Q");
     let before = PDF_RENDERS.with(std::cell::Cell::get);
-    let (frac, size) = pdf_crop_box(&pdf, 0, designcraft_doc::PdfCrop::ContentVisible).unwrap();
+    let (frac, size) = pdf_crop_box(&pdf, 0, pliego_doc::PdfCrop::ContentVisible).unwrap();
     assert_eq!(PDF_RENDERS.with(std::cell::Cell::get), before, "the page was rasterized");
     let want = [100.0 / 612.0, 200.0 / 792.0, 500.0 / 612.0, 697.0 / 792.0];
     assert!(frac.iter().zip(want).all(|(a, b)| (a - b).abs() < 1e-6), "{frac:?} vs {want:?}");
@@ -682,10 +675,10 @@ fn an_item_a_parent_overrode_and_deleted_is_gone_from_the_pages_that_use_it() {
     let a = d.parents[0].id;
     let margins = d.parents[0].pages[0].margins;
     let b = d.add_parent("B", "Parent", 1, 0.0, margins);
-    let box_id = designcraft_doc::ItemId(d.alloc());
+    let box_id = pliego_doc::ItemId(d.alloc());
     let rect = Rect::new(100.0, 100.0, 200.0, 160.0);
-    let mut it = Item::new(box_id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(rect));
-    it.fill = designcraft_doc::Fill::swatch(designcraft_color::swatch::BLACK);
+    let mut it = Item::new(box_id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(rect));
+    it.fill = pliego_doc::Fill::swatch(pliego_color::swatch::BLACK);
     d.insert_item(SpreadRef::Parent(0), it, None).unwrap();
     {
         let bp = std::sync::Arc::make_mut(&mut d.parents[1]);
@@ -718,13 +711,13 @@ fn an_item_a_parent_overrode_and_deleted_is_gone_from_the_pages_that_use_it() {
 /// whose frame reaches down into the next line (a negative Y offset) doesn't hide that line.
 #[test]
 fn inline_objects_are_painted_under_the_text() {
-    use designcraft_doc::{AnchorPosition, AnchoredObject, ItemId, Shape, SpreadRef};
+    use pliego_doc::{AnchorPosition, AnchoredObject, ItemId, Shape, SpreadRef};
     let mut d = Document::new(&NewDocument::default());
     let (fid, sid) =
         d.add_text_frame(SpreadRef::Doc(0), Rect::new(20.0, 20.0, 300.0, 300.0), d.default_layer(), "A\nWWWW", ParaFormat::default()).unwrap();
     let mut item =
-        Item::new(ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, designcraft_geom::shapes::rectangle(Rect::new(0.0, 0.0, 250.0, 60.0)));
-    item.fill = Fill::swatch(designcraft_color::swatch::PAPER);
+        Item::new(ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, pliego_geom::shapes::rectangle(Rect::new(0.0, 0.0, 250.0, 60.0)));
+    item.fill = Fill::swatch(pliego_color::swatch::PAPER);
     d.story_mut(sid).unwrap().insert_object(1, AnchoredObject::new(item, AnchorPosition::Inline { y_offset: -40.0 }));
     let cache = Cache::new();
     let cs = cache.get(&d, sid, None);
@@ -734,7 +727,7 @@ fn inline_objects_are_painted_under_the_text() {
     assert!(obj.origin.y + obj.size.1 > l.baseline && obj.origin.y < l.baseline - l.ascent, "{:?} {}", obj.origin, l.baseline);
     let m = d.text_xf(d.item(fid).unwrap());
     let image = Renderer::new().render_page(&d, &cache, 0, 1.0, false, &RenderOptions::default()).unwrap();
-    let (a, b) = (m * designcraft_geom::Point::new(l.x0, l.baseline - l.ascent), m * designcraft_geom::Point::new(l.end_x, l.baseline));
+    let (a, b) = (m * pliego_geom::Point::new(l.x0, l.baseline - l.ascent), m * pliego_geom::Point::new(l.end_x, l.baseline));
     let dark =
         (a.y as u32..b.y as u32).flat_map(|y| (a.x as u32..b.x as u32).map(move |x| (x, y))).filter(|&(x, y)| image.pixel(x, y)[0] < 100).count();
     assert!(dark > 20, "the line's glyphs show over the box: {dark} dark pixels");
@@ -745,15 +738,11 @@ fn dotted_strokes_draw_every_dot() {
     // A 4 pt dotted line 96 pt long: dots every 8 pt, 13 of them.
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let id = designcraft_doc::ItemId(d.alloc());
-    let path = designcraft_geom::shapes::line(designcraft_geom::Point::new(100.0, 400.0), designcraft_geom::Point::new(196.0, 400.0));
-    let mut line = Item::new(id, lid, designcraft_doc::Shape::GraphicLine, path);
-    line.stroke = designcraft_doc::Stroke {
-        swatch: designcraft_color::swatch::BLACK.into(),
-        weight: 4.0,
-        kind: designcraft_doc::StrokeType::Dotted,
-        ..Default::default()
-    };
+    let id = pliego_doc::ItemId(d.alloc());
+    let path = pliego_geom::shapes::line(pliego_geom::Point::new(100.0, 400.0), pliego_geom::Point::new(196.0, 400.0));
+    let mut line = Item::new(id, lid, pliego_doc::Shape::GraphicLine, path);
+    line.stroke =
+        pliego_doc::Stroke { swatch: pliego_color::swatch::BLACK.into(), weight: 4.0, kind: pliego_doc::StrokeType::Dotted, ..Default::default() };
     d.insert_item(SpreadRef::Doc(0), line, None).unwrap();
     let cache = Cache::new();
     let mut r = Renderer::new();
@@ -767,7 +756,7 @@ fn dotted_strokes_draw_every_dot() {
         }
     }
     // Table and paragraph rules: one round dot per period.
-    let stroke = text::cell_stroke(&designcraft_doc::StrokeType::Dotted, 4.0, 96.0);
+    let stroke = text::cell_stroke(&pliego_doc::StrokeType::Dotted, 4.0, 96.0);
     let edge = kurbo::Line::new((0.0, 0.0), (96.0, 0.0));
     let outline = kurbo::stroke(kurbo::Shape::path_elements(&edge, 0.01), &stroke, &kurbo::StrokeOpts::default(), 0.01);
     let dots = outline.elements().iter().filter(|e| matches!(e, kurbo::PathEl::MoveTo(_))).count();

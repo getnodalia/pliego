@@ -39,8 +39,8 @@ fn separations(s: &mut Session, p: &Value) -> Result<Value> {
         Some(v) => Some(v.as_f64().filter(|v| v.is_finite() && *v >= 0.0).ok_or_else(|| bad(ID, "`inkLimit`: a percentage"))? as f32),
     };
     let standard = match super::str_param(p, "standard") {
-        Some(v) => designcraft_pdf::Standard::parse(v).ok_or_else(|| bad(ID, format!("unknown standard `{v}` (none, x4, a2b)")))?,
-        None => designcraft_pdf::Standard::None,
+        Some(v) => pliego_pdf::Standard::parse(v).ok_or_else(|| bad(ID, format!("unknown standard `{v}` (none, x4, a2b)")))?,
+        None => pliego_pdf::Standard::None,
     };
     let print = crate::separations::Print {
         standard,

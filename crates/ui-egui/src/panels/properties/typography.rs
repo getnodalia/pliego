@@ -273,8 +273,8 @@ pub fn paragraph_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
         let _ = app.run("type.para", json!({"attrs": {"sameParaStyleSpacing": v}}));
     }
     for (right, icon, tip, key, max) in [
-        (false, "drop-lines", "Drop Cap Number of Lines", "dropCapLines", designcraft_compose::MAX_DROP_CAP_LINES),
-        (true, "drop-chars", "Drop Cap One or More Characters", "dropCapChars", designcraft_compose::MAX_DROP_CAP_CHARS),
+        (false, "drop-lines", "Drop Cap Number of Lines", "dropCapLines", pliego_compose::MAX_DROP_CAP_LINES),
+        (true, "drop-chars", "Drop Cap One or More Characters", "dropCapChars", pliego_compose::MAX_DROP_CAP_CHARS),
     ] {
         let field = NumField::number(key, p[key].as_f64(), "", 0).spinner().range(0.0, max as f64);
         if let Some(v) = half_field(ui, b, right, 4.0 * row, half, icon, &tr(tip), field) {
@@ -438,7 +438,7 @@ fn variable_font_axes(app: &mut DesignApp, ui: &mut egui::Ui, family: &str, styl
     if axes.is_empty() {
         return;
     }
-    let base = designcraft_fonts::base_style(style).to_string();
+    let base = pliego_fonts::base_style(style).to_string();
     let face = db.face(family, style);
     let cur = |tag: &str, default: f32| face.coords.iter().find(|(t, _)| t == tag.as_bytes()).map_or(default, |c| c.1);
     let mut values: Vec<(String, f32)> = axes.iter().map(|a| (a.0.clone(), cur(&a.0, a.3))).collect();

@@ -71,7 +71,7 @@ fn oversized_part_is_an_error_not_a_huge_read() {
 /// page and a size the engine cannot mean is dropped (#1593).
 #[test]
 fn a_measure_or_size_a_file_cannot_mean_is_bounded() {
-    use designcraft_doc::attrs::MAX_MEASURE;
+    use pliego_doc::attrs::MAX_MEASURE;
     let doc = format!(
         r#"<w:document {W}><w:body><w:p><w:pPr>
                  <w:spacing w:before="1e300" w:after="-1e300"/><w:ind w:left="1e300" w:firstLine="-1e300"/>
@@ -333,7 +333,7 @@ fn page_break_ends_its_paragraph() {
     );
     let st = import(&docx(&document, &styles, "")).unwrap().story;
     st.check().unwrap();
-    let (pb, cb) = (designcraft_doc::PAGE_BREAK, designcraft_doc::COLUMN_BREAK);
+    let (pb, cb) = (pliego_doc::PAGE_BREAK, pliego_doc::COLUMN_BREAK);
     assert_eq!(st.text, format!("End of one{pb}\n{pb}\nTwo{cb}\n"));
     let styles: Vec<&str> = st.paras.iter().map(|p| p.style.as_str()).collect();
     assert_eq!(styles, [BASIC_PARAGRAPH, "Chapter", "Chapter", "Chapter"]);
@@ -359,10 +359,10 @@ fn lists_docx(numbering: &str, styles: &str, body: &[String]) -> Imported {
 /// The label composition gives paragraph `i`: numbered paragraphs count per level on one
 /// counter that a paragraph outside a list restarts; bullets and empty paragraphs leave it.
 fn label(st: &Story, i: usize) -> String {
-    let mut counter = designcraft_doc::ListCounter::default();
+    let mut counter = pliego_doc::ListCounter::default();
     let mut label = String::new();
     for (f, r) in st.paras.iter().zip(st.para_ranges()).take(i + 1) {
-        let mut p = designcraft_doc::ParaProps::default();
+        let mut p = pliego_doc::ParaProps::default();
         p.apply(&f.para);
         label = match p.list_type {
             _ if r.is_empty() => String::new(),
@@ -372,7 +372,7 @@ fn label(st: &Story, i: usize) -> String {
             }
             ListType::Bullets => p.bullet_label(),
             ListType::None => {
-                counter = designcraft_doc::ListCounter::default();
+                counter = pliego_doc::ListCounter::default();
                 String::new()
             }
         };
@@ -404,7 +404,7 @@ fn bullets_and_numbers_from_numbering_xml() {
     let types: Vec<Option<ListType>> = st.paras.iter().map(|p| p.para.list_type).collect();
     assert_eq!(types, [None, Some(ListType::Bullets), Some(ListType::Bullets), Some(ListType::Numbers), Some(ListType::Numbers)]);
     assert_eq!(label(&st, 1), "•\t");
-    assert_eq!(st.paras[3].para.number_style, Some(designcraft_doc::NumberStyle::Arabic));
+    assert_eq!(st.paras[3].para.number_style, Some(pliego_doc::NumberStyle::Arabic));
     assert_eq!((label(&st, 3), label(&st, 4)), ("1.\t".to_string(), "2.\t".to_string()));
     // The model's own counter already starts at 1 and carries on: no Start At needed.
     assert_eq!((st.paras[3].para.start_at, st.paras[4].para.start_at), (None, None));

@@ -1,4 +1,4 @@
-use designcraft_engine::Session;
+use pliego_engine::Session;
 use serde_json::json;
 
 fn library_failure(command: &str) {
@@ -42,7 +42,7 @@ fn book_failure(command: &str) {
     let mut chapters = Vec::new();
     for i in 0..3 {
         s.execute("file.new", &json!({})).unwrap();
-        let path = temp.path().join(format!("chapter-{i}.designcraft"));
+        let path = temp.path().join(format!("chapter-{i}.pliego"));
         s.execute("file.saveAs", &json!({"path": path})).unwrap();
         chapters.push(path);
     }

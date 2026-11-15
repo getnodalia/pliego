@@ -55,9 +55,9 @@ impl<'r> Importer<'r> {
         }
         if let Some(i) = e.get("Intent") {
             s.intent = match i {
-                "WebIntent" => designcraft_doc::Intent::Web,
-                "MobileIntent" => designcraft_doc::Intent::Mobile,
-                _ => designcraft_doc::Intent::Print,
+                "WebIntent" => pliego_doc::Intent::Web,
+                "MobileIntent" => pliego_doc::Intent::Mobile,
+                _ => pliego_doc::Intent::Print,
             };
         }
         if let Some(v) = e.boolean("CreatePrimaryTextFrame") {
@@ -115,12 +115,12 @@ impl<'r> Importer<'r> {
                 let topic = prefix.child(t);
                 for x in t.find_all("CrossReference") {
                     let target = x.get("ReferencedTopic").and_then(|r| self.index_topics.get(r)).map(|t| t.path.join(": ")).unwrap_or_default();
-                    use designcraft_doc::index::IndexRange as R;
+                    use pliego_doc::index::IndexRange as R;
                     let range = match x.get("CrossReferenceType") {
                         Some("SeeAlso") | Some("SeeAlsoHerein") => R::SeeAlso(target),
                         _ => R::See(target),
                     };
-                    self.index_xrefs.push(designcraft_doc::IndexRef { topics: topic.path.clone(), sort: topic.sort.clone(), range });
+                    self.index_xrefs.push(pliego_doc::IndexRef { topics: topic.path.clone(), sort: topic.sort.clone(), range });
                 }
                 stack.push((t, topic));
             }
@@ -131,7 +131,7 @@ impl<'r> Importer<'r> {
     /// A `TextVariable` definition. Types that aren't computed here keep their settings and show
     /// the result of their first instance.
     pub(super) fn text_variable(&mut self, e: &El) {
-        use designcraft_doc::vars::{TextVariable, Use, VAR_MAX, VarKind};
+        use pliego_doc::vars::{TextVariable, Use, VAR_MAX, VarKind};
         let ty = e.get("VariableType").unwrap_or("");
         // Cross-reference internals; export writes its own. Their page numbers are recognised
         // inside cross-reference text.
@@ -199,7 +199,7 @@ impl<'r> Importer<'r> {
     /// A `TextVariableInstance`: the variable's character, or its recorded text when the file
     /// doesn't define the variable.
     pub(super) fn text_variable_instance(&mut self, e: &El) -> String {
-        use designcraft_doc::vars::{VarKind, var_char};
+        use pliego_doc::vars::{VarKind, var_char};
         let result = e.get("ResultText").unwrap_or("");
         let found = e.get("AssociatedTextVariable").and_then(|r| self.text_var_ids.get(r)).copied();
         let var = found.and_then(|i| Some((i, self.text_vars.as_mut()?.get_mut(i)?)));
@@ -243,7 +243,7 @@ impl<'r> Importer<'r> {
         }
         match self.xref_formats.iter_mut().find(|f| f.name == name) {
             Some(f) => f.definition = def,
-            None => self.xref_formats.push(designcraft_doc::XrefFormat { name, definition: def }),
+            None => self.xref_formats.push(pliego_doc::XrefFormat { name, definition: def }),
         }
     }
 
@@ -255,16 +255,16 @@ impl<'r> Importer<'r> {
         }
         let name = e.get("ParagraphStyleName").unwrap_or("$ID/NormalParagraphStyle");
         self.settings.epub_split = if name.trim().is_empty() {
-            designcraft_doc::EpubSplit::ExportTags
+            pliego_doc::EpubSplit::ExportTags
         } else {
             let style = self.para_style_ref(name);
-            if self.styles.para(&style).is_some() { designcraft_doc::EpubSplit::Style(style) } else { designcraft_doc::EpubSplit::Off }
+            if self.styles.para(&style).is_some() { pliego_doc::EpubSplit::Style(style) } else { pliego_doc::EpubSplit::Off }
         };
     }
 
     /// Preferences › `FootnoteOption` (after styles: it names the footnote text and marker styles).
     pub(super) fn footnote_option(&mut self, e: &El) {
-        let mut o = designcraft_doc::FootnoteOptions::default();
+        let mut o = pliego_doc::FootnoteOptions::default();
         if let Some(v) = e.num("StartAt") {
             o.start_at = v.max(0.0) as u32;
         }
@@ -312,8 +312,8 @@ impl<'r> Importer<'r> {
 
     /// The table of contents: the TOC style a story is generated from (`AppliedTOCStyle`), with
     /// its entries. Styles the document doesn't have fall back to the generated TOC styles.
-    pub(super) fn toc_of(&self, top: &[El]) -> Option<designcraft_doc::Toc> {
-        use designcraft_doc::{TocEntry, TocPageNumber};
+    pub(super) fn toc_of(&self, top: &[El]) -> Option<pliego_doc::Toc> {
+        use pliego_doc::{TocEntry, TocPageNumber};
         let (ts, story) = top.iter().filter(|e| e.local() == "TOCStyle").find_map(|ts| {
             let id = ts.get("Self")?;
             let story = top.iter().find(|e| e.local() == "Story" && e.get("AppliedTOCStyle") == Some(id))?;
@@ -324,7 +324,7 @@ impl<'r> Importer<'r> {
         let known = |r: Option<&str>| r.map(|r| self.listed_para_style_ref(r)).filter(|n| self.styles.para(n).is_some());
         // Character styles the document has; [None] is stored as no style.
         let known_chars = |r: Option<&str>| {
-            r.map(|r| self.listed_char_style_ref(r)).filter(|n| n != designcraft_doc::NO_CHAR_STYLE && self.styles.char_style(n).is_some())
+            r.map(|r| self.listed_char_style_ref(r)).filter(|n| n != pliego_doc::NO_CHAR_STYLE && self.styles.char_style(n).is_some())
         };
         let entries: Vec<TocEntry> = ts
             .elements()
@@ -356,6 +356,6 @@ impl<'r> Importer<'r> {
         let title: String = ts.get("Title").unwrap_or("").chars().filter(|c| !matches!(c, '\n' | '\r' | '\u{2029}')).take(1024).collect();
         let title_style = known(ts.get("TitleStyle")).filter(|n| n != "TOC Title");
         let create_bookmarks = ts.get("CreateBookmarks").or_else(|| ts.get("CreatePdfBookmarks")) == Some("true");
-        Some(designcraft_doc::Toc { story, title, entries, page_numbers: true, title_style, create_bookmarks })
+        Some(pliego_doc::Toc { story, title, entries, page_numbers: true, title_style, create_bookmarks })
     }
 }

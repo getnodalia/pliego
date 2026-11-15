@@ -28,12 +28,12 @@ impl Fill {
     /// box: by default it's centred and reaches the box's sides (an ellipse in a non-square box);
     /// with a Gradient Swatch tool vector it's centred at the vector's start, and the vector's
     /// length, measured with the box made square, sets its size.
-    pub fn radial_ellipse(&self, b: designcraft_geom::Rect) -> (designcraft_geom::Point, f64, f64) {
+    pub fn radial_ellipse(&self, b: pliego_geom::Rect) -> (pliego_geom::Point, f64, f64) {
         let k = if b.width() > 1e-9 && b.height() > 1e-9 { b.height() / b.width() } else { 1.0 };
         match self.gradient_vector {
             Some([x0, y0, x1, y1]) => {
-                let r = designcraft_geom::Vec2::new(x1 - x0, (y1 - y0) / k).hypot();
-                (designcraft_geom::Point::new(x0, y0), r, r * k)
+                let r = pliego_geom::Vec2::new(x1 - x0, (y1 - y0) / k).hypot();
+                (pliego_geom::Point::new(x0, y0), r, r * k)
             }
             // A box with no width or height (a straight line's) has no ellipse: a circle across
             // its length.
@@ -56,18 +56,18 @@ impl Fill {
         let a = self.gradient_angle.unwrap_or(0.0).to_radians();
         let half = (b.width() * a.cos().abs() + b.height() * a.sin().abs()) / 2.0;
         let half = if half > 1e-9 { half } else { b.width().max(b.height()).max(1e-3) / 2.0 };
-        let d = designcraft_geom::Vec2::new(a.cos(), -a.sin()) * half;
+        let d = pliego_geom::Vec2::new(a.cos(), -a.sin()) * half;
         (b.center() - d, b.center() + d)
     }
 
     pub fn none() -> Self {
-        Fill { swatch: designcraft_color::swatch::NONE.into(), tint: 1.0, gradient_angle: None, gradient_vector: None, overprint: false }
+        Fill { swatch: pliego_color::swatch::NONE.into(), tint: 1.0, gradient_angle: None, gradient_vector: None, overprint: false }
     }
     pub fn swatch(name: &str) -> Self {
         Fill { swatch: name.into(), ..Fill::none() }
     }
     pub fn is_none(&self) -> bool {
-        self.swatch == designcraft_color::swatch::NONE
+        self.swatch == pliego_color::swatch::NONE
     }
 }
 
@@ -111,8 +111,8 @@ pub const MAX_DASH_ENTRIES: usize = 64;
 pub const MAX_DASH_PERIODS: f64 = 20_000.0;
 
 /// An upper bound of the length of `bp`: the length of its control polygon.
-pub fn path_length_bound(bp: &designcraft_geom::BezPath) -> f64 {
-    use designcraft_geom::PathSeg;
+pub fn path_length_bound(bp: &pliego_geom::BezPath) -> f64 {
+    use pliego_geom::PathSeg;
     bp.segments()
         .map(|s| match s {
             PathSeg::Line(l) => l.p0.distance(l.p1),
@@ -207,8 +207,8 @@ impl StrokeType {
 
     /// The filled area for types drawn as fills (stripes, wavy, hash); `None` for solid, dashed
     /// and dotted strokes (and unresolved named styles).
-    pub fn outline(&self, bp: &designcraft_geom::BezPath, weight: f64, tol: f64) -> Option<designcraft_geom::BezPath> {
-        use designcraft_geom::stroke_style as ss;
+    pub fn outline(&self, bp: &pliego_geom::BezPath, weight: f64, tol: f64) -> Option<pliego_geom::BezPath> {
+        use pliego_geom::stroke_style as ss;
         match self {
             StrokeType::Wavy => Some(ss::wavy(bp, weight, tol)),
             StrokeType::Hashed => Some(ss::hashed(bp, weight, tol)),
@@ -310,7 +310,7 @@ impl Default for Stroke {
     /// InDesign's default for drawn shapes: 1 pt black.
     fn default() -> Self {
         Stroke {
-            swatch: designcraft_color::swatch::BLACK.into(),
+            swatch: pliego_color::swatch::BLACK.into(),
             tint: 1.0,
             weight: 1.0,
             kind: StrokeType::Solid,
@@ -320,7 +320,7 @@ impl Default for Stroke {
             miter_limit: 4.0,
             start: Arrowhead::None,
             end: Arrowhead::None,
-            gap_swatch: designcraft_color::swatch::NONE.into(),
+            gap_swatch: pliego_color::swatch::NONE.into(),
             gap_tint: 1.0,
             overprint: false,
             gap_overprint: false,
@@ -349,9 +349,9 @@ impl Stroke {
     }
 
     pub fn none() -> Self {
-        Stroke { swatch: designcraft_color::swatch::NONE.into(), ..Stroke::default() }
+        Stroke { swatch: pliego_color::swatch::NONE.into(), ..Stroke::default() }
     }
     pub fn is_none(&self) -> bool {
-        self.swatch == designcraft_color::swatch::NONE || self.weight <= 0.0
+        self.swatch == pliego_color::swatch::NONE || self.weight <= 0.0
     }
 }

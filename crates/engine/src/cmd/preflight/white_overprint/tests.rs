@@ -59,7 +59,7 @@ fn a_paper_fill_set_to_overprint_is_reported() {
 fn white_colours_and_strokes_are_reported() {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
-    Arc::make_mut(&mut s.doc_mut().unwrap().doc).swatches.push(designcraft_color::swatch::Swatch::cmyk(0.0, 0.0, 0.0, 0.0));
+    Arc::make_mut(&mut s.doc_mut().unwrap().doc).swatches.push(pliego_color::swatch::Swatch::cmyk(0.0, 0.0, 0.0, 0.0));
     let a = rect(&mut s, [72.0, 72.0, 200.0, 200.0]);
     s.execute("object.fill", &json!({"ids": [a], "swatch": "[Black]", "tint": 0.0})).unwrap();
     s.execute("object.stroke", &json!({"ids": [a], "swatch": "C=0 M=0 Y=0 K=0", "weight": 4})).unwrap();
@@ -77,7 +77,7 @@ fn white_colours_and_strokes_are_reported() {
 /// set to overprint, as they usually are, is not white. A 0% tint of one lays down no ink.
 #[test]
 fn a_spot_ink_with_a_white_alternate_prints() {
-    use designcraft_color::{Color, ColorType, Swatch, SwatchValue};
+    use pliego_color::{Color, ColorType, Swatch, SwatchValue};
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let swatches = &mut Arc::make_mut(&mut s.doc_mut().unwrap().doc).swatches;
@@ -160,7 +160,7 @@ fn ruby_and_kenten_are_reported_on_the_frame_that_shows_them() {
     let b = s.execute("frame.create", &json!({"spread": 1, "rect": [72, 72, 400, 600], "content": "text"})).unwrap()["id"].as_u64().unwrap();
     s.execute("text.thread", &json!({"from": a, "to": b})).unwrap();
     let d = s.doc().unwrap().doc.clone();
-    let sid = d.item(designcraft_doc::ItemId(a)).unwrap().text_frame().unwrap().story;
+    let sid = d.item(pliego_doc::ItemId(a)).unwrap().text_frame().unwrap().story;
     let cs = s.cache.get(&d, sid, None);
     let second = cs.frames.iter().find(|f| f.frame.0 == b).unwrap().range.clone();
     assert!(second.start > 0 && second.end > second.start, "{second:?}");
@@ -200,7 +200,7 @@ fn an_anchored_object_is_reported() {
     let id = rect(&mut s, [450.0, 450.0, 474.0, 490.0]);
     paper_overprint(&mut s, id);
     let d = s.doc().unwrap().doc.clone();
-    let sid = d.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+    let sid = d.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
     s.execute("anchored.insert", &json!({"ids": [id], "story": sid.0, "pos": 7})).unwrap();
     assert_eq!(white_overprints_on(&mut s), [(PAPER_FILL.to_string(), Some(id), Some(0))]);
     s.execute("object.attributes", &json!({"ids": [r["id"]], "nonprinting": true})).unwrap();
@@ -247,10 +247,10 @@ fn a_frame_with_states_is_looked_at_as_pdf_export_draws_it() {
     paper_overprint(&mut s, a);
     let b = rect(&mut s, [300.0, 72.0, 400.0, 200.0]);
     let ms = s.execute("states.create", &json!({"ids": [a, b]})).unwrap()["id"].as_u64().unwrap();
-    let at = s.doc().unwrap().doc.item(designcraft_doc::ItemId(ms)).unwrap().children().iter().position(|c| c.id.0 == a).unwrap();
+    let at = s.doc().unwrap().doc.item(pliego_doc::ItemId(ms)).unwrap().children().iter().position(|c| c.id.0 == a).unwrap();
     s.execute("states.show", &json!({"id": ms, "index": 1 - at})).unwrap();
     assert!(white_overprints(&mut s).is_empty(), "an inactive state doesn't print");
     s.execute("flex.convert", &json!({"ids": [ms]})).unwrap();
-    assert!(!s.doc().unwrap().doc.item(designcraft_doc::ItemId(ms)).unwrap().states.is_empty(), "the frame keeps its states");
+    assert!(!s.doc().unwrap().doc.item(pliego_doc::ItemId(ms)).unwrap().states.is_empty(), "the frame keeps its states");
     assert_eq!(white_overprints(&mut s), [(PAPER_FILL.to_string(), Some(a))]);
 }

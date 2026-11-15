@@ -1,14 +1,14 @@
 //! Typing a new position for a selected placed image moves the frame and its content together.
-use designcraft_engine::Session;
-use designcraft_engine::cmd::base64_encode;
-use designcraft_geom::Rect;
-use designcraft_render::Rendered;
+use pliego_engine::Session;
+use pliego_engine::cmd::base64_encode;
+use pliego_geom::Rect;
+use pliego_render::Rendered;
 use serde_json::json;
 
 /// The frame's top-left and the placed graphic's top-left on the spread.
 fn corners(s: &Session, f: u64) -> ((f64, f64), (f64, f64)) {
     let d = &s.doc().unwrap().doc;
-    let id = designcraft_doc::ItemId(f);
+    let id = pliego_doc::ItemId(f);
     let loc = d.find(id).unwrap();
     let it = d.item(id).unwrap();
     let g = it.graphic().unwrap();

@@ -28,13 +28,13 @@
     <string>zh-Hans</string>
   </array>
   <key>CFBundleDisplayName</key>
-  <string>DesignCraft</string>
+  <string>Pliego</string>
   <key>CFBundleName</key>
-  <string>DesignCraft</string>
+  <string>Pliego</string>
   <key>CFBundleExecutable</key>
-  <string>DesignCraft</string>
+  <string>Pliego</string>
   <key>CFBundleIdentifier</key>
-  <string>ai.storyteller.designcraft</string>
+  <string>dev.danielmiguelt.Pliego</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
@@ -45,12 +45,12 @@
   <string>@SHORT_VERSION@</string>
   <key>CFBundleVersion</key>
   <string>@SHORT_VERSION@</string>
-  <key>DesignCraftVersion</key>
+  <key>PliegoVersion</key>
   <string>@VERSION@</string>
-  <key>DesignCraftBuildCommit</key>
+  <key>PliegoBuildCommit</key>
   <string>@BUILD_SHA@</string>
   <key>CFBundleIconFile</key>
-  <string>DesignCraft</string>
+  <string>Pliego</string>
   <key>LSApplicationCategoryType</key>
   <string>public.app-category.graphics-design</string>
   <!-- Must match MACOSX_DEPLOYMENT_TARGET in package.sh. Big Sur is the first release on
@@ -64,39 +64,39 @@
   <key>NSRequiresAquaSystemAppearance</key>
   <false/>
   <key>NSHumanReadableCopyright</key>
-  <string>Copyright © the DesignCraft authors. MIT OR Apache-2.0.</string>
+  <string>Copyright © the Pliego authors. MIT OR Apache-2.0.</string>
 
   <!-- The documents Finder, the Dock and Open With hand to the app (an Apple event; see
-       apps/designcraft/src/apple_events.rs). -->
+       apps/pliego/src/apple_events.rs). -->
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
       <key>CFBundleTypeName</key>
-      <string>DesignCraft Document</string>
+      <string>Pliego Document</string>
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>LSHandlerRank</key>
       <string>Owner</string>
       <key>CFBundleTypeIconFile</key>
-      <string>DesignCraft</string>
+      <string>Pliego</string>
       <key>LSItemContentTypes</key>
-      <array><string>ai.storyteller.designcraft.document</string></array>
+      <array><string>dev.danielmiguelt.Pliego.document</string></array>
     </dict>
     <dict>
       <key>CFBundleTypeName</key>
       <string>IDML Document</string>
-      <!-- Opens as a new, unsaved document; saving writes a .designcraft file. -->
+      <!-- Opens as a new, unsaved document; saving writes a .pliego file. -->
       <key>CFBundleTypeRole</key>
       <string>Viewer</string>
       <key>LSHandlerRank</key>
       <string>Alternate</string>
       <key>LSItemContentTypes</key>
-      <array><string>ai.storyteller.designcraft.idml</string></array>
+      <array><string>dev.danielmiguelt.Pliego.idml</string></array>
     </dict>
     <!-- The same, by extension. When another installed app (InDesign) exports its own type for
          .idml, files get that type instead of the one imported below, so the entry above no
          longer matches them: Finder then won't drop them on the app's icon, and Open With leaves
-         DesignCraft out. An extension entry matches whatever type the file has. It must be a
+         Pliego out. An extension entry matches whatever type the file has. It must be a
          dict of its own: where LSItemContentTypes is present, the extension keys are ignored. -->
     <dict>
       <key>CFBundleTypeName</key>
@@ -122,28 +122,28 @@
     </dict>
   </array>
 
-  <!-- DesignCraft's own format: a zip package, declared as a document rather than an archive so
+  <!-- Pliego's own format: a zip package, declared as a document rather than an archive so
        Finder doesn't offer to expand it. -->
   <key>UTExportedTypeDeclarations</key>
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>ai.storyteller.designcraft.document</string>
+      <string>dev.danielmiguelt.Pliego.document</string>
       <key>UTTypeDescription</key>
-      <string>DesignCraft Document</string>
+      <string>Pliego Document</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
         <string>public.composite-content</string>
       </array>
       <key>UTTypeIconFile</key>
-      <string>DesignCraft</string>
+      <string>Pliego</string>
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.filename-extension</key>
-        <array><string>designcraft</string></array>
+        <array><string>pliego</string></array>
         <key>public.mime-type</key>
-        <array><string>application/x-designcraft</string></array>
+        <array><string>application/x-pliego</string></array>
       </dict>
     </dict>
   </array>
@@ -152,7 +152,7 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>ai.storyteller.designcraft.idml</string>
+      <string>dev.danielmiguelt.Pliego.idml</string>
       <key>UTTypeDescription</key>
       <string>IDML Document</string>
       <key>UTTypeConformsTo</key>

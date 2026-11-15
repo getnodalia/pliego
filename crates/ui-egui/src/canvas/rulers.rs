@@ -166,8 +166,8 @@ enum RulerMenu {
 }
 
 /// The units a ruler's menu offers, in InDesign's order.
-const RULER_UNITS: [designcraft_geom::Unit; 9] = {
-    use designcraft_geom::Unit::*;
+const RULER_UNITS: [pliego_geom::Unit; 9] = {
+    use pliego_geom::Unit::*;
     [Points, Picas, Inches, InchesDecimal, Millimeters, Centimeters, Ciceros, Agates, Pixels]
 };
 
@@ -175,7 +175,7 @@ const RULER_UNITS: [designcraft_geom::Unit; 9] = {
 /// ruler, Delete All Guides on Spread. The corner's menu (`Both`) starts with Lock Zero Point
 /// (`locked` = the zero point is locked). Picking a unit sets `horizontalUnits`,
 /// `verticalUnits` or both through `document.preferences`.
-fn ruler_units_menu(app: &mut DesignApp, ui: &mut egui::Ui, which: RulerMenu, cur: Option<designcraft_geom::Unit>, locked: bool) {
+fn ruler_units_menu(app: &mut DesignApp, ui: &mut egui::Ui, which: RulerMenu, cur: Option<pliego_geom::Unit>, locked: bool) {
     let lang = app.ui.language.clone();
     let tr = |s: &str| crate::i18n::tr(&lang, s).to_string();
     if which == RulerMenu::Both {

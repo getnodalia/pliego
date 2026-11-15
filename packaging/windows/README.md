@@ -1,15 +1,15 @@
 # Windows installer UI
 
 `installer-ui.wxs` is generated from the shared `craft-installer` crate in
-[craft-libs](https://github.com/storytold/craft-libs/tree/main/crates/installer).
+[craft-libs](https://github.com/getnodalia/foundation/tree/main/crates/installer).
 `package.ps1` compiles it with this app's package source. The common UI provides progress,
 repair/remove, and explicit install/uninstall/repair success, cancellation and failure screens.
 
 Regenerate or check from a sibling craft-libs checkout:
 
 ```sh
-cargo run --locked -p craft-installer -- --write --app designcraft ../designcraft/packaging/windows/installer-ui.wxs
-cargo run --locked -p craft-installer -- --check --app designcraft ../designcraft/packaging/windows/installer-ui.wxs
+cargo run --locked -p craft-installer -- --write --app pliego ../pliego/packaging/windows/installer-ui.wxs
+cargo run --locked -p craft-installer -- --check --app pliego ../pliego/packaging/windows/installer-ui.wxs
 ```
 
 Edit the shared templates/profile and regenerate; avoid editing this snapshot by hand. The

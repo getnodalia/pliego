@@ -5,7 +5,7 @@
 
 use std::fmt::Write as _;
 
-use designcraft_fonts::{FontDb, FontFace};
+use pliego_fonts::{FontDb, FontFace};
 
 /// A positioned piece of the formula (baseline-relative: y grows downwards).
 #[derive(Clone, Debug, PartialEq)]
@@ -622,7 +622,7 @@ impl Fonts {
     }
 }
 
-const FAMILY: &str = designcraft_fonts::DEFAULT_FAMILY;
+const FAMILY: &str = pliego_fonts::DEFAULT_FAMILY;
 const FALLBACK: &str = "Source Sans 3";
 
 fn text_box(f: &Fonts, s: &str, size: f64, italic: bool) -> MBox {

@@ -19,7 +19,7 @@ fn typing_in(name: &str) -> (Harness<'static, Window>, u64) {
 /// [`typing_in`] a window of `size`, with the macOS window chrome (the native menu bar and the
 /// title bar inside the window) when `mac`.
 fn typing_on(name: &str, size: egui::Vec2, mac: bool) -> (Harness<'static, Window>, u64) {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("window.workspace", json!({ "name": name })).unwrap();
     app.native_menu = mac;
     app.integrated_titlebar = mac;
@@ -83,7 +83,7 @@ fn open_menu(h: &mut Harness<'static, Window>, family: &str, query: &str) {
 #[test]
 fn a_family_opens_to_its_styles_and_a_style_is_picked() {
     let (mut h, _) = typing();
-    let serif = designcraft_fonts::DEFAULT_FAMILY;
+    let serif = pliego_fonts::DEFAULT_FAMILY;
     open_menu(&mut h, serif, "serif 4");
     // The arrow before the name opens the family; the menu stays open.
     {
@@ -103,7 +103,7 @@ fn a_family_opens_to_its_styles_and_a_style_is_picked() {
 #[test]
 fn picked_fonts_come_first_as_recently_used() {
     let (mut h, _) = typing();
-    open_menu(&mut h, designcraft_fonts::DEFAULT_FAMILY, "source sans");
+    open_menu(&mut h, pliego_fonts::DEFAULT_FAMILY, "source sans");
     {
         let at = h.get_by_label("Source Sans 3").rect().center();
         click_at(&mut h, at);
@@ -120,7 +120,7 @@ fn picked_fonts_come_first_as_recently_used() {
 #[test]
 fn the_class_filter_and_similar_fonts_narrow_the_list() {
     let (mut h, _) = typing();
-    open_menu(&mut h, designcraft_fonts::DEFAULT_FAMILY, "");
+    open_menu(&mut h, pliego_fonts::DEFAULT_FAMILY, "");
     {
         let at = h.get_by(|n| n.label().is_some_and(|l| l.starts_with("All Classes"))).rect().center();
         click_at(&mut h, at);
@@ -131,7 +131,7 @@ fn the_class_filter_and_similar_fonts_narrow_the_list() {
     }
     settle(&mut h);
     assert!(h.query_by_label("JetBrains Mono").is_some(), "a monospaced family is listed");
-    assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "a serif isn't");
+    assert!(h.query_by_label(pliego_fonts::DEFAULT_FAMILY).is_none(), "a serif isn't");
     // Back to all classes, then fonts like the serif: it leads, other serifs follow, no sans.
     {
         let at = h.get_by(|n| n.label().is_some_and(|l| l.starts_with("Monospaced ▾"))).rect().center();
@@ -143,22 +143,22 @@ fn the_class_filter_and_similar_fonts_narrow_the_list() {
     }
     h.event(egui::Event::Text("serif 4".into()));
     h.run_steps(4);
-    let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
+    let row = h.get_by_label(pliego_fonts::DEFAULT_FAMILY).rect();
     h.hover_at(row.center());
     h.run_steps(2);
     {
         let at = h.get_by_label("Show Similar Fonts").rect().center();
         click_at(&mut h, at);
     }
-    assert!(h.query_by_label(&format!("Similar to {}", designcraft_fonts::DEFAULT_FAMILY)).is_some());
+    assert!(h.query_by_label(&format!("Similar to {}", pliego_fonts::DEFAULT_FAMILY)).is_some());
     assert!(h.query_by_label("Source Sans 3").is_none() && h.query_by_label("JetBrains Mono").is_none(), "other classes aren't similar");
-    assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_some());
+    assert!(h.query_by_label(pliego_fonts::DEFAULT_FAMILY).is_some());
 }
 
 #[test]
 fn every_font_field_reports_as_a_combo_box_showing_the_family() {
     let (h, _) = typing();
-    let shown = fields(&h, designcraft_fonts::DEFAULT_FAMILY);
+    let shown = fields(&h, pliego_fonts::DEFAULT_FAMILY);
     // The Control bar's, and the hand-drawn ones (Properties, the Contextual Task Bar).
     assert!(shown.len() >= 2, "{shown:?}");
 }
@@ -167,7 +167,7 @@ fn every_font_field_reports_as_a_combo_box_showing_the_family() {
 fn typing_in_the_font_menu_searches_and_never_reaches_the_story() {
     let (mut h, story) = typing();
     let before = story_text(&mut h, story);
-    let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+    let at = field(&h, pliego_fonts::DEFAULT_FAMILY);
     click_at(&mut h, at.center());
     assert!(h.ctx.text_edit_focused(), "the search field takes the keyboard when the menu opens");
     h.event(egui::Event::Text("source sans".into()));
@@ -175,7 +175,7 @@ fn typing_in_the_font_menu_searches_and_never_reaches_the_story() {
     assert_eq!(search(&h), "source sans");
     assert_eq!(story_text(&mut h, story), before, "the typing went to the search, not the story");
     assert!(h.query_by_label("Source Sans 3").is_some(), "a match is listed");
-    assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "families that don't match aren't");
+    assert!(h.query_by_label(pliego_fonts::DEFAULT_FAMILY).is_none(), "families that don't match aren't");
     // ↓ and Return pick the first match and close the menu.
     h.key_press(egui::Key::ArrowDown);
     h.run_steps(2);
@@ -191,18 +191,18 @@ fn typing_in_the_font_menu_searches_and_never_reaches_the_story() {
     // A click on a family picks it.
     h.event(egui::Event::Text("serif 4".into()));
     h.run_steps(4);
-    let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
+    let row = h.get_by_label(pliego_fonts::DEFAULT_FAMILY).rect();
     click_at(&mut h, row.center());
-    assert_eq!(family(&mut h), designcraft_fonts::DEFAULT_FAMILY);
+    assert_eq!(family(&mut h), pliego_fonts::DEFAULT_FAMILY);
     // Escape closes the menu and leaves the text as it was.
-    let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+    let at = field(&h, pliego_fonts::DEFAULT_FAMILY);
     click_at(&mut h, at.center());
     // A star marks a favourite and keeps the menu open.
     h.event(egui::Event::Text("serif 4".into()));
     h.run_steps(4);
-    let row = h.get_by_label(designcraft_fonts::DEFAULT_FAMILY).rect();
+    let row = h.get_by_label(pliego_fonts::DEFAULT_FAMILY).rect();
     click_at(&mut h, row.min + vec2(10.0, 12.0));
-    assert!(h.state().app.session.prefs.favorite_fonts.iter().any(|f| f == designcraft_fonts::DEFAULT_FAMILY));
+    assert!(h.state().app.session.prefs.favorite_fonts.iter().any(|f| f == pliego_fonts::DEFAULT_FAMILY));
     assert_eq!(search(&h), "serif 4", "the menu stays open");
     h.key_press(egui::Key::Escape);
     h.run_steps(4);
@@ -223,7 +223,7 @@ fn search_in_menu(h: &mut Harness<'static, Window>, at: egui::Rect, what: &str) 
     h.run_steps(4);
     assert_eq!(search(h), "SOURCE SA", "{what}: the typing went to the search");
     assert!(h.query_by_label("Source Sans 3").is_some(), "{what}: a match is listed");
-    assert!(h.query_by_label(designcraft_fonts::DEFAULT_FAMILY).is_none(), "{what}: families that don't match aren't");
+    assert!(h.query_by_label(pliego_fonts::DEFAULT_FAMILY).is_none(), "{what}: families that don't match aren't");
     h.key_press(egui::Key::ArrowDown);
     h.run_steps(2);
     h.key_press(egui::Key::Enter);
@@ -249,21 +249,21 @@ fn every_font_field_searches_in_every_workspace() {
         }
         let name = &format!("{name} {size:?} {panel:?}");
         let before = story_text(&mut h, story);
-        let count = fields(&h, designcraft_fonts::DEFAULT_FAMILY).len();
+        let count = fields(&h, pliego_fonts::DEFAULT_FAMILY).len();
         assert_eq!(count, 3, "{name}: the font fields are shown");
         for k in 0..count {
-            h.state_mut().app.run("type.char", json!({"attrs": {"fontFamily": designcraft_fonts::DEFAULT_FAMILY}})).unwrap();
+            h.state_mut().app.run("type.char", json!({"attrs": {"fontFamily": pliego_fonts::DEFAULT_FAMILY}})).unwrap();
             h.run_steps(4);
             // A short Properties group (below it, the workspace's open panel) scrolls to the field.
             let mut nodes: Vec<_> = h
-                .query_all_by(|n| n.role() == egui::accesskit::Role::ComboBox && n.value().as_deref() == Some(designcraft_fonts::DEFAULT_FAMILY))
+                .query_all_by(|n| n.role() == egui::accesskit::Role::ComboBox && n.value().as_deref() == Some(pliego_fonts::DEFAULT_FAMILY))
                 .collect();
             nodes.sort_by(|a, b| a.rect().min.y.total_cmp(&b.rect().min.y).then(a.rect().min.x.total_cmp(&b.rect().min.x)));
             if let Some(node) = nodes.get(k) {
                 node.scroll_to_me();
             }
             h.run_steps(4);
-            let at = fields(&h, designcraft_fonts::DEFAULT_FAMILY)[k];
+            let at = fields(&h, pliego_fonts::DEFAULT_FAMILY)[k];
             search_in_menu(&mut h, at, &format!("{name}, field {k}"));
             assert_eq!(family(&mut h), "Source Sans 3", "{name}, field {k}");
             assert_eq!(story_text(&mut h, story), before, "{name}, field {k}");
@@ -275,13 +275,13 @@ fn every_font_field_searches_in_every_workspace() {
 /// Character Formats and Find/Replace Font's Replace With.
 #[test]
 fn font_fields_in_panels_and_dialogs_search() {
-    let paragraph = json!({"name": designcraft_doc::BASIC_PARAGRAPH, "section": "chars"});
+    let paragraph = json!({"name": pliego_doc::BASIC_PARAGRAPH, "section": "chars"});
     for (what, panel, dialog, shown) in [
-        ("Glyphs", Some("glyphs"), None, designcraft_fonts::DEFAULT_FAMILY),
-        ("Paragraph Style Options", None, Some(("paragraphStyleOptions", paragraph)), designcraft_fonts::DEFAULT_FAMILY),
-        ("Find/Replace Font", None, Some(("findFont", json!({"toFamily": designcraft_fonts::DEFAULT_FAMILY}))), designcraft_fonts::DEFAULT_FAMILY),
+        ("Glyphs", Some("glyphs"), None, pliego_fonts::DEFAULT_FAMILY),
+        ("Paragraph Style Options", None, Some(("paragraphStyleOptions", paragraph)), pliego_fonts::DEFAULT_FAMILY),
+        ("Find/Replace Font", None, Some(("findFont", json!({"toFamily": pliego_fonts::DEFAULT_FAMILY}))), pliego_fonts::DEFAULT_FAMILY),
     ] {
-        let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let mut h = test_window::open(app, vec2(1440.0, 900.0));
         let dialog_id = dialog.as_ref().map(|(id, _)| id.to_string());
         h.state_mut().app.ui.open_panel = panel.map(str::to_string);
@@ -348,7 +348,7 @@ fn menu_regrows_after_a_search_with_no_matches(h: &mut Harness<'static, Window>,
 #[test]
 fn the_font_field_menu_grows_back_after_a_search_with_no_matches() {
     let (mut h, _) = typing();
-    let at = field(&h, designcraft_fonts::DEFAULT_FAMILY);
+    let at = field(&h, pliego_fonts::DEFAULT_FAMILY);
     menu_regrows_after_a_search_with_no_matches(&mut h, at, "Control bar");
 }
 
@@ -356,11 +356,11 @@ fn the_font_field_menu_grows_back_after_a_search_with_no_matches() {
 /// fields' combo box hosts the same menu the same way.
 #[test]
 fn the_style_dialog_font_menu_grows_back_after_a_search_with_no_matches() {
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let mut h = test_window::open(app, vec2(1440.0, 900.0));
-    let section = json!({"name": designcraft_doc::BASIC_PARAGRAPH, "section": "chars"});
+    let section = json!({"name": pliego_doc::BASIC_PARAGRAPH, "section": "chars"});
     h.state_mut().app.ui.dialog = Some(crate::dialogs::Dialog::new("paragraphStyleOptions", section));
     h.run_steps(4);
-    let at = *fields(&h, designcraft_fonts::DEFAULT_FAMILY).first().expect("the dialog's font field is shown");
+    let at = *fields(&h, pliego_fonts::DEFAULT_FAMILY).first().expect("the dialog's font field is shown");
     menu_regrows_after_a_search_with_no_matches(&mut h, at, "Paragraph Style Options");
 }

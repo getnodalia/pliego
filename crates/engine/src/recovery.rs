@@ -3,7 +3,7 @@
 //! closing a document removes its file; after a crash `file.recovery.open` reopens what was left
 //! there as unsaved documents that remember where they were saved.
 //!
-//! A recovery entry is `<uid>.designcraft` (the document) plus `<uid>.json` (`{"path", "title",
+//! A recovery entry is `<uid>.pliego` (the document) plus `<uid>.json` (`{"path", "title",
 //! "saved"}`: the original file, the title, and when it was written).
 //!
 //! Document uids start at 1 in every process, so each running app keeps its entries in a folder
@@ -32,12 +32,12 @@ use crate::{DocState, EngineError, Result, Session};
 pub fn default_dir() -> Option<PathBuf> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
     if cfg!(target_os = "macos") {
-        return home.map(|h| h.join("Library/Application Support/DesignCraft/Recovery"));
+        return home.map(|h| h.join("Library/Application Support/Pliego/Recovery"));
     }
     if cfg!(target_os = "windows") {
-        return std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("DesignCraft").join("Recovery"));
+        return std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("Pliego").join("Recovery"));
     }
-    std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).or_else(|| home.map(|h| h.join(".local/share"))).map(|d| d.join("designcraft/recovery"))
+    std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).or_else(|| home.map(|h| h.join(".local/share"))).map(|d| d.join("pliego/recovery"))
 }
 
 /// This process's folder in a recovery folder, with the lock that says it is still running.
@@ -340,7 +340,7 @@ fn access(dir: &Path, created: bool) -> Result<Access> {
 fn check_unheld(dir: &Path) -> Result<()> {
     let path = dir.join(LOCK);
     let in_use =
-        || EngineError::Other(format!("{}: another running DesignCraft keeps its recovery data here; choose another recovery folder", dir.display()));
+        || EngineError::Other(format!("{}: another running Pliego keeps its recovery data here; choose another recovery folder", dir.display()));
     match std::fs::symlink_metadata(&path) {
         Ok(metadata) if is_link_like(&metadata) || !metadata.file_type().is_file() => return Err(in_use()),
         Ok(_) => {}
@@ -410,7 +410,7 @@ fn remove_emptied(dir: &Path) {
         let name = name.to_string_lossy();
         let numbered = path.file_stem().and_then(std::ffi::OsStr::to_str).is_some_and(|s| s.parse::<u64>().is_ok());
         // Metadata whose document has gone, and a file a crash left half written.
-        if (numbered && name.ends_with(".json")) || (name.starts_with(".designcraft-recovery-") && name.ends_with(".tmp")) {
+        if (numbered && name.ends_with(".json")) || (name.starts_with(".pliego-recovery-") && name.ends_with(".tmp")) {
             left.push(path);
         } else if name != LOCK {
             return;
@@ -438,7 +438,7 @@ fn move_entries(from: &Path, own: &Path) {
 }
 
 fn files(dir: &Path, uid: u64) -> (PathBuf, PathBuf) {
-    (dir.join(format!("{uid}.designcraft")), dir.join(format!("{uid}.json")))
+    (dir.join(format!("{uid}.pliego")), dir.join(format!("{uid}.json")))
 }
 
 /// Remove a document's recovery entry (it was saved or closed). In a folder that is not this
@@ -559,8 +559,8 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
         }
         let Some(document) = s.docs.get_mut(index) else { continue };
         let (doc, meta) = files(dir, document.uid);
-        let bytes = designcraft_format::save(document.preview_stash.as_deref().unwrap_or(document.doc.as_ref()))
-            .map_err(|e| EngineError::Other(e.to_string()))?;
+        let bytes =
+            pliego_format::save(document.preview_stash.as_deref().unwrap_or(document.doc.as_ref())).map_err(|e| EngineError::Other(e.to_string()))?;
         // An entry this run did not write is never replaced, even one made since it checked.
         let replace = access.owns(document.uid);
         publish_recovery_file(&doc, &bytes, replace)?;
@@ -569,7 +569,7 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
         if !has_checkpoint(document, dir) {
             document.recovery_entries.push((dir.to_path_buf(), document.uid));
         }
-        let metadata = json!({"path": document.path, "title": document.title(), "saved": designcraft_doc::vars::now()});
+        let metadata = json!({"path": document.path, "title": document.title(), "saved": pliego_doc::vars::now()});
         publish_recovery_file(&meta, metadata.to_string().as_bytes(), replace)?;
         n += 1;
     }
@@ -579,11 +579,11 @@ pub(crate) fn save_tracked(s: &mut Session, dir: &Path) -> Result<usize> {
 /// Publish a document's recovery entry before its optional metadata.
 fn write_entry(access: &Access, dir: &Path, d: &DocState) -> Result<()> {
     let (doc, meta) = files(dir, d.uid);
-    let bytes = designcraft_format::save(d.preview_stash.as_deref().unwrap_or(d.doc.as_ref())).map_err(|e| EngineError::Other(e.to_string()))?;
+    let bytes = pliego_format::save(d.preview_stash.as_deref().unwrap_or(d.doc.as_ref())).map_err(|e| EngineError::Other(e.to_string()))?;
     let replace = access.owns(d.uid);
     publish_recovery_file(&doc, &bytes, replace)?;
     access.record(d.uid);
-    let metadata = json!({"path": d.path, "title": d.title(), "saved": designcraft_doc::vars::now()});
+    let metadata = json!({"path": d.path, "title": d.title(), "saved": pliego_doc::vars::now()});
     publish_recovery_file(&meta, metadata.to_string().as_bytes(), replace)
 }
 
@@ -637,7 +637,7 @@ fn publish_recovery_file(path: &Path, bytes: &[u8], replace: bool) -> Result<()>
     };
     validate_recovery_dir(dir)?;
     let mut tmp = tempfile::Builder::new()
-        .prefix(".designcraft-recovery-")
+        .prefix(".pliego-recovery-")
         .suffix(".tmp")
         .tempfile_in(dir)
         .map_err(|e| EngineError::Other(format!("{}: {e}", path.display())))?;
@@ -726,7 +726,7 @@ fn occupied_uids(dir: &Path) -> Result<std::collections::HashSet<u64>> {
     for entry in entries {
         let entry = entry.map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
         let path = entry.path();
-        if matches!(path.extension().and_then(std::ffi::OsStr::to_str), Some("json" | "designcraft"))
+        if matches!(path.extension().and_then(std::ffi::OsStr::to_str), Some("json" | "pliego"))
             && let Some(uid) = path.file_stem().and_then(std::ffi::OsStr::to_str).and_then(|s| s.parse().ok())
         {
             ids.insert(uid);
@@ -756,7 +756,7 @@ pub fn list(dir: &Path) -> Vec<(u64, Value)> {
     let Ok(rd) = std::fs::read_dir(dir) else { return out };
     for e in rd.flatten() {
         let p = e.path();
-        if p.extension().and_then(std::ffi::OsStr::to_str) != Some("designcraft") {
+        if p.extension().and_then(std::ffi::OsStr::to_str) != Some("pliego") {
             continue;
         }
         let Some(uid) = p.file_stem().and_then(std::ffi::OsStr::to_str).and_then(|s| s.parse::<u64>().ok()) else { continue };
@@ -834,14 +834,13 @@ fn open_with_publisher(s: &mut Session, dir: &Path, mut publish: impl FnMut(&Pat
         // clean up every snapshot this document actually owns rather than an unrelated same uid.
         if let Some(state) = s.docs.get_mut(index) {
             let (document, metadata) = files(&destination, state.uid);
-            let published = designcraft_format::save(state.doc.as_ref())
-                .map_err(|e| EngineError::Other(e.to_string()))
-                .and_then(|bytes| publish(&document, &bytes));
+            let published =
+                pliego_format::save(state.doc.as_ref()).map_err(|e| EngineError::Other(e.to_string())).and_then(|bytes| publish(&document, &bytes));
             match published {
                 Ok(()) => {
                     target.record(state.uid);
                     state.recovery_entries.push((destination.clone(), state.uid));
-                    let meta = json!({"path": state.path, "title": state.title(), "saved": designcraft_doc::vars::now()});
+                    let meta = json!({"path": state.path, "title": state.title(), "saved": pliego_doc::vars::now()});
                     match publish(&metadata, meta.to_string().as_bytes()) {
                         Ok(()) => {
                             discard(dir, uid);
@@ -871,7 +870,7 @@ mod file_tests {
         let dir = std::env::temp_dir().join(format!("dc-recovery-corrupt-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("7.designcraft"), b"not a document").unwrap();
+        std::fs::write(dir.join("7.pliego"), b"not a document").unwrap();
         std::fs::write(dir.join("7.json"), b"[1, 2]").unwrap();
         let mut s = Session::new();
         s.recovery_dir = Some(dir.clone());
@@ -884,7 +883,7 @@ mod file_tests {
     fn revert_and_save_a_copy() {
         let dir = std::env::temp_dir().join(format!("dc-revert-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        let (a, copy) = (dir.join("a.designcraft"), dir.join("copy.designcraft"));
+        let (a, copy) = (dir.join("a.pliego"), dir.join("copy.pliego"));
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         assert!(s.execute("file.revert", &json!({})).is_err(), "never saved");

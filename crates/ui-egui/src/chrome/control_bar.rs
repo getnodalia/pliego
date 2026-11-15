@@ -81,11 +81,11 @@ pub(super) fn control_page(app: &mut DesignApp, ui: &mut egui::Ui) {
     let Some(sp) = d.spread(spread) else { return };
     let Some(pg) = sp.pages.get(page).cloned() else { return };
     let n = match spread {
-        designcraft_doc::SpreadRef::Doc(si) => Some(d.first_page_of_spread(si) + page + 1),
+        pliego_doc::SpreadRef::Doc(si) => Some(d.first_page_of_spread(si) + page + 1),
         _ => None,
     };
     let resize = |app: &mut DesignApp, params| {
-        if let Some((cmd, params)) = designcraft_tools::layout::page_size_command(&d, spread, page, params) {
+        if let Some((cmd, params)) = pliego_tools::layout::page_size_command(&d, spread, page, params) {
             let _ = app.run(cmd, params);
         }
     };
@@ -389,7 +389,7 @@ fn control_character(
     ui.vertical(|ui| {
         ui.spacing_mut().item_spacing.y = 3.0;
         // The character style, then the language.
-        let cs = attrs.as_ref().and_then(|a| a["characterStyle"].as_str()).unwrap_or(designcraft_doc::NO_CHAR_STYLE).to_string();
+        let cs = attrs.as_ref().and_then(|a| a["characterStyle"].as_str()).unwrap_or(pliego_doc::NO_CHAR_STYLE).to_string();
         let names: Vec<String> = app.session.active().map(|d| d.doc.styles.character.iter().map(|c| c.name.clone()).collect()).unwrap_or_default();
         let mut pick = None;
         craft_ui::ComboBox::from_id_salt("ctl_char_style")
@@ -434,7 +434,7 @@ fn control_paragraph(
     vsep(ui);
     // Bulleted List over Numbered List, as InDesign's (a list with the default hanging indent, or,
     // pressed, none). Pressed when every selected paragraph has it, as Type › Apply Bullets shows.
-    use designcraft_doc::ListType;
+    use pliego_doc::ListType;
     let pressed = [ListType::Bullets, ListType::Numbers].map(|k| app.session.selection_has_list(k));
     let mut list = None;
     rows(ui, |ui, row| {
@@ -540,7 +540,7 @@ fn drop_cap_fields(ui: &mut egui::Ui, para: &serde_json::Value, tr: &dyn Fn(&str
     let mut drop = None;
     rows(ui, |ui, row| {
         if row == 0 {
-            let max = designcraft_compose::MAX_DROP_CAP_LINES as f64;
+            let max = pliego_compose::MAX_DROP_CAP_LINES as f64;
             if let Some(v) = icon_field(
                 ui,
                 "drop-lines",
@@ -550,7 +550,7 @@ fn drop_cap_fields(ui: &mut egui::Ui, para: &serde_json::Value, tr: &dyn Fn(&str
                 drop = Some(("dropCapLines", v));
             }
         } else {
-            let max = designcraft_compose::MAX_DROP_CAP_CHARS as f64;
+            let max = pliego_compose::MAX_DROP_CAP_CHARS as f64;
             if let Some(v) = icon_field(
                 ui,
                 "drop-chars",
@@ -610,7 +610,7 @@ fn shading_buttons(
 
 /// A swatch field of the Control panel (Shading and Border colours): the swatch's chip and name,
 /// and the document's swatches in its menu. Returns the swatch picked.
-pub(crate) fn swatch_field(ui: &mut egui::Ui, doc: &designcraft_doc::Document, cur: &str, width: f32, label: &str) -> Option<String> {
+pub(crate) fn swatch_field(ui: &mut egui::Ui, doc: &pliego_doc::Document, cur: &str, width: f32, label: &str) -> Option<String> {
     let t = Tokens::get(ui.ctx());
     let (r, resp) = ui.allocate_exact_size(vec2(width, crate::widgets::FIELD_H), Sense::click());
     let resp = resp.on_hover_text(label);

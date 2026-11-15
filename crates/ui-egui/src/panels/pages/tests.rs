@@ -10,7 +10,7 @@ use crate::test_window;
 #[test]
 fn parent_context_menu_deletes_the_clicked_id_even_with_a_shared_prefix() {
     for vertical in [true, false] {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
         app.ui.pages_panel.parents_vertical = vertical;
         let original = app.session.doc().unwrap().doc.parents[0].id;
@@ -33,7 +33,7 @@ fn parent_context_menu_deletes_the_clicked_id_even_with_a_shared_prefix() {
 
 #[test]
 fn double_clicking_a_parent_shows_that_parent() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     for prefix in ["B", "C", "D"] {
         app.run("layout.parents.new", json!({"prefix": prefix})).unwrap();
@@ -55,9 +55,9 @@ fn double_clicking_a_parent_shows_that_parent() {
     let app = &h.state().app;
     assert!(app.session.active().unwrap().editing_parents);
     let st = app.session.active().unwrap();
-    let layout = designcraft_tools::CanvasLayout::new(&st.doc, true);
+    let layout = pliego_tools::CanvasLayout::new(&st.doc, true);
     let slot = crate::canvas::current_slot(app, &layout).unwrap();
-    assert_eq!(layout.slots[slot].spread, designcraft_doc::SpreadRef::Parent(2));
+    assert_eq!(layout.slots[slot].spread, pliego_doc::SpreadRef::Parent(2));
     for name in names {
         assert_eq!(h.get_by_label(name).accesskit_node().toggled() == Some(egui::accesskit::Toggled::True), name == "C-Parent", "{name}");
     }
@@ -122,7 +122,7 @@ fn menu_harness(app: DesignApp, abs: usize, si: usize) -> Harness<'static, Desig
 
 #[test]
 fn a_page_in_a_spread_offers_delete_page_and_delete_spread() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 5, "facingPages": true})).unwrap();
     let doc = app.session.doc().unwrap().doc.clone();
     let (si, _) = doc.page_loc(2).unwrap();
@@ -138,7 +138,7 @@ fn a_page_in_a_spread_offers_delete_page_and_delete_spread() {
 /// "Don't show again" stops the question.
 #[test]
 fn deleting_a_page_with_objects_asks_first() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 5, "facingPages": true})).unwrap();
     let doc = app.session.doc().unwrap().doc.clone();
     let (si, pi) = doc.page_loc(2).unwrap();
@@ -195,7 +195,7 @@ fn deleting_a_page_with_objects_asks_first() {
 #[test]
 fn the_footer_stays_put_and_the_divider_resizes_the_parents() {
     use egui::{Event, Modifiers, PointerButton};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 60, "facingPages": true})).unwrap();
     for prefix in ["B", "C", "D", "E", "F", "G"] {
         app.run("layout.parents.new", json!({"prefix": prefix})).unwrap();
@@ -232,7 +232,7 @@ fn the_footer_stays_put_and_the_divider_resizes_the_parents() {
 /// side, pages on top.
 #[test]
 fn panel_options_size_and_arrange_the_panel() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 6, "facingPages": true})).unwrap();
     app.run("layout.parents.new", json!({"prefix": "B"})).unwrap();
     app.ui.dock_tab = "pages".into();
@@ -290,7 +290,7 @@ fn panel_options_size_and_arrange_the_panel() {
 fn large_parent_rows_in_a_short_panel_do_not_panic() {
     use egui::{Event, Modifiers, PointerButton};
     for size in [IconSize::ExtraLarge, IconSize::Jumbo] {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"pages": 4})).unwrap();
         app.ui.pages_panel.parent_size = size;
         let mut h = sized_harness(app, vec2(260.0, 160.0));
@@ -311,7 +311,7 @@ fn large_parent_rows_in_a_short_panel_do_not_panic() {
 #[test]
 fn parent_thumbnails_follow_panel_options() {
     let parent_thumb_heights = |thumbnails: bool| {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.ui.dock_tab = "pages".into();
         app.ui.pages_panel.parent_size = IconSize::Large;
@@ -329,7 +329,7 @@ fn parent_thumbnails_follow_panel_options() {
 
 #[test]
 fn parents_are_added_duplicated_and_renamed_from_the_panel() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
     let mut h = harness(app);
     // One click on New Parent adds B-Parent and selects it.
@@ -366,11 +366,11 @@ fn parents_are_added_duplicated_and_renamed_from_the_panel() {
 
 #[test]
 fn the_panel_menu_names_the_selected_parent_or_lists_the_parents() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
     let h = menu_harness(app, 0, 0);
     assert!(h.query_by_label("Parent Options").is_some(), "no parent selected: a submenu of the parents");
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
     let first = app.session.doc().unwrap().doc.parents[0].id;
     select_parent(&mut app, Some(first));
@@ -388,11 +388,11 @@ fn the_panel_menu_names_the_selected_parent_or_lists_the_parents() {
 
 #[test]
 fn alternate_layouts_show_as_columns_with_their_own_menus() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "width": 612, "height": 792})).unwrap();
     let single = sized_harness(app, vec2(600.0, 520.0));
     assert!(single.query_by_label("Layout 1").is_none(), "one layout: no column headers");
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "width": 612, "height": 792})).unwrap();
     app.run("layout.createAlternate", json!({"name": "Tablet H", "width": 1024, "height": 768})).unwrap();
     let mut h = sized_harness(app, vec2(600.0, 520.0));
@@ -421,7 +421,7 @@ fn alternate_layouts_show_as_columns_with_their_own_menus() {
 
 #[test]
 fn renaming_an_alternate_layout_keeps_its_page_sizes() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 1, "width": 600, "height": 800, "facingPages": false})).unwrap();
     app.run("layout.createAlternate", json!({"name": "Wide", "width": 900, "height": 600})).unwrap();
     app.run("layout.pages.insert", json!({"after": 1, "count": 1})).unwrap();
@@ -446,7 +446,7 @@ fn renaming_an_alternate_layout_keeps_its_page_sizes() {
 
 #[test]
 fn layout_menu_options_open_the_pages_panel_dialogs() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
     app.run("layout.parents.new", json!({"prefix": "B"})).unwrap();
     app.run("app.parentOptions", json!({})).unwrap();
@@ -473,7 +473,7 @@ fn layout_menu_options_open_the_pages_panel_dialogs() {
 
 #[test]
 fn the_panel_menu_follows_indesigns_order() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2, "facingPages": false})).unwrap();
     let mut h = menu_harness(app, 0, 0);
     assert!(h.query_by_label("Delete Spread").is_none(), "a single-page spread has no Delete Spread");
@@ -494,7 +494,7 @@ fn the_panel_menu_follows_indesigns_order() {
 #[test]
 fn a_page_dropped_on_create_new_page_is_duplicated_at_the_end() {
     // Chris Cicchino's Page Tool video (2:06): "click and drag onto my plus sign I can duplicate that".
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 252, "height": 144, "facingPages": false})).unwrap();
     app.run("layout.pages.insert", json!({"count": 1})).unwrap();
     app.run("layout.pageSize", json!({"pages": [2], "width": 612, "height": 792})).unwrap();

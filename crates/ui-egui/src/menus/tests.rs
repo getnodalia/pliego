@@ -148,7 +148,7 @@ fn submenu_paths(title: &str) -> Vec<String> {
 /// A command's menu path names the menu entries that really hold it.
 #[test]
 fn define_lists_command_path_matches_the_type_menu() {
-    let spec = designcraft_engine::command_specs().iter().find(|c| c.id == "list.define").expect("list.define is a command");
+    let spec = pliego_engine::command_specs().iter().find(|c| c.id == "list.define").expect("list.define is a command");
     assert_eq!(spec.menu[0], "Type");
     assert!(submenu_paths("Type").contains(&spec.menu.join("/")), "{:?} is not a Type submenu", spec.menu);
     assert!(menu_ids("Type").contains(&"list.define"));
@@ -157,7 +157,7 @@ fn define_lists_command_path_matches_the_type_menu() {
 /// Checks that screen-mode menu checkmarks follow the current Normal or Preview mode.
 #[test]
 fn screen_mode_shows_the_current_mode() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let mode = |app: &DesignApp, m: &str| checked(app, "view.screenMode", &json!({ "mode": m }));
     assert_eq!((mode(&app, "normal"), mode(&app, "preview")), (Some(true), Some(false)));
     app.ui.screen_mode = crate::ScreenMode::Preview;
@@ -195,7 +195,7 @@ fn walk(items: &[Item], out: &mut Vec<(String, String, Value)>) {
 /// Exercise the real dropdown, including clipping and wheel input, on a short viewport.
 #[test]
 fn oversized_edit_menu_scrolls_to_preferences() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(700.0, 260.0));
     let mut tick = 0;
@@ -286,7 +286,7 @@ fn oversized_edit_menu_scrolls_to_preferences() {
 
 #[test]
 fn formatting_affects_text_sends_swatches_to_the_text() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     for (name, color) in [("Cyan", "#00ffff"), ("Magenta", "#ff00ff")] {
         let created = app.run("swatch.create", json!({"name": name, "color": color})).unwrap();
@@ -296,10 +296,10 @@ fn formatting_affects_text_sends_swatches_to_the_text() {
     let (fid, sid) = (r["id"].as_u64().unwrap(), r["story"].as_u64().unwrap());
     app.run("selection.set", json!({"ids": [fid]})).unwrap();
     let text_fill = |app: &crate::DesignApp| {
-        let st = app.session.active().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().clone();
+        let st = app.session.active().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().clone();
         st.char_format_at(2).over.fill.clone()
     };
-    let frame_fill = |app: &crate::DesignApp| app.session.active().unwrap().doc.item(designcraft_doc::ItemId(fid)).unwrap().fill.swatch.clone();
+    let frame_fill = |app: &crate::DesignApp| app.session.active().unwrap().doc.item(pliego_doc::ItemId(fid)).unwrap().fill.swatch.clone();
     assert!(!crate::panels::colors_affect_text(&app));
     crate::panels::apply_swatch(&mut app, false, "C=100 M=0 Y=0 K=0", None).unwrap();
     assert_eq!(frame_fill(&app), "C=100 M=0 Y=0 K=0");
@@ -316,7 +316,7 @@ fn formatting_affects_text_sends_swatches_to_the_text() {
 #[test]
 fn transform_menu_items_open_their_dialogs() {
     for id in ["transform.move", "transform.scale", "transform.rotate", "transform.shear"] {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         activate(&mut app, id, &Value::Null);
         let dialog = app.ui.dialog.as_ref().map(|d| d.id.clone());
         assert_eq!(dialog.as_deref(), Some(format!("cmd:{id}").as_str()), "{id} opens its dialog");
@@ -326,18 +326,18 @@ fn transform_menu_items_open_their_dialogs() {
 #[test]
 fn pdf_export_menu_item_opens_the_dialog_or_exports() {
     // No params: the menu item opens the options dialog.
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     activate(&mut app, "app.exportPdf", &Value::Null);
     assert_eq!(app.ui.dialog.as_ref().map(|d| d.id.as_str()), Some("pdfExport"));
     // Explicit options: programmatic callers still export directly, opening no dialog.
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     activate(&mut app, "app.exportPdf", &json!({"path": "/tmp/x.pdf"}));
     assert!(app.ui.dialog.is_none());
 }
 
 #[test]
 fn snap_preferences_are_a_command() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let r = run_ui(&mut app, "view.snapPreferences", &json!({"smartSpacing": false, "zone": 8})).unwrap().unwrap();
     assert_eq!(r["smartSpacing"], false);
     assert_eq!(r["alignEdges"], true, "unnamed switches keep their value");
@@ -357,7 +357,7 @@ fn effective_shortcuts(app: &DesignApp) -> Vec<(String, String)> {
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn shortcut_edits_wait_for_the_dialog_and_the_menu_bar_owns_its_paste_chord() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     crate::shortcuts_dialog::open(&mut app, None);
     for (id, p) in [
         ("window.setShortcut", json!({"id": "app.palette", "shortcut": "F2"})),
@@ -378,7 +378,7 @@ fn shortcut_edits_wait_for_the_dialog_and_the_menu_bar_owns_its_paste_chord() {
 
 #[test]
 fn custom_shortcuts_override_defaults() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert_eq!(shortcut_of(&app, "app.preferences").as_deref(), Some("Cmd+K"));
     let r = run_ui(&mut app, "window.setShortcut", &json!({"id": "app.preferences", "shortcut": "Cmd+Alt+Shift+9"})).unwrap().unwrap();
     assert_eq!(r["shortcut"], "Cmd+Alt+Shift+9");
@@ -418,7 +418,7 @@ fn press_keys(app: &mut crate::DesignApp, ctx: &egui::Context, keys: &[(egui::Ke
 #[test]
 fn shortcuts_saved_as_a_map_by_older_versions_load_unchanged() {
     let saved = br#"{"shortcuts": {"app.preferences": "Cmd+Alt+Shift+9", "app.palette": "", "file.close": [""]}}"#;
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui = crate::UiState::from_preferences_json(saved).unwrap();
     app.sync_keymap();
     assert_eq!(shortcut_of(&app, "app.preferences").as_deref(), Some("Cmd+Alt+Shift+9"));
@@ -434,7 +434,7 @@ fn shortcuts_saved_as_a_map_by_older_versions_load_unchanged() {
 
 #[test]
 fn panel_shortcuts_open_their_panels() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let shown = |app: &crate::DesignApp, p: &str| crate::panel_docking::showing(app, p);
@@ -452,7 +452,7 @@ fn panel_shortcuts_open_their_panels() {
 
 #[test]
 fn a_reassigned_tool_key_selects_the_tool_and_the_old_key_does_not() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let none = egui::Modifiers::NONE;
@@ -470,7 +470,7 @@ fn a_reassigned_tool_key_selects_the_tool_and_the_old_key_does_not() {
 
 #[test]
 fn split_window_panes_have_their_own_views() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
@@ -506,7 +506,7 @@ fn split_window_panes_have_their_own_views() {
 #[test]
 fn split_window_dispatches_text_once_to_the_shared_document() {
     for focus_pane in [0, 1] {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let made = app.run("frame.create", json!({"rect": [36, 36, 300, 200], "content": "text"})).unwrap();
         let story = made["story"].as_u64().unwrap();
@@ -559,7 +559,7 @@ fn split_window_dispatches_text_once_to_the_shared_document() {
 
 #[test]
 fn split_window_click_focus_routes_menu_zoom_but_hover_scroll_stays_local() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("window.split", json!({"on": true})).unwrap();
     let ctx = egui::Context::default();
@@ -638,7 +638,7 @@ fn split_window_contextual_bars_have_independent_widget_ids() {
         }
     }
 
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     for rect in [[36, 36, 280, 180], [300, 36, 550, 180]] {
         app.run("frame.create", json!({"rect": rect, "content": "unassigned"})).unwrap();
@@ -670,7 +670,7 @@ fn split_window_contextual_bars_have_independent_widget_ids() {
 /// Checks the document-grid menu label, shortcut, checkmark and repeated toggle behavior.
 #[test]
 fn show_document_grid_toggles_from_the_grids_and_guides_menu() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let tree = menu_tree();
     let mut items = vec![];
     for (_, entries) in &tree {
@@ -690,7 +690,7 @@ fn show_document_grid_toggles_from_the_grids_and_guides_menu() {
 /// translated menu labels and preservation of document data when switching to Arabic.
 #[test]
 fn interface_language_switches_and_validates() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     run_ui(&mut app, "app.language", &json!({"lang": "de"})).unwrap().unwrap();
     assert_eq!(app.ui.language, "de");
     assert_eq!(checked(&app, "app.language", &json!({"lang": "de"})), Some(true));
@@ -752,7 +752,7 @@ fn interface_language_switches_and_validates() {
 /// document data or translating user-defined names.
 #[test]
 fn hungarian_language_is_selectable_persisted_and_keeps_document_data() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 4, "facingPages": true})).unwrap();
     app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "text", "text": "My words · Árvíztűrő tükörfúrógép"})).unwrap();
     let before = serde_json::to_value(&app.session.doc().unwrap().doc).unwrap();
@@ -774,7 +774,7 @@ fn hungarian_language_is_selectable_persisted_and_keeps_document_data() {
 /// document data or translating user-defined names.
 #[test]
 fn ukrainian_language_is_selectable_persisted_and_keeps_document_data() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 4, "facingPages": true})).unwrap();
     app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "text", "text": "My words · Мої слова"})).unwrap();
     let before = serde_json::to_value(&app.session.doc().unwrap().doc).unwrap();
@@ -796,7 +796,7 @@ fn ukrainian_language_is_selectable_persisted_and_keeps_document_data() {
 /// document data or translating user-defined names.
 #[test]
 fn russian_language_is_selectable_persisted_and_keeps_document_data() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 4, "facingPages": true})).unwrap();
     app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "text", "text": "My words · Мои слова"})).unwrap();
     let before = serde_json::to_value(&app.session.doc().unwrap().doc).unwrap();
@@ -816,7 +816,7 @@ fn russian_language_is_selectable_persisted_and_keeps_document_data() {
 
 #[test]
 fn every_interface_language_is_selectable_persisted_and_keeps_document_data() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 4, "facingPages": true})).unwrap();
     app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "text", "text": "My words · Мої слова · Zażółć gęślą jaźń"})).unwrap();
     let before = serde_json::to_value(&app.session.doc().unwrap().doc).unwrap();
@@ -833,7 +833,7 @@ fn every_interface_language_is_selectable_persisted_and_keeps_document_data() {
 
 #[test]
 fn arabic_dialog_and_language_switch_keep_finite_widget_geometry() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
         for _ in 0..4 {
@@ -866,7 +866,7 @@ fn arabic_dialog_and_language_switch_keep_finite_widget_geometry() {
 
 #[test]
 fn story_direction_is_checked() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [72, 72, 200, 400], "content": "text", "text": "縦", "vertical": true})).unwrap();
     assert_eq!(checked(&app, "type.storyDirection", &json!({"vertical": true})), Some(true));
@@ -875,7 +875,7 @@ fn story_direction_is_checked() {
 
 #[test]
 fn proof_setup_and_colors() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert_eq!(checked(&app, "view.proofColors", &Value::Null), Some(false));
     let r = run_ui(&mut app, "view.proofSetup", &json!({"target": "deuteranopia"})).unwrap().unwrap();
     assert_eq!(r["on"], true);
@@ -889,7 +889,7 @@ fn proof_setup_and_colors() {
 
 #[test]
 fn lock_guides_and_lock_column_guides_are_checked_in_grids_and_guides() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let view = menu_ids("View");
     assert!(view.contains(&"view.lockGuides") && view.contains(&"view.lockColumnGuides"));
@@ -911,16 +911,16 @@ fn lock_guides_and_lock_column_guides_are_checked_in_grids_and_guides() {
 fn fitting_has_indesigns_shortcuts() {
     // LYH Studio episode 6 (7:00): "Fit Content to Frame (Ctrl + Shift + Alt + C)" fills the
     // photo frames proportionally.
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
     let f = app.run("frame.create", json!({"rect": [100, 100, 300, 300]})).unwrap()["id"].as_u64().unwrap();
-    app.run("file.place", json!({"base64": designcraft_engine::cmd::base64_encode(&png), "name": "a.png", "frame": f})).unwrap();
+    app.run("file.place", json!({"base64": pliego_engine::cmd::base64_encode(&png), "name": "a.png", "frame": f})).unwrap();
     app.run("selection.set", json!({"ids": [f]})).unwrap();
     let width = |app: &crate::DesignApp| {
-        let it = app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap().clone();
-        let designcraft_doc::Content::Graphic(g) = &it.content else { panic!("graphic") };
-        it.xf.transform_rect_bbox(g.xf.transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1))).width()
+        let it = app.session.doc().unwrap().doc.item(pliego_doc::ItemId(f)).unwrap().clone();
+        let pliego_doc::Content::Graphic(g) = &it.content else { panic!("graphic") };
+        it.xf.transform_rect_bbox(g.xf.transform_rect_bbox(pliego_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1))).width()
     };
     for (id, keys) in [
         ("fit.fillFrameProportionally", "Cmd+Alt+Shift+C"),
@@ -950,7 +950,7 @@ fn fitting_has_indesigns_shortcuts() {
 
 #[test]
 fn tab_and_presentation_hide_floating_panels_too() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
@@ -1000,7 +1000,7 @@ fn tab_and_presentation_hide_floating_panels_too() {
 
 #[test]
 fn tab_hides_panels_and_documents_cycle() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert_eq!(shortcut_of(&app, "window.hidePanels").as_deref(), Some("Tab"));
     run_ui(&mut app, "window.hidePanels", &json!({})).unwrap().unwrap();
     assert_eq!(app.ui.hidden_panels, 1);
@@ -1020,7 +1020,7 @@ fn tab_hides_panels_and_documents_cycle() {
 
 #[test]
 fn rotate_spread_view() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 3})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
@@ -1040,7 +1040,7 @@ fn rotate_spread_view() {
     let d = app.session.active().unwrap().doc.clone();
     let turned: Vec<usize> = d.spreads.iter().enumerate().filter(|(_, sp)| sp.pages[0].view_rotation == 1).map(|(i, _)| i).collect();
     assert_eq!(turned.len(), 1);
-    let layout = designcraft_tools::CanvasLayout::new(&d, false);
+    let layout = pliego_tools::CanvasLayout::new(&d, false);
     let slot = layout.slots[turned[0]];
     let b = d.spreads[turned[0]].bounds();
     assert!((slot.bounds.width() - b.height()).abs() < 1e-6 && (slot.bounds.height() - b.width()).abs() < 1e-6);
@@ -1052,7 +1052,7 @@ fn rotate_spread_view() {
 
 #[test]
 fn hand_tool_hold_starts_power_zoom() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, t: f64, events: Vec<egui::Event>| {
@@ -1095,7 +1095,7 @@ fn hand_tool_hold_starts_power_zoom() {
 
 #[test]
 fn middle_drag_pans_with_any_tool() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1132,7 +1132,7 @@ fn middle_drag_pans_with_any_tool() {
 
 #[test]
 fn layout_menu_goes_through_pages_and_spreads_with_their_shortcuts() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1156,7 +1156,7 @@ fn layout_menu_goes_through_pages_and_spreads_with_their_shortcuts() {
     let page = |app: &crate::DesignApp| crate::canvas::current_page(app).unwrap();
     let spread = |app: &crate::DesignApp| {
         let st = app.session.active().unwrap();
-        crate::canvas::current_slot(app, &designcraft_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
+        crate::canvas::current_slot(app, &pliego_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
     };
     frame(&mut app, vec![]);
     frame(&mut app, vec![]);
@@ -1199,7 +1199,7 @@ fn layout_menu_goes_through_pages_and_spreads_with_their_shortcuts() {
     let zoom = app.view().unwrap().zoom;
     app.run("view.previousSpread", json!({})).unwrap();
     let st = app.session.active().unwrap();
-    let slot = designcraft_tools::layout::CanvasLayout::new(&st.doc, false).slots[1];
+    let slot = pliego_tools::layout::CanvasLayout::new(&st.doc, false).slots[1];
     let (v, r) = (*app.view().unwrap(), app.canvas_rect.unwrap());
     let centre = (v.origin.x + r.width() as f64 / 2.0 / v.zoom, v.origin.y + r.height() as f64 / 2.0 / v.zoom);
     assert!((centre.0 - slot.bounds.center().x).abs() < 1e-6 && (centre.1 - slot.bounds.center().y).abs() < 1e-6);
@@ -1208,7 +1208,7 @@ fn layout_menu_goes_through_pages_and_spreads_with_their_shortcuts() {
 
 #[test]
 fn go_back_and_go_forward_retrace_the_pages_viewed() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1276,7 +1276,7 @@ fn go_back_and_go_forward_retrace_the_pages_viewed() {
 
 #[test]
 fn go_back_waits_for_the_view_to_be_fitted() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
@@ -1303,7 +1303,7 @@ fn go_back_waits_for_the_view_to_be_fitted() {
 
 #[test]
 fn next_spread_at_the_last_spread_is_no_jump() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1344,7 +1344,7 @@ fn next_spread_at_the_last_spread_is_no_jump() {
 
 #[test]
 fn go_back_returns_to_the_view_a_jump_left_and_scrolling_adds_no_entry() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1367,7 +1367,7 @@ fn go_back_returns_to_the_view_a_jump_left_and_scrolling_adds_no_entry() {
     };
     let spread = |app: &crate::DesignApp| {
         let st = app.session.active().unwrap();
-        crate::canvas::current_slot(app, &designcraft_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
+        crate::canvas::current_slot(app, &pliego_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
     };
     let cmd = egui::Modifiers { command: true, ctrl: true, ..Default::default() };
     let alt = egui::Modifiers::ALT;
@@ -1388,7 +1388,7 @@ fn go_back_returns_to_the_view_a_jump_left_and_scrolling_adds_no_entry() {
     // centres the same place.
     let centre = |app: &crate::DesignApp| {
         let (v, r) = (app.view().unwrap(), app.canvas_rect.unwrap());
-        designcraft_geom::Point::new(v.origin.x + r.width() as f64 / 2.0 / v.zoom, v.origin.y + r.height() as f64 / 2.0 / v.zoom)
+        pliego_geom::Point::new(v.origin.x + r.width() as f64 / 2.0 / v.zoom, v.origin.y + r.height() as f64 / 2.0 / v.zoom)
     };
     let place = centre(&app);
     frame(&mut app, key(egui::Key::PageDown, alt));
@@ -1400,7 +1400,7 @@ fn go_back_returns_to_the_view_a_jump_left_and_scrolling_adds_no_entry() {
     assert!((centre(&app) - place).hypot() < 1e-6, "the same place: {:?} vs {place:?}", centre(&app));
     // Scrolling down two spreads is not a jump: Go Forward keeps its page, and Go Back skips
     // from where the scroll ended straight to the page before the first jump.
-    let slots = designcraft_tools::layout::CanvasLayout::new(&app.session.active().unwrap().doc, false).slots;
+    let slots = pliego_tools::layout::CanvasLayout::new(&app.session.active().unwrap().doc, false).slots;
     app.view_mut().unwrap().origin.y += slots[3].bounds.center().y - slots[1].bounds.center().y;
     frame(&mut app, vec![]);
     assert_eq!(spread(&app), 3);
@@ -1416,7 +1416,7 @@ fn go_back_returns_to_the_view_a_jump_left_and_scrolling_adds_no_entry() {
 
 #[test]
 fn go_back_after_presentation_returns_to_the_last_spread_presented() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1439,7 +1439,7 @@ fn go_back_after_presentation_returns_to_the_last_spread_presented() {
     };
     let spread = |app: &crate::DesignApp| {
         let st = app.session.active().unwrap();
-        crate::canvas::current_slot(app, &designcraft_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
+        crate::canvas::current_slot(app, &pliego_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
     };
     let cmd = egui::Modifiers { command: true, ctrl: true, ..Default::default() };
     frame(&mut app, vec![]);
@@ -1474,7 +1474,7 @@ fn go_back_after_presentation_returns_to_the_last_spread_presented() {
 
 #[test]
 fn presentation_shows_one_spread_and_goes_through_them_with_keys_and_clicks() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 7, "facingPages": true})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [100, 100, 300, 300]})).unwrap();
     let id = app.session.active().unwrap().selection.items[0];
@@ -1506,12 +1506,12 @@ fn presentation_shows_one_spread_and_goes_through_them_with_keys_and_clicks() {
     };
     let spread = |app: &crate::DesignApp| {
         let st = app.session.active().unwrap();
-        crate::canvas::current_slot(app, &designcraft_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
+        crate::canvas::current_slot(app, &pliego_tools::layout::CanvasLayout::new(&st.doc, false)).unwrap()
     };
     // The spread fills the screen: as wide or as tall as it, centred.
     let fills = |app: &crate::DesignApp| {
         let st = app.session.active().unwrap();
-        let b = designcraft_tools::layout::CanvasLayout::new(&st.doc, false).slots[spread(app)].bounds;
+        let b = pliego_tools::layout::CanvasLayout::new(&st.doc, false).slots[spread(app)].bounds;
         let (v, r) = (*app.view().unwrap(), app.canvas_rect.unwrap());
         let (w, h) = (b.width() * v.zoom, b.height() * v.zoom);
         let x0 = (b.x0 - v.origin.x) * v.zoom;
@@ -1577,7 +1577,7 @@ fn presentation_shows_one_spread_and_goes_through_them_with_keys_and_clicks() {
 fn tool_shortcuts_work_after_drawing_on_the_canvas() {
     // Clicking the canvas gives it keyboard focus; single-key tool shortcuts must still switch
     // tools without pressing Esc first (#1).
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1627,7 +1627,7 @@ fn tool_shortcuts_work_after_drawing_on_the_canvas() {
 #[test]
 fn escape_and_shift_w_leave_presentation_for_the_previous_mode() {
     // Presentation hides every control, so the keyboard must get out of it (#493).
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "graphic"})).unwrap();
     let ctx = egui::Context::default();
@@ -1682,7 +1682,7 @@ fn escape_and_shift_w_leave_presentation_for_the_previous_mode() {
 fn cmd_plus_zooms_the_canvas_not_the_window() {
     // A German keyboard has its own + key, so Cmd+= arrives as Plus; it must zoom the canvas like
     // Cmd+- does, not hand the key to egui's whole-window zoom.
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1757,7 +1757,7 @@ fn cmd_plus_zooms_the_canvas_not_the_window() {
 
 #[test]
 fn the_quick_apply_shortcut_opens_it_without_running_an_entry() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1795,7 +1795,7 @@ fn the_quick_apply_shortcut_opens_it_without_running_an_entry() {
 
 #[test]
 fn quick_apply_rows_are_left_aligned() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     app.ui.palette = Some(String::new());
     let ctx = egui::Context::default();
@@ -1830,7 +1830,7 @@ fn quick_apply_rows_are_left_aligned() {
 fn copy_and_paste_keys_work_for_objects_without_a_native_menu() {
     // Without a native menu the paste key arrives only as a paste event, which needs text on
     // the system clipboard (#164, #185).
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
@@ -1871,9 +1871,9 @@ fn copy_and_paste_keys_work_for_objects_without_a_native_menu() {
     frame(&mut app, vec![egui::Event::Paste(copied.clone())]);
     // Shift pastes without formatting.
     frame(&mut app, vec![egui::Event::ModifiersChanged(egui::Modifiers::SHIFT), egui::Event::Paste(copied)]);
-    let text = app.session.active().unwrap().doc.story(designcraft_doc::StoryId(story)).unwrap().text.clone();
+    let text = app.session.active().unwrap().doc.story(pliego_doc::StoryId(story)).unwrap().text.clone();
     assert!(text.starts_with("Hello") && !text.contains('\u{FFFC}'), "{text:?}");
-    assert!(text.contains(designcraft_doc::OBJECT_MARK), "{text:?}");
+    assert!(text.contains(pliego_doc::OBJECT_MARK), "{text:?}");
 }
 
 #[test]
@@ -1887,7 +1887,7 @@ fn paste_with_no_insertion_point_makes_a_text_frame_from_other_apps_text() {
         Some(d.doc.story(it.text_frame()?.story)?.text.clone())
     };
     let ctx = egui::Context::default();
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     native_frame(&mut app, &ctx, vec![], None);
     native_frame(&mut app, &ctx, vec![], None);
@@ -1914,7 +1914,7 @@ fn paste_with_no_insertion_point_makes_a_text_frame_from_other_apps_text() {
     let clip = std::rc::Rc::new(std::cell::RefCell::new(Some("Menu text".to_string())));
     let read = clip.clone();
     let services = crate::Services { clipboard_text: Some(Box::new(move || read.borrow().clone())), ..Default::default() };
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), services);
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), services);
     app.native_menu = true;
     app.session.execute("file.new", &json!({})).unwrap();
     native_frame(&mut app, &ctx, vec![], None);
@@ -1939,7 +1939,7 @@ fn paste_with_no_insertion_point_makes_a_text_frame_from_other_apps_text() {
 
 #[test]
 fn sample_scripts_run() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     for (name, text) in app.ui.scripts.clone() {
         let r = app.session.execute("script.run", &json!({"text": text}));
@@ -1949,7 +1949,7 @@ fn sample_scripts_run() {
 
 #[test]
 fn new_window_shows_a_second_view() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp| {
@@ -1978,7 +1978,7 @@ fn new_window_shows_a_second_view() {
 
 #[test]
 fn panels_float_and_dock() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let r = run_ui(&mut app, "window.floatPanel", &json!({"panel": "swatches", "x": 50, "y": 60})).unwrap().unwrap();
     assert_eq!(r["floating"], json!(["swatches"]));
     let window = &app.ui.docking.as_ref().unwrap().floating[0];
@@ -2020,7 +2020,7 @@ fn native_frame(app: &mut crate::DesignApp, ctx: &egui::Context, events: Vec<egu
 /// A document with two frames, nothing selected, and Quick Apply's search field focused
 /// holding `text`.
 fn app_with_focused_field(ctx: &egui::Context, text: &str) -> crate::DesignApp {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [36, 36, 200, 200]})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [236, 36, 400, 200]})).unwrap();
@@ -2077,7 +2077,7 @@ fn native_paste_and_copy_act_on_the_focused_field() {
 #[test]
 fn native_copy_and_paste_use_the_system_clipboard_for_canvas_text() {
     let ctx = egui::Context::default();
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     app.session.execute("frame.create", &json!({"rect": [36, 36, 200, 200], "content": "text", "text": "hello"})).unwrap();
     let story = *app.session.active().unwrap().doc.stories.keys().next().unwrap();
@@ -2145,7 +2145,7 @@ fn native_select_all_without_a_focused_field_selects_the_documents_items() {
 
 #[test]
 fn command_search_matches_labels_in_the_interface_language() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.language = "de".into();
     let label = crate::i18n::tr("de", "Group");
     let items = command_search(&app, &label.to_lowercase());
@@ -2159,7 +2159,7 @@ fn command_search_matches_labels_in_the_interface_language() {
 
 #[test]
 fn quick_apply_lists_styles_then_commands() {
-    let mut s = designcraft_engine::Session::new();
+    let mut s = pliego_engine::Session::new();
     s.execute("file.new", &json!({})).unwrap();
     s.execute("style.paragraph.create", &json!({"name": "Body Copy"})).unwrap();
     let items = quick_apply_items(&s, "body", false);
@@ -2178,7 +2178,7 @@ fn searched_ui_commands_run_without_parameters_and_keep_preferences() {
         assert!(!searched.contains(&id), "{id} is searched");
     }
     // A placed PDF: a graphic with layers.
-    let mut scratch = designcraft_engine::Session::new();
+    let mut scratch = pliego_engine::Session::new();
     scratch.execute("file.new", &json!({})).unwrap();
     let pdf = scratch.execute("file.exportPdf", &json!({})).unwrap()["base64"].clone();
     let contexts = ["nothing selected", "text insertion point", "text frame selected", "table cell", "placed PDF selected", "text selected"];
@@ -2186,7 +2186,7 @@ fn searched_ui_commands_run_without_parameters_and_keep_preferences() {
     // controls, and file dialogs that are dismissed.
     let setup = |context: usize| {
         let services = crate::Services { clipboard_text: Some(Box::new(|| None)), ..Default::default() };
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), services);
+        let mut app = DesignApp::new(pliego_engine::Session::new(), services);
         app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(None));
         app.custom_titlebar = true;
         app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(900.0, 700.0)));
@@ -2280,7 +2280,7 @@ fn searched_ui_commands_run_without_parameters_and_keep_preferences() {
 
 #[test]
 fn distribute_rows_menu_dispatches_an_undoable_edit() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let frame = app.run("frame.create", json!({"rect": [72, 72, 500, 700], "content": "text", "text": ""})).unwrap();
     app.run("text.select", json!({"story": frame["story"], "anchor": 0, "focus": 0})).unwrap();
@@ -2306,7 +2306,7 @@ fn every_menu_entry_is_a_command() {
     assert!(all.len() > 80, "{}", all.len());
     assert!(all.iter().any(|(label, id, _)| label == "Distribute Rows Evenly" && id == "table.distributeRows"));
     for (label, id, params) in &all {
-        assert!(ui_label(id).is_some() || designcraft_engine::find_command(id).is_some(), "menu entry {label}: unknown command {id}");
+        assert!(ui_label(id).is_some() || pliego_engine::find_command(id).is_some(), "menu entry {label}: unknown command {id}");
         assert!(!label.is_empty() && label != id, "menu entry {id} has no label");
         if let Some(o) = params.as_object() {
             assert!(!o.is_empty(), "{id}: empty fixed params");
@@ -2335,7 +2335,7 @@ fn context_menus_hold_commands_and_menu_bar_submenus() {
             walk(&items, &mut all);
         }
         for (label, id, _) in &all {
-            assert!(ui_label(id).is_some() || designcraft_engine::find_command(id).is_some(), "context entry {label}: unknown command {id}");
+            assert!(ui_label(id).is_some() || pliego_engine::find_command(id).is_some(), "context entry {label}: unknown command {id}");
         }
     }
 }
@@ -2378,13 +2378,13 @@ fn the_table_menu_follows_indesigns_order() {
     // Cmd+Alt+Shift+T opens the dialog, as InDesign's; the engine command has no shortcut of
     // its own. The Table panel is in Window › Type & Tables.
     assert_eq!(ui_label("app.insertTableDialog").and_then(|c| c.1), Some("Cmd+Alt+Shift+T"));
-    assert_eq!(designcraft_engine::find_command("table.insert").unwrap().shortcut, None);
+    assert_eq!(pliego_engine::find_command("table.insert").unwrap().shortcut, None);
     assert_eq!(ui_label("app.tablePanel").and_then(|c| c.1), Some("Shift+F9"));
 }
 
 #[test]
 fn convert_cell_to_graphic_cell_needs_a_table_target() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 400, 400], "content": "text", "caret": true})).unwrap();
     assert!(!menu_enabled(&app, "app.graphicCell"), "without a table");
@@ -2441,7 +2441,7 @@ fn the_type_menu_follows_indesigns_order() {
     for gone in ["Align Left", "Bold", "Increase Point Size", "Paragraph Rules…"] {
         assert!(!labels.iter().any(|l| l == gone), "{gone}");
     }
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let all = effective_shortcuts(&app);
     for (id, sc) in [
         ("type.alignLeft", "Cmd+Shift+L"),
@@ -2466,7 +2466,7 @@ fn the_type_menu_follows_indesigns_order() {
 
 #[test]
 fn type_panel_items_open_their_panels_and_the_marker_shortcut_inserts_a_page_number() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     activate(&mut app, "app.characterPanel", &Value::Null);
     assert!(crate::panel_docking::showing(&app, "character"));
@@ -2484,12 +2484,12 @@ fn type_panel_items_open_their_panels_and_the_marker_shortcut_inserts_a_page_num
     app.run("text.select", json!({"story": story, "anchor": 5, "focus": 5})).unwrap();
     activate(&mut app, "app.insertCurrentPageNumber", &Value::Null);
     let d = &app.session.doc().unwrap().doc;
-    assert_eq!(d.story(designcraft_doc::StoryId(story.as_u64().unwrap())).unwrap().text, "Page \u{e000}");
+    assert_eq!(d.story(pliego_doc::StoryId(story.as_u64().unwrap())).unwrap().text, "Page \u{e000}");
 }
 
 #[test]
 fn custom_workspaces_save_apply_and_delete() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.dock_tab = "swatches".into();
     app.ui.control_bar = true;
     run_ui(&mut app, "window.newWorkspace", &json!({"name": "Mine"})).unwrap().unwrap();
@@ -2509,7 +2509,7 @@ fn custom_workspaces_save_apply_and_delete() {
 /// Menu Customization, both on by default.
 #[test]
 fn new_workspace_captures_panel_locations_and_menu_customization() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     // The dialog offers both, checked.
     run_ui(&mut app, "window.newWorkspace", &json!({})).unwrap().unwrap();
     let d = app.ui.dialog.take().unwrap();
@@ -2542,7 +2542,7 @@ fn new_workspace_captures_panel_locations_and_menu_customization() {
 
 #[test]
 fn essentials_classic_is_the_control_panel_and_iconic_groups() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     run_ui(&mut app, "window.workspace", &json!({"name": "Essentials Classic"})).unwrap().unwrap();
     assert!(app.ui.control_bar && !app.ui.dock_expanded);
     let groups = app.ui.icon_groups.clone().unwrap();
@@ -2566,7 +2566,7 @@ fn essentials_classic_is_the_control_panel_and_iconic_groups() {
 
 #[test]
 fn typography_workspace_opens_its_panels_from_named_icon_groups_and_resets() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     run_ui(&mut app, "window.workspace", &json!({"name":"Typography"})).unwrap().unwrap();
     assert!(app.ui.control_bar);
     assert!(!app.ui.dock_expanded);
@@ -2637,7 +2637,7 @@ fn the_window_menu_is_in_indesigns_order_and_reaches_every_panel() {
 
 #[test]
 fn interactive_workspaces_show_their_panels() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.dock_expanded = false;
     run_ui(&mut app, "window.workspace", &json!({"name": "Interactive for PDF"})).unwrap().unwrap();
     assert_eq!((app.ui.dock_tab.as_str(), app.ui.dock_expanded, app.ui.open_panel.as_deref()), ("pages", true, Some("buttons")));
@@ -2649,7 +2649,7 @@ fn interactive_workspaces_show_their_panels() {
 
 #[test]
 fn hide_and_show_menu_items() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let items = all_menu_items();
     let (menu, label) = items.iter().find(|(m, _)| m == "Edit").cloned().expect("Edit items");
     let key = menu_key(&menu, &label);
@@ -2686,7 +2686,7 @@ fn drawn_type_menu(app: &mut DesignApp) -> Vec<String> {
 /// the user sets it. Hidden, they still run.
 #[test]
 fn cjk_menu_items_follow_show_cjk_features() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let ty = menu_tree().into_iter().find(|(m, _)| *m == "Type").unwrap().1;
     let cjk: Vec<String> = ty
@@ -2726,7 +2726,7 @@ fn cjk_menu_items_follow_show_cjk_features() {
 /// separator at the end of the menu.
 #[test]
 fn cjk_menu_items_have_their_own_group() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ty = menu_tree().into_iter().find(|(m, _)| *m == "Type").unwrap().1;
     let first = ty.iter().position(|i| matches!(i, Item::Cmd { id, .. } if CJK_ONLY.contains(&id.as_str()))).unwrap();
     assert!(matches!(ty[first - 1], Item::Sep), "separator before the CJK group");
@@ -2742,7 +2742,7 @@ fn cjk_menu_items_have_their_own_group() {
 /// language; changed, it is kept in prefs.json.
 #[test]
 fn show_cjk_features_is_a_persisted_preference() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.language = "ja".into();
     run_ui(&mut app, "app.preferences", &json!({})).unwrap().unwrap();
     assert_eq!(app.ui.dialog.as_ref().unwrap().fields["cjkFeatures"], true);
@@ -2755,8 +2755,8 @@ fn show_cjk_features_is_a_persisted_preference() {
     assert!(!crate::cjk_features(&app));
     // prefs.json round trip; a file from before the setting follows the language.
     let saved = serde_json::to_vec(&app.session.prefs).unwrap();
-    assert_eq!(serde_json::from_slice::<designcraft_engine::Prefs>(&saved).unwrap().cjk_features, Some(false));
-    assert_eq!(serde_json::from_str::<designcraft_engine::Prefs>(r#"{"scaleStrokes": false}"#).unwrap().cjk_features, None);
+    assert_eq!(serde_json::from_slice::<pliego_engine::Prefs>(&saved).unwrap().cjk_features, Some(false));
+    assert_eq!(serde_json::from_str::<pliego_engine::Prefs>(r#"{"scaleStrokes": false}"#).unwrap().cjk_features, None);
     assert_eq!(app.run("prefs.set", json!({"cjkFeatures": null})).unwrap()["cjkFeatures"], Value::Null);
     assert!(crate::cjk_features(&app), "follows the Japanese interface again");
 }
@@ -2900,7 +2900,7 @@ fn tiny_menu_viewport_does_not_force_the_default_scroll_height() {
 
 #[test]
 fn clipped_submenu_does_not_open_when_hovering_outside_menu() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1000.0, 900.0));
     let entries = vec![Item::Sub("Hidden submenu".into(), vec![cmd_item("app.preferences", Value::Null)])];
@@ -2975,7 +2975,7 @@ fn the_mac_window_menu_minimizes_with_cmd_m() {
     let window = native_menu_tree().into_iter().find(|(t, _)| *t == "Window").map(|(_, e)| e).unwrap_or_default();
     assert!(matches!(window.first(), Some(Item::Cmd { id, shortcut: Some("Cmd+M"), .. }) if id == "window.minimize"), "{:?}", window.first());
     assert!(matches!(window.get(1), Some(Item::Sep)));
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert!(run_ui(&mut app, "window.minimize", &Value::Null).is_some_and(|r| r.is_err()), "no host window controls");
     app.native_menu = true;
     assert!(menu_enabled(&app, "window.minimize") && !menu_enabled(&app, "window.maximize"));
@@ -3034,7 +3034,7 @@ fn web_save_marks_the_document_saved_only_after_the_download_starts() {
         download: Some(Box::new(move |_: &str, _: &[u8]| if f.get() { Err("blocked".into()) } else { Ok(()) })),
         ..Default::default()
     };
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), services);
+    let mut app = DesignApp::new(pliego_engine::Session::new(), services);
     app.run("file.new", json!({"title": title})).unwrap();
     app.run("frame.create", json!({"rect": [36, 36, 300, 200]})).unwrap();
     assert!(app.session.active().unwrap().is_dirty());
@@ -3079,10 +3079,10 @@ fn open_recent_lists_the_files_then_clear() {
     let Some(Item::Sub(name, children)) = file.get(2) else { panic!("Open Recent after Open…: {:?}", file.get(2)) };
     assert_eq!(format!("File/{name}"), OPEN_RECENT);
     assert!(matches!(children.as_slice(), [Item::Cmd { id, .. }] if id == "file.clearRecent"));
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert!(recent_items(&app).is_empty());
     assert!(!menu_enabled(&app, "file.clearRecent"));
-    app.session.prefs.note_recent_file("/work/a.designcraft");
+    app.session.prefs.note_recent_file("/work/a.pliego");
     app.session.prefs.note_recent_file("/work/b.idml");
     let items = recent_items(&app);
     let labels: Vec<_> = items
@@ -3093,7 +3093,7 @@ fn open_recent_lists_the_files_then_clear() {
             Item::Sub(..) => "sub".into(),
         })
         .collect();
-    assert_eq!(labels, ["b.idml app.openRecent {\"index\":0}", "a.designcraft app.openRecent {\"index\":1}", "-"]);
+    assert_eq!(labels, ["b.idml app.openRecent {\"index\":0}", "a.pliego app.openRecent {\"index\":1}", "-"]);
     assert!(menu_enabled(&app, "file.clearRecent"));
     assert!(menu_enabled(&app, "app.openRecent"));
 }
@@ -3101,26 +3101,26 @@ fn open_recent_lists_the_files_then_clear() {
 /// A recent file that is gone says so in an alert (and the start screen still lists it).
 #[test]
 fn open_recent_of_a_missing_file_alerts_and_the_start_screen_lists_recent_files() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert!(!start_screen_texts(&mut app).iter().any(|t| t == "Recent files"), "no section without recent files");
-    app.session.prefs.note_recent_file("/nonexistent/dc-recent/gone.designcraft");
+    app.session.prefs.note_recent_file("/nonexistent/dc-recent/gone.pliego");
     assert!(app.run("app.openRecent", json!({"index": 0})).is_err());
     let d = app.ui.dialog.take().expect("an alert");
     assert_eq!(d.fields["title"], "Can't Open the File");
-    assert_eq!(d.fields["file"], "gone.designcraft");
+    assert_eq!(d.fields["file"], "gone.pliego");
     assert!(d.fields["message"].as_str().unwrap().contains("can't be found"));
     assert!(app.run("app.openRecent", json!({"index": 9})).is_err(), "out of range: an error, not a panic");
     app.ui.dialog = None;
     let texts = start_screen_texts(&mut app);
     assert!(texts.iter().any(|t| t == "Recent files"), "{texts:?}");
-    assert!(texts.iter().any(|t| t == "gone"), "the card names it without `.designcraft`: {texts:?}");
+    assert!(texts.iter().any(|t| t == "gone"), "the card names it without `.pliego`: {texts:?}");
 }
 
 /// On a short window (1366 x 768 laptops) the start screen is taller than the window; the part
 /// below the fold has to be reachable by scrolling instead of being cut off.
 #[test]
 fn start_screen_scrolls_when_the_window_is_too_short() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx, "");
     let size = egui::vec2(1366.0, 300.0);
@@ -3161,7 +3161,7 @@ fn start_screen_scrolls_when_the_window_is_too_short() {
 // Regression test for #329: on the start screen (no document) the Help menu's links were greyed out.
 #[test]
 fn help_links_are_enabled_without_a_document() {
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert!(app.session.active().is_none());
     let ids: Vec<&str> = UI_COMMANDS.iter().map(|c| c.0).filter(|id| id.starts_with("help.")).collect();
     assert!(ids.contains(&"help.discord") && ids.contains(&"help.github"), "{ids:?}");
@@ -3174,13 +3174,13 @@ fn help_links_are_enabled_without_a_document() {
 // Regression test for #248: the start screen offered no A6 sheet (it listed only the first ten presets).
 #[test]
 fn start_screen_offers_every_print_preset_including_a6() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let texts = start_screen_texts(&mut app);
-    for p in designcraft_doc::build::PRESETS.iter().filter(|p| p.intent == designcraft_doc::Intent::Print) {
+    for p in pliego_doc::build::PRESETS.iter().filter(|p| p.intent == pliego_doc::Intent::Print) {
         assert!(texts.iter().any(|t| t == p.name), "start screen lacks the {} card: {texts:?}", p.name);
     }
     assert!(texts.iter().any(|t| t == "A6"), "{texts:?}");
-    let a6 = designcraft_doc::build::PRESETS.iter().find(|p| p.name == "A6").unwrap();
+    let a6 = pliego_doc::build::PRESETS.iter().find(|p| p.name == "A6").unwrap();
     assert!((a6.width - 105.0 * 72.0 / 25.4).abs() < 0.01 && (a6.height - 148.0 * 72.0 / 25.4).abs() < 0.01, "{a6:?}");
     let page = crate::panels::properties::PAGE_PRESETS.iter().find(|p| p.0 == "A6").expect("Properties page-size list has A6");
     assert!((page.1 - a6.width).abs() < 0.01 && (page.2 - a6.height).abs() < 0.01, "{page:?} vs {a6:?}");
@@ -3189,7 +3189,7 @@ fn start_screen_offers_every_print_preset_including_a6() {
 // Regression test for #249: a menu row only reacted over its text, not across the whole row.
 #[test]
 fn menu_rows_are_selectable_across_the_full_width() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let ctx = egui::Context::default();
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(600.0, 400.0));
     let entries = vec![cmd_item("app.preferences", Value::Null)];
@@ -3244,7 +3244,7 @@ fn searched_ui_commands_are_available_and_named_once() {
         .iter()
         .filter(|c| docking(c.0))
         .filter_map(|c| {
-            let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+            let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
             app.run(c.0, json!({})).err().map(|e| (c.0, e))
         })
         .collect();
@@ -3265,7 +3265,7 @@ fn forwarded_keys_run_shortcuts() {
         [true, false].map(|pressed| Event::Key { key, physical_key: Some(key), pressed, repeat: false, modifiers: Modifiers::NONE }).to_vec()
     }
     let ctx = egui::Context::default();
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let frame = app.session.execute("frame.create", &json!({"rect": [36, 36, 200, 200]})).unwrap();
     app.session.execute("selection.set", &json!({"ids": [frame["id"]]})).unwrap();
@@ -3275,7 +3275,7 @@ fn forwarded_keys_run_shortcuts() {
     assert_eq!(app.session.tool_id(), "selection", "Escape goes back to the Selection tool");
     app.session.execute("selection.set", &json!({"ids": [frame["id"]]})).unwrap();
     forwarded_shortcuts(&mut app, &ctx, press(Key::Delete), Modifiers::NONE);
-    assert!(app.session.active().unwrap().doc.item(designcraft_doc::ItemId(frame["id"].as_u64().unwrap())).is_none(), "Delete clears the selection");
+    assert!(app.session.active().unwrap().doc.item(pliego_doc::ItemId(frame["id"].as_u64().unwrap())).is_none(), "Delete clears the selection");
 }
 
 #[test]
@@ -3294,7 +3294,7 @@ fn file_menu_ends_with_quit_but_the_macos_menu_bar_leaves_it_to_the_app_menu() {
 
 #[test]
 fn zoom_commands_zoom_around_the_pointer_when_it_is_over_the_canvas() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut crate::DesignApp, events: Vec<egui::Event>| {
