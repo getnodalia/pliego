@@ -11,6 +11,7 @@ use table::TABLE;
 mod ar;
 mod cs;
 mod de;
+mod es;
 mod fr;
 mod hu;
 mod it;
@@ -95,6 +96,7 @@ fn lookup<'a>(lang: &str, s: &'a str) -> &'a str {
     static RUSSIAN: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     static CZECH: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     static FRENCH: OnceLock<HashMap<&str, &str>> = OnceLock::new();
+    static SPANISH: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     static GEORGIAN: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     static HUNGARIAN: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     if lang == "hu" {
@@ -119,6 +121,12 @@ fn lookup<'a>(lang: &str, s: &'a str) -> &'a str {
     // `fr::TABLE` holds the strings the shared table has no row for.
     if lang == "fr"
         && let Some(text) = FRENCH.get_or_init(|| fr::TABLE.iter().copied().collect()).get(s).copied().filter(|text| !text.trim().is_empty())
+    {
+        return text;
+    }
+    // `es::TABLE` holds the strings the shared table has no row for.
+    if lang == "es"
+        && let Some(text) = SPANISH.get_or_init(|| es::TABLE.iter().copied().collect()).get(s).copied().filter(|text| !text.trim().is_empty())
     {
         return text;
     }

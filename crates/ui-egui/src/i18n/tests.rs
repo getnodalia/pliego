@@ -6,6 +6,7 @@ const LANGUAGE_TABLES: &[(&str, &[(&str, &str)])] = &[
     ("ar", ar::TABLE),
     ("cs", cs::TABLE),
     ("de", de::TABLE),
+    ("es", es::TABLE),
     ("fr", fr::TABLE),
     ("hu", hu::TABLE),
     ("it", it::TABLE),
