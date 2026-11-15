@@ -7,7 +7,7 @@ use egui::{Event, Modifiers, PointerButton, Pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable};
 
 fn app() -> DesignApp {
-    DesignApp::new(designcraft_engine::Session::new(), Default::default())
+    DesignApp::new(pliego_engine::Session::new(), Default::default())
 }
 
 #[test]
@@ -151,7 +151,7 @@ fn capture_custom_panel_docking_visual_fixtures() {
                 harness
                     .render()
                     .unwrap()
-                    .save(directory.join(format!("designcraft-shared-docking-{}-{language}-{width}-{scale}x.png", theme.id())))
+                    .save(directory.join(format!("pliego-shared-docking-{}-{language}-{width}-{scale}x.png", theme.id())))
                     .unwrap();
                 if language == "ar" {
                     let tab = tab_id("swatches");
@@ -172,7 +172,7 @@ fn capture_custom_panel_docking_visual_fixtures() {
                     for action in ["Float Panel", "Group with", "Close Panel"] {
                         assert!(harness.query_all_by_label(crate::i18n::tr("ar", action)).count() >= 1, "the menu lists {action}");
                     }
-                    harness.render().unwrap().save(directory.join(format!("designcraft-dock-context-{}-ar.png", theme.id()))).unwrap();
+                    harness.render().unwrap().save(directory.join(format!("pliego-dock-context-{}-ar.png", theme.id()))).unwrap();
                 }
             }
         }
@@ -276,18 +276,18 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
         h.run_steps(1);
     }
     h.run_steps(2);
-    assert_eq!(h.state().session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().stroke.join, designcraft_doc::Join::Bevel);
+    assert_eq!(h.state().session.active().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().stroke.join, pliego_doc::Join::Bevel);
     if let Some(directory) = &directory {
         std::fs::create_dir_all(directory).unwrap();
-        h.render().unwrap().save(directory.join("designcraft-populated-stroke-floating.png")).unwrap();
+        h.render().unwrap().save(directory.join("pliego-populated-stroke-floating.png")).unwrap();
     }
     let from = h.ctx.read_response(tab_id("stroke")).unwrap().rect.center();
     let to = h.ctx.read_response(tab_id("properties")).unwrap().rect.center();
     drag(&mut h, from, to);
     assert!(h.state().ui.docking.as_ref().unwrap().floating.is_empty());
-    assert_eq!(h.state().session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().stroke.join, designcraft_doc::Join::Bevel);
+    assert_eq!(h.state().session.active().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().stroke.join, pliego_doc::Join::Bevel);
     if let Some(directory) = &directory {
-        h.render().unwrap().save(directory.join("designcraft-populated-stroke-redocked.png")).unwrap();
+        h.render().unwrap().save(directory.join("pliego-populated-stroke-redocked.png")).unwrap();
     }
 }
 
@@ -982,7 +982,7 @@ fn arrow_after_dragging_a_dock_divider_nudges_the_selection_not_the_dock() {
     let divider = hits(&h).into_iter().find_map(|(hit, rect)| (hit == column).then_some(rect)).expect("the main dock column's divider");
     drag(&mut h, divider.center(), divider.center() - vec2(40.0, 0.0));
     let resized = h.state().ui.docking.clone().expect("the drag customizes the layout");
-    let bounds = |h: &Harness<'static, DesignApp>| h.state().session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+    let bounds = |h: &Harness<'static, DesignApp>| h.state().session.active().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
     let before = bounds(&h);
     h.event(Event::Key { key: egui::Key::ArrowRight, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(1);
@@ -996,7 +996,7 @@ fn hits(h: &Harness<'static, DesignApp>) -> Vec<(craft_ui::docking::Hit<String>,
     craft_ui::docking::DockArea::<String>::hit_rects(&h.ctx, area_id())
 }
 
-/// `window.panel.*` ids and DesignCraft's aliases go through craft-ui's `DockCommand`.
+/// `window.panel.*` ids and Pliego's aliases go through craft-ui's `DockCommand`.
 #[test]
 fn shared_panel_commands_float_dock_and_reject_atomically() {
     let mut app = app();
@@ -1159,7 +1159,7 @@ fn a_canvas_click_leaves_an_open_flyout_open() {
     assert!(!saved.dock_auto_collapse, "the older key is not read");
 }
 
-/// Iconic columns paint DesignCraft's own panel icons, in the colour craft-ui passes; a panel
+/// Iconic columns paint Pliego's own panel icons, in the colour craft-ui passes; a panel
 /// without an icon paints nothing.
 #[test]
 fn panel_icons_are_painted_in_code() {
@@ -1181,7 +1181,7 @@ fn panel_icons_are_painted_in_code() {
     assert_eq!(paint(CANVAS), (false, 0));
 }
 
-/// Every docking label in DesignCraft's wording is translated in the shared catalog's languages.
+/// Every docking label in Pliego's wording is translated in the shared catalog's languages.
 #[test]
 fn docking_labels_are_translated() {
     for language in ["de", "fr", "es", "ja", "zh"] {
@@ -1191,7 +1191,7 @@ fn docking_labels_are_translated() {
     }
 }
 
-/// With DesignCraft's title bar under macOS's transparent one, a floating window saved in the
+/// With Pliego's title bar under macOS's transparent one, a floating window saved in the
 /// title-bar strip is drawn below it, where its title bar can't move the app window.
 #[test]
 fn a_floating_window_saved_in_the_title_bar_strip_is_drawn_below_it() {
@@ -1277,7 +1277,7 @@ fn a_document_dropped_on_a_floating_panel_window_opens() {
         }
     }
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("dropped.designcraft");
+    let path = dir.path().join("dropped.pliego");
     let mut saved = app();
     saved.run("file.new", json!({})).unwrap();
     saved.run("file.save", json!({"path": path})).unwrap();

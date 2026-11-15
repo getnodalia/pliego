@@ -29,7 +29,7 @@ fn drop_stale_ime_events(app: &mut DesignApp) {
 }
 
 /// One input method event for the text caret: marked text previews in the story, a commit types.
-pub(super) fn ime_event(app: &mut DesignApp, ctx: &egui::Context, e: egui::ImeEvent, vi: designcraft_engine::ViewInfo) {
+pub(super) fn ime_event(app: &mut DesignApp, ctx: &egui::Context, e: egui::ImeEvent, vi: pliego_engine::ViewInfo) {
     let r = match e {
         egui::ImeEvent::Preedit { text, active_range_chars } => {
             if text.is_empty() {
@@ -87,15 +87,15 @@ struct ImeBefore {
     snapshot: IMESurroundingText,
     document_uid: u64,
     document_epoch: u64,
-    story: designcraft_doc::StoryId,
-    cell: Option<designcraft_doc::CellAddr>,
+    story: pliego_doc::StoryId,
+    cell: Option<pliego_doc::CellAddr>,
     anchor: usize,
     focus: usize,
 }
 
 /// Build a stable owner from the document uid, story and cell identity, plus the document epoch.
 fn ime_target(context: &ImeTextContext<'_>) -> ImeTarget {
-    let owner = egui::Id::unique(("designcraft-ime", context.document_uid, context.story.0, context.cell.map(|c| (c.table, c.row, c.col))));
+    let owner = egui::Id::unique(("pliego-ime", context.document_uid, context.story.0, context.cell.map(|c| (c.table, c.row, c.col))));
     ImeTarget::new(owner, context.document_epoch)
 }
 
@@ -118,7 +118,7 @@ fn capture_ime_before(app: &DesignApp) -> Option<ImeBefore> {
 }
 
 /// Fold a pending delete-surrounding plus commit into one engine operation, clear marked/target state and record the change.
-fn ime_commit(app: &mut DesignApp, ctx: &egui::Context, text: &str, vi: designcraft_engine::ViewInfo) -> Result<(), String> {
+fn ime_commit(app: &mut DesignApp, ctx: &egui::Context, text: &str, vi: pliego_engine::ViewInfo) -> Result<(), String> {
     let pending = app.pending_ime_delete.take();
     let before = capture_ime_before(app);
     let r = if let Some((before_bytes, after_bytes, bytes)) = pending {

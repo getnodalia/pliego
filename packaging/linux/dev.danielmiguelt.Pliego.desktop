@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Pliego
+GenericName=Page Layout
+Comment=Lay out magazines, books and print documents
+Exec=pliego %F
+TryExec=pliego
+Icon=dev.danielmiguelt.Pliego
+Terminal=false
+StartupNotify=true
+StartupWMClass=dev.danielmiguelt.Pliego
+Categories=Graphics;Publishing;
+MimeType=application/x-pliego;application/vnd.adobe.indesign-idml-package;
+Keywords=layout;page;desktop publishing;dtp;magazine;book;indesign;idml;typesetting;

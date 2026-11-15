@@ -13,13 +13,13 @@ fn tab_list_repaired(read: &[TabStop], sanitized: &[TabStop]) -> bool {
         sanitized.iter().any(|o| {
             o.position == t.position
                 && o.leader == t.leader
-                && (o.align_on == t.align_on || (t.align_on.is_empty() && o.align == designcraft_doc::TabAlign::Char))
+                && (o.align_on == t.align_on || (t.align_on.is_empty() && o.align == pliego_doc::TabAlign::Char))
         })
     };
     read.len() != sanitized.len() || !read.iter().all(kept)
 }
 
-pub(super) fn mojikumi_row(e: &El) -> Result<designcraft_doc::cjk::MojikumiAki> {
+pub(super) fn mojikumi_row(e: &El) -> Result<pliego_doc::cjk::MojikumiAki> {
     let number = |key: &str| -> Result<f64> {
         let Some(raw) = e.prop(key) else {
             return Ok(0.0);
@@ -40,7 +40,7 @@ pub(super) fn mojikumi_row(e: &El) -> Result<designcraft_doc::cjk::MojikumiAki> 
             _ => Err(IdmlError::Invalid(format!("Mojikumi row has invalid {key}"))),
         }
     };
-    let row = designcraft_doc::cjk::MojikumiAki {
+    let row = pliego_doc::cjk::MojikumiAki {
         target_class: integer("TargetMojikumiClass")?,
         side_class: integer("SideMojikumiClass")?,
         after: boolean("SideIsAfterTarget")?,
@@ -176,9 +176,9 @@ impl<'r> Importer<'r> {
         let frac = |k: &str| e.num(k).map(|v| v / 100.0);
         a.align = e.prop("Justification").and_then(|v| names::align_in(v.trim()));
         a.kinsoku_hang = e.prop("KinsokuHangType").and_then(|v| match v.as_str() {
-            "None" => Some(designcraft_doc::cjk::KinsokuHang::None),
-            "KinsokuHangRegular" => Some(designcraft_doc::cjk::KinsokuHang::Regular),
-            "KinsokuHangForce" => Some(designcraft_doc::cjk::KinsokuHang::Force),
+            "None" => Some(pliego_doc::cjk::KinsokuHang::None),
+            "KinsokuHangRegular" => Some(pliego_doc::cjk::KinsokuHang::Regular),
+            "KinsokuHangForce" => Some(pliego_doc::cjk::KinsokuHang::Force),
             _ => None,
         });
         a.mojikumi = e.prop("Mojikumi").map(|name| self.mojikumi_names.get(&name).cloned().unwrap_or_else(|| unescape_id(&name)));
@@ -192,12 +192,12 @@ impl<'r> Importer<'r> {
                 a.kinsoku = Some(Some(Default::default()));
             } else if let Some(set) = self.kinsoku.get(&k) {
                 a.kinsoku = Some(Some(set.clone()));
-            } else if let Some(set) = designcraft_doc::cjk::Kinsoku::named(&k) {
+            } else if let Some(set) = pliego_doc::cjk::Kinsoku::named(&k) {
                 a.kinsoku = Some(Some(set));
             }
         }
         a.direction = e.prop("ParagraphDirection").map(|v| {
-            if v.trim() == "RightToLeftDirection" { designcraft_doc::TextDirection::RightToLeft } else { designcraft_doc::TextDirection::LeftToRight }
+            if v.trim() == "RightToLeftDirection" { pliego_doc::TextDirection::RightToLeft } else { pliego_doc::TextDirection::LeftToRight }
         });
         a.kashidas = e.prop("Kashidas").and_then(|s| crate::arabic::kashidas_in(&s));
         a.arabic_justification = e.prop("ParagraphJustification");
@@ -340,7 +340,7 @@ impl<'r> Importer<'r> {
         a.shading_nonprinting = e.boolean("ParagraphShadingSuppressPrinting");
         a.span_space_before = e.num("SpanColumnMinSpaceBefore").filter(|v| v.is_finite());
         a.span_space_after = e.num("SpanColumnMinSpaceAfter").filter(|v| v.is_finite());
-        a.list_level = e.num("NumberingLevel").filter(|v| v.is_finite()).map(|v| v.round().clamp(1.0, designcraft_doc::LIST_LEVELS as f64) as u32);
+        a.list_level = e.num("NumberingLevel").filter(|v| v.is_finite()).map(|v| v.round().clamp(1.0, pliego_doc::LIST_LEVELS as f64) as u32);
         if let Some(c) = e.prop("BulletsCharacterStyle") {
             a.bullet_char_style = Some(self.char_style_ref(c.trim()));
         }
@@ -368,12 +368,12 @@ impl<'r> Importer<'r> {
 
     fn read_nested_styles(&self, e: &El, attrs: &mut ParaAttrs) {
         if let Some(list) = e.prop_el("AllNestedStyles") {
-            let styles: Vec<designcraft_doc::NestedStyle> = list
+            let styles: Vec<pliego_doc::NestedStyle> = list
                 .find_all("ListItem")
                 .map(|item| {
                     let text = |key: &str| item.find(key).map(|element| element.text_content()).unwrap_or_default();
                     let delimiter = item.find("Delimiter");
-                    designcraft_doc::NestedStyle {
+                    pliego_doc::NestedStyle {
                         style: self.listed_char_style_ref(&text("AppliedCharacterStyle")),
                         through: text("Inclusive").trim() != "false",
                         count: text("Repetition").trim().parse().unwrap_or(1),
@@ -391,7 +391,7 @@ impl<'r> Importer<'r> {
                 .find_all("ListItem")
                 .map(|item| {
                     let text = |key: &str| item.find(key).map(|element| element.text_content()).unwrap_or_default();
-                    designcraft_doc::NestedLineStyle {
+                    pliego_doc::NestedLineStyle {
                         style: self.listed_char_style_ref(&text("AppliedCharacterStyle")),
                         lines: text("LineCount").trim().parse().unwrap_or(1),
                     }
@@ -404,7 +404,7 @@ impl<'r> Importer<'r> {
                 .find_all("ListItem")
                 .map(|item| {
                     let text = |key: &str| item.find(key).map(|element| element.text_content()).unwrap_or_default();
-                    designcraft_doc::GrepStyle { style: self.listed_char_style_ref(&text("AppliedCharacterStyle")), pattern: text("GrepExpression") }
+                    pliego_doc::GrepStyle { style: self.listed_char_style_ref(&text("AppliedCharacterStyle")), pattern: text("GrepExpression") }
                 })
                 .collect();
             attrs.grep_styles = Some(styles);
@@ -444,8 +444,8 @@ pub(super) fn ace_char(v: &str) -> Option<char> {
 }
 
 /// `HL Composer` and `HL Single`, their World-Ready (`… Optyca`) and Japanese (`… J`) forms.
-fn composer_in(name: &str) -> designcraft_doc::Composer {
-    use designcraft_doc::Composer as C;
+fn composer_in(name: &str) -> pliego_doc::Composer {
+    use pliego_doc::Composer as C;
     let name = name.trim().trim_start_matches("$ID/");
     match (name.contains("Single"), name.ends_with(" J") || name.contains("Japanese")) {
         (false, false) => C::Paragraph,
@@ -556,20 +556,20 @@ impl Importer<'_> {
 fn read_otf_features(e: &El, a: &mut CharAttrs) {
     let mut otf_list: Vec<String> = Vec::new();
     let mut any = false;
-    for (tag, _, attr) in designcraft_doc::otf::TOGGLES {
+    for (tag, _, attr) in pliego_doc::otf::TOGGLES {
         if let Some(on) = e.boolean(attr) {
-            designcraft_doc::otf::set(&mut otf_list, tag, on);
+            pliego_doc::otf::set(&mut otf_list, tag, on);
             any = true;
         }
     }
     if let Some(fig) = e.prop("OTFFigureStyle")
-        && let Some((id, ..)) = designcraft_doc::otf::FIGURES.iter().find(|f| f.3 == fig.trim())
+        && let Some((id, ..)) = pliego_doc::otf::FIGURES.iter().find(|f| f.3 == fig.trim())
     {
-        designcraft_doc::otf::set_figures(&mut otf_list, id);
+        pliego_doc::otf::set_figures(&mut otf_list, id);
         any = true;
     }
     if let Some(m) = e.num("OTFStylisticSets") {
-        designcraft_doc::otf::set_stylistic_sets(&mut otf_list, m.max(0.0) as u32);
+        pliego_doc::otf::set_stylistic_sets(&mut otf_list, m.max(0.0) as u32);
         any = true;
     }
     if any {

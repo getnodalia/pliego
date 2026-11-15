@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate every app icon from assets/app-icon/designcraft.svg.
+# Regenerate every app icon from assets/app-icon/pliego.svg.
 #
 # Needs: resvg (brew install resvg / cargo install resvg). On macOS, iconutil also writes the
 # .icns. The outputs are committed, so builds and packaging never need these tools.
@@ -8,8 +8,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="$ROOT/assets/app-icon"
-SVG="$DIR/designcraft.svg"
-ID="ai.storyteller.designcraft"
+SVG="$DIR/pliego.svg"
+ID="dev.danielmiguelt.Pliego"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -26,9 +26,9 @@ render() {
   resvg -w "$size" -h "$size" "$svg" "$out" </dev/null
 }
 
-render "$SVG" 1024 "$DIR/designcraft-1024.png"
-# Runtime window/Dock icon on macOS (embedded by apps/designcraft); other platforms use hicolor 256.
-render "$MAC" 512 "$DIR/designcraft-macos-512.png"
+render "$SVG" 1024 "$DIR/pliego-1024.png"
+# Runtime window/Dock icon on macOS (embedded by apps/pliego); other platforms use hicolor 256.
+render "$MAC" 512 "$DIR/pliego-macos-512.png"
 
 # Linux hicolor theme: the scalable icon sits on the Nodalix/Colloid app grid (224/256 tile,
 # 16 px margin, 51.5 px radius, soft shadow). It is made by tools/nodalia-app-icon.py in
@@ -45,18 +45,18 @@ for s in 16 20 24 32 40 48 64 128 256; do
   render "$SVG" "$s" "$TMP/ico-$s.png"
   ICO_PNGS+=("$TMP/ico-$s.png")
 done
-(cd "$ROOT" && cargo run -q -p xtask -- ico "$DIR/designcraft.ico" "${ICO_PNGS[@]}")
+(cd "$ROOT" && cargo run -q -p xtask -- ico "$DIR/pliego.ico" "${ICO_PNGS[@]}")
 
 # macOS .icns.
 if command -v iconutil >/dev/null; then
-  SET="$TMP/designcraft.iconset"
+  SET="$TMP/pliego.iconset"
   mkdir -p "$SET"
   for s in 16 32 128 256 512; do
     render "$MAC" "$s" "$SET/icon_${s}x${s}.png"
     render "$MAC" $((s * 2)) "$SET/icon_${s}x${s}@2x.png"
   done
-  iconutil -c icns -o "$DIR/designcraft.icns" "$SET"
+  iconutil -c icns -o "$DIR/pliego.icns" "$SET"
 else
-  echo "warning: iconutil not found (macOS only); designcraft.icns not regenerated" >&2
+  echo "warning: iconutil not found (macOS only); pliego.icns not regenerated" >&2
 fi
 echo "icons written to $DIR"

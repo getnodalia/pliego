@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::build::{NewDocument, PRESETS};
-use designcraft_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, PdfCrop, Selection, Shape};
-use designcraft_geom::{Affine, Rect, shapes};
+use pliego_doc::build::{NewDocument, PRESETS};
+use pliego_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, PdfCrop, Selection, Shape};
+use pliego_geom::{Affine, Rect, shapes};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, bad, cmd, f64_or, has_doc, ok, str_param};

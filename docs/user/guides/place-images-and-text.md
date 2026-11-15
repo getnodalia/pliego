@@ -24,7 +24,7 @@ Shortcuts on this page use Ctrl. On macOS, use Cmd instead of Ctrl.
 | Vector   | pdf, ai, eps                                                                    |
 | Text     | txt, docx, rtf, md                                                              |
 | Table    | xlsx (placed as a table)                                                        |
-| Layout   | idml, designcraft (one page's objects, placed as a group)                       |
+| Layout   | idml, pliego (one page's objects, placed as a group)                       |
 | Media    | mp4, m4v, mov, webm, mp3, m4a, wav, ogg (placed in a media frame)               |
 
 The same dialog has separate filters for **Graphics**, **Text (Word, RTF, plain, Excel)** and **Video and sound**.
@@ -44,4 +44,4 @@ A PDF with one page is placed without this dialog.
 
 ## If a file cannot be placed
 
-Pliego shows an alert when a file cannot be opened or placed. Ask in [Discord](https://discord.gg/artcraft) or see [Report a problem](../troubleshooting/get-help.md).
+Pliego shows an alert when a file cannot be opened or placed. Ask in [Discord](https://github.com/getnodalia/pliego/issues) or see [Report a problem](../troubleshooting/get-help.md).

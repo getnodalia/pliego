@@ -27,7 +27,7 @@ pub fn xlsx_records(bytes: &[u8], sheet: Option<&str>) -> Result<Vec<Vec<String>
     xlsx::records(bytes, sheet)
 }
 
-use designcraft_doc::{CharAttrs, ParaAttrs, Story};
+use pliego_doc::{CharAttrs, ParaAttrs, Story};
 
 /// Characters kept of a style name read from a file: each paragraph that uses a style carries a
 /// copy of its name, so a long one would be multiplied by the paragraph count.
@@ -134,7 +134,7 @@ pub fn import(name: &str, bytes: &[u8]) -> Result<Imported, ImportError> {
 pub fn plain(text: &str) -> Imported {
     let t = text.trim_start_matches('\u{FEFF}').replace("\r\n", "\n").replace('\r', "\n");
     let t: String = t.chars().filter(|c| !('\u{E000}'..='\u{E1FF}').contains(c)).collect();
-    let story = Story::with_text(designcraft_doc::StoryId(0), &t, Default::default());
+    let story = Story::with_text(pliego_doc::StoryId(0), &t, Default::default());
     Imported { story, para_styles: vec![], char_styles: vec![], warnings: vec![] }
 }
 

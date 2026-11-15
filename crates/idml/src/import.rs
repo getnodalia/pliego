@@ -4,17 +4,17 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
 
-use designcraft_color::cms::lab;
-use designcraft_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue, swatch};
-use designcraft_doc::{
+use pliego_color::cms::lab;
+use pliego_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue, swatch};
+use pliego_doc::{
     Asset, AssetId, BaselineGrid, CellRange, CharAttrs, CharFormat, CharRun, CharacterStyle, Columns, ColumnsKind, Content, DirectionalFeather,
     DocSettings, Document, DropShadow, Effects, Fill, GradientFeather, GridAlign, GridRelative, Guide, Item, ItemId, Kerning, LAYER_COLORS, Layer,
     LayerId, ListType, Margins, ObjectStyle, Orientation, Page, PageId, PageSide, ParaAttrs, ParaFormat, ParagraphStyle, ParentInfo, RowHeightMode,
     Rule, Section, Shape, SpanColumns, Spread, SpreadId, Story, StoryId, Stroke, Styles, TabStop, Table, TextFrame, TextFrameOptions, TextWrap,
     story as st,
 };
-use designcraft_geom::corners::{Corner, CornerOptions};
-use designcraft_geom::{Affine, Anchor, PathData, Point, Rect, SubPath};
+use pliego_geom::corners::{Corner, CornerOptions};
+use pliego_geom::{Affine, Anchor, PathData, Point, Rect, SubPath};
 
 use crate::names::{self, CHAR_BUILTINS, OBJECT_BUILTINS, PARA_BUILTINS, unescape_id};
 use crate::xml::{El, Node, parse};
@@ -115,9 +115,9 @@ pub fn import_idml_report_with_previews(
     if im.repaired_tab_lists > 0 {
         warnings.push(format!(
             "tab lists repaired to fit the limits (at most {} stops, finite positions up to {} in, leaders of at most {} characters, one stop per position): {}",
-            designcraft_doc::MAX_TAB_STOPS,
-            designcraft_doc::MAX_TAB_POSITION / 72.0,
-            designcraft_doc::MAX_TAB_LEADER,
+            pliego_doc::MAX_TAB_STOPS,
+            pliego_doc::MAX_TAB_POSITION / 72.0,
+            pliego_doc::MAX_TAB_LEADER,
             im.repaired_tab_lists,
         ));
     }
@@ -179,18 +179,18 @@ struct Importer<'r> {
     hidden_colors: HashMap<String, Color>,
     /// Unnamed swatches (gradients) added on first use.
     hidden_swatches: HashMap<String, Swatch>,
-    color_groups: Vec<designcraft_doc::ColorGroup>,
-    conditions: Vec<designcraft_doc::Condition>,
+    color_groups: Vec<pliego_doc::ColorGroup>,
+    conditions: Vec<pliego_doc::Condition>,
     condition_names: HashMap<String, String>,
-    inks: designcraft_doc::InkManager,
-    stroke_styles: Vec<designcraft_doc::StrokeStyleDef>,
+    inks: pliego_doc::InkManager,
+    stroke_styles: Vec<pliego_doc::StrokeStyleDef>,
     styles: Styles,
     composite_names: HashMap<String, String>,
     mojikumi_names: HashMap<String, String>,
-    kinsoku: HashMap<String, designcraft_doc::cjk::Kinsoku>,
+    kinsoku: HashMap<String, pliego_doc::cjk::Kinsoku>,
     para_names: HashMap<String, String>,
     char_names: HashMap<String, String>,
-    lists: Vec<designcraft_doc::NumberedList>,
+    lists: Vec<pliego_doc::NumberedList>,
     object_names: HashMap<String, String>,
     cell_names: HashMap<String, String>,
     table_names: HashMap<String, String>,
@@ -215,13 +215,13 @@ struct Importer<'r> {
     item_ids: HashMap<String, ItemId>,
     assets: BTreeMap<AssetId, Arc<Asset>>,
     /// Content lookup for `assets`, so each placed graphic doesn't compare against every earlier one.
-    asset_index: designcraft_doc::AssetIndex,
+    asset_index: pliego_doc::AssetIndex,
     /// Assets read from a link path at a page and crop, so later placements of that path, page
     /// and crop reuse them unread.
-    linked_assets: HashMap<(String, u32, designcraft_doc::PdfCrop), AssetId>,
+    linked_assets: HashMap<(String, u32, pliego_doc::PdfCrop), AssetId>,
     ctx: ItemCtx,
     sections: Vec<Section>,
-    footnote_options: designcraft_doc::FootnoteOptions,
+    footnote_options: pliego_doc::FootnoteOptions,
     /// Text destination Self → anchor id.
     anchor_ids: HashMap<String, u64>,
     /// Cross-reference source Self → (story, index in its cross-references).
@@ -246,12 +246,12 @@ struct Importer<'r> {
     links: Vec<(String, String, String)>,
     /// Cross-reference format Self → name.
     xref_format_names: HashMap<String, String>,
-    xref_formats: Vec<designcraft_doc::XrefFormat>,
+    xref_formats: Vec<pliego_doc::XrefFormat>,
     /// Index topic Self → topic path and per-level sort keys; topic cross-references.
     index_topics: HashMap<String, IndexTopic>,
-    index_xrefs: Vec<designcraft_doc::IndexRef>,
+    index_xrefs: Vec<pliego_doc::IndexRef>,
     /// The file's text variables (`None`: it defines none) and their Self → index.
-    text_vars: Option<Vec<designcraft_doc::vars::TextVariable>>,
+    text_vars: Option<Vec<pliego_doc::vars::TextVariable>>,
     text_var_ids: HashMap<String, usize>,
     /// The Self of each cross-reference page number variable (`XrefPageNumberType`).
     xref_page_vars: HashSet<String>,
@@ -260,12 +260,12 @@ struct Importer<'r> {
     modified: Option<i64>,
     /// Tab lists [`TabStop::sanitized_list`] had to repair (an import warning).
     repaired_tab_lists: usize,
-    toc: Option<designcraft_doc::Toc>,
+    toc: Option<pliego_doc::Toc>,
 }
 
 impl<'r> Importer<'r> {
     fn new(read_link: &'r dyn Fn(&str) -> Option<Vec<u8>>, previews: &'r HashMap<String, Arc<Vec<u8>>>) -> Self {
-        let specials: Vec<Swatch> = designcraft_color::default_swatches().into_iter().filter(|s| s.locked).collect();
+        let specials: Vec<Swatch> = pliego_color::default_swatches().into_iter().filter(|s| s.locked).collect();
         let mut swatch_names = HashMap::new();
         swatch_names.insert("Swatch/None".to_string(), swatch::NONE.to_string());
         swatch_names.insert("Color/Paper".to_string(), swatch::PAPER.to_string());
@@ -316,7 +316,7 @@ impl<'r> Importer<'r> {
             page_index: HashMap::new(),
             item_ids: HashMap::new(),
             assets: BTreeMap::new(),
-            asset_index: designcraft_doc::AssetIndex::new(),
+            asset_index: pliego_doc::AssetIndex::new(),
             linked_assets: HashMap::new(),
             ctx: ItemCtx { threads: Vec::new() },
             sections: Vec::new(),
@@ -331,7 +331,7 @@ impl<'r> Importer<'r> {
             other_dests: HashMap::new(),
             links: Vec::new(),
             xref_format_names: HashMap::new(),
-            xref_formats: designcraft_doc::xref::default_formats(),
+            xref_formats: pliego_doc::xref::default_formats(),
             index_topics: HashMap::new(),
             index_xrefs: Vec::new(),
             text_vars: None,
@@ -356,7 +356,7 @@ impl<'r> Importer<'r> {
                 "DocumentPreference" => self.doc_prefs(e),
                 "TransparencyPreference" => {
                     if let Some(v) = e.get("BlendingSpace") {
-                        self.settings.blend_space = if v == "RGB" { designcraft_doc::BlendSpace::Rgb } else { designcraft_doc::BlendSpace::Cmyk };
+                        self.settings.blend_space = if v == "RGB" { pliego_doc::BlendSpace::Rgb } else { pliego_doc::BlendSpace::Cmyk };
                     }
                 }
                 "TextPreference" => {
@@ -381,7 +381,7 @@ impl<'r> Importer<'r> {
                         let Some(u) = e.get(attr) else { continue };
                         let unit = names::unit_in(u).unwrap_or_else(|| {
                             self.warnings.push(format!("{ruler} ruler units `{u}` are not available; read as points"));
-                            designcraft_geom::Unit::Points
+                            pliego_geom::Unit::Points
                         });
                         if ruler == "horizontal" {
                             self.settings.horizontal_units = unit;
@@ -393,9 +393,9 @@ impl<'r> Importer<'r> {
                         self.settings.keyboard_increment = v;
                     }
                     match e.get("RulerOrigin") {
-                        Some("PageOrigin") => self.settings.ruler_origin = designcraft_doc::RulerOrigin::Page,
-                        Some("SpineOrigin") => self.settings.ruler_origin = designcraft_doc::RulerOrigin::Spine,
-                        Some("SpreadOrigin") => self.settings.ruler_origin = designcraft_doc::RulerOrigin::Spread,
+                        Some("PageOrigin") => self.settings.ruler_origin = pliego_doc::RulerOrigin::Page,
+                        Some("SpineOrigin") => self.settings.ruler_origin = pliego_doc::RulerOrigin::Spine,
+                        Some("SpreadOrigin") => self.settings.ruler_origin = pliego_doc::RulerOrigin::Spread,
                         _ => {}
                     }
                 }
@@ -423,7 +423,7 @@ impl<'r> Importer<'r> {
             }
             let entries = e
                 .find_all("CompositeFontEntry")
-                .map(|c| designcraft_doc::cjk::CompositeFontEntry {
+                .map(|c| pliego_doc::cjk::CompositeFontEntry {
                     name: c.get("Name").unwrap_or("").into(),
                     characters: c.get("CustomCharacters").unwrap_or("").into(),
                     family: c.prop("AppliedFont").as_deref().and_then(names::font_family_in).unwrap_or_default(),
@@ -437,7 +437,7 @@ impl<'r> Importer<'r> {
                     scale_option: c.boolean("ScaleOption").unwrap_or(true),
                 })
                 .collect();
-            self.styles.composite_fonts.push(designcraft_doc::cjk::CompositeFont { name, entries });
+            self.styles.composite_fonts.push(pliego_doc::cjk::CompositeFont { name, entries });
         }
     }
 
@@ -446,7 +446,7 @@ impl<'r> Importer<'r> {
             if e.get("CantBeginLineChars").is_some() || e.get("CantEndLineChars").is_some() {
                 self.kinsoku.insert(
                     e.get("Self").unwrap_or("").into(),
-                    designcraft_doc::cjk::Kinsoku {
+                    pliego_doc::cjk::Kinsoku {
                         name: e.get("Name").unwrap_or("").into(),
                         no_start: e.get("CantBeginLineChars").unwrap_or("").into(),
                         no_end: e.get("CantEndLineChars").unwrap_or("").into(),
@@ -465,7 +465,7 @@ impl<'r> Importer<'r> {
             } else {
                 Vec::new()
             };
-            self.styles.mojikumi_tables.push(designcraft_doc::cjk::MojikumiTable {
+            self.styles.mojikumi_tables.push(pliego_doc::cjk::MojikumiTable {
                 name: unescape_id(e.get("Name").unwrap_or("")),
                 based_on: e.get("BasedOnMojikumiSet").unwrap_or("").into(),
                 overrides,
@@ -693,9 +693,9 @@ impl<'r> Importer<'r> {
     /// they name have been read. A link whose source or destination is not in the file is
     /// dropped: a source that names no item is nothing to click, and a destination that resolves
     /// to nothing would be a link that goes nowhere.
-    fn hyperlink_list(&mut self) -> Vec<designcraft_doc::Hyperlink> {
-        use designcraft_doc::{HyperlinkDest as D, HyperlinkSource as S};
-        let mut out: Vec<designcraft_doc::Hyperlink> = Vec::new();
+    fn hyperlink_list(&mut self) -> Vec<pliego_doc::Hyperlink> {
+        use pliego_doc::{HyperlinkDest as D, HyperlinkSource as S};
+        let mut out: Vec<pliego_doc::Hyperlink> = Vec::new();
         for (name, src, dest) in std::mem::take(&mut self.links) {
             // A cross-reference's source is its own kind and is joined to its anchor elsewhere.
             if self.xref_srcs.contains_key(&src) {
@@ -758,7 +758,7 @@ impl<'r> Importer<'r> {
                 },
             };
             let name = if name.is_empty() { dest.label() } else { name };
-            out.push(designcraft_doc::Hyperlink { id: self.alloc(), name, source, dest });
+            out.push(pliego_doc::Hyperlink { id: self.alloc(), name, source, dest });
         }
         out
     }
@@ -798,11 +798,11 @@ impl<'r> Importer<'r> {
             user_words: vec![],
             hyphenation_exceptions: vec![],
             toc: self.toc.take(),
-            text_variables: self.text_vars.take().unwrap_or_else(designcraft_doc::vars::defaults),
+            text_variables: self.text_vars.take().unwrap_or_else(pliego_doc::vars::defaults),
             footnote_options: std::mem::take(&mut self.footnote_options),
             xref_formats: std::mem::take(&mut self.xref_formats),
             index: None,
-            created: self.created.unwrap_or_else(designcraft_doc::vars::now),
+            created: self.created.unwrap_or_else(pliego_doc::vars::now),
             modified: self.modified.unwrap_or(0),
             next_id: self.next_id,
             font_scope: 0,
@@ -811,7 +811,7 @@ impl<'r> Importer<'r> {
         // to IDML -- but PDF export finds a link's frame among the spreads' items, where an
         // anchored frame is not, so the PDF would leave it out without a word. Say so here.
         for h in &d.hyperlinks {
-            if let designcraft_doc::HyperlinkSource::Item { id } = h.source
+            if let pliego_doc::HyperlinkSource::Item { id } = h.source
                 && d.find(id).is_none()
             {
                 self.warnings.push(format!(

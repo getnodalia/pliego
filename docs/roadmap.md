@@ -17,7 +17,7 @@ but are next in line.
 
 | Core workflow | Works end to end? | Evidence | Hours to pass |
 |---|---|---|---|
-| Set up a document (size, margins, columns, parent pages, page numbers, sections); save and reopen | yes | New Document, Document Setup, independently sized parent pages (Properties and Page Tool, #1620), parent overrides, Numbering & Section Options; `.designcraft` round-trip tests; recovery | 0 |
+| Set up a document (size, margins, columns, parent pages, page numbers, sections); save and reopen | yes | New Document, Document Setup, independently sized parent pages (Properties and Page Tool, #1620), parent overrides, Numbering & Section Options; `.pliego` round-trip tests; recovery | 0 |
 | Flow a long story across frames and pages: thread, unthread, autoflow | **no** | threading by hand works (ports, loaded text cursor, `text.thread`/`text.unthread`/`text.removeFromThread`); Primary Text Frame autoflow adds pages users can't delete (#165) | 5–7 |
 | Format text with paragraph and character styles | partial (not blocking) | Paragraph/Character Style Options, Quick Apply, based-on, nested/GREP styles work; style edit/delete from the panel reported (#169); formatting set at a caret is discarded (#289) | 6–12 |
 | Place, crop and fit images; wrap text around them | yes | place gun, frame fitting and Fitting Options, content grabber, text wrap, Links panel | 0 |

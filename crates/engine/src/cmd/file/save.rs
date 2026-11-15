@@ -128,7 +128,7 @@ mod save_tests {
         let dir = std::env::temp_dir().join(format!("dc-save-atomic-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("doc.designcraft");
+        let path = dir.join("doc.pliego");
         std::fs::write(&path, vec![b'x'; 1 << 20]).unwrap();
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
@@ -138,9 +138,9 @@ mod save_tests {
         let saved = super::from_bytes(&std::fs::read(&path).unwrap()).unwrap();
         assert!(saved.stories.values().any(|st| st.text == "Saved whole"));
         let names: Vec<_> = std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name()).collect();
-        assert_eq!(names, ["doc.designcraft"], "no temporary file is left");
+        assert_eq!(names, ["doc.pliego"], "no temporary file is left");
         // A folder that doesn't exist: an error naming the path.
-        let missing = dir.join("missing").join("doc.designcraft");
+        let missing = dir.join("missing").join("doc.pliego");
         let e = s.execute("file.save", &json!({"path": missing.to_string_lossy()})).unwrap_err();
         assert!(e.to_string().contains("missing"), "{e}");
         let _ = std::fs::remove_dir_all(&dir);
@@ -153,7 +153,7 @@ mod save_tests {
         let dir = std::env::temp_dir().join(format!("dc-save-fails-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("doc.designcraft");
+        let path = dir.join("doc.pliego");
         let recovery = dir.join("recovery");
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
@@ -161,13 +161,13 @@ mod save_tests {
         let before = std::fs::read(&path).unwrap();
         s.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "text", "text": "Unsaved", "caret": false})).unwrap();
         s.execute("file.recovery.save", &json!({"dir": recovery.to_string_lossy()})).unwrap();
-        let checkpoint = recovery.join(format!("{}.designcraft", s.doc().unwrap().uid));
+        let checkpoint = recovery.join(format!("{}.pliego", s.doc().unwrap().uid));
         assert!(checkpoint.exists());
 
         FAIL_TO_BYTES.with(|f| f.set(true));
         let save = s.execute("file.save", &json!({}));
-        let copy = s.execute("file.saveACopy", &json!({"path": dir.join("copy.designcraft").to_string_lossy()}));
-        let save_as = s.execute("file.saveAs", &json!({"path": dir.join("other.designcraft").to_string_lossy()}));
+        let copy = s.execute("file.saveACopy", &json!({"path": dir.join("copy.pliego").to_string_lossy()}));
+        let save_as = s.execute("file.saveAs", &json!({"path": dir.join("other.pliego").to_string_lossy()}));
         let serialized = s.execute("file.serialize", &json!({}));
         FAIL_TO_BYTES.with(|f| f.set(false));
 
@@ -175,9 +175,9 @@ mod save_tests {
         assert!(e.to_string().contains("could not write the document"), "{e}");
         assert!(copy.is_err() && serialized.is_err(), "no empty copy and no empty download");
         assert_eq!(std::fs::read(&path).unwrap(), before, "the saved file is untouched");
-        assert!(!dir.join("copy.designcraft").exists());
-        assert!(save_as.is_err() && !dir.join("other.designcraft").exists());
-        assert!(!s.prefs.recent_files.iter().any(|p| p.ends_with("other.designcraft")), "a failed Save As isn't a recent file");
+        assert!(!dir.join("copy.pliego").exists());
+        assert!(save_as.is_err() && !dir.join("other.pliego").exists());
+        assert!(!s.prefs.recent_files.iter().any(|p| p.ends_with("other.pliego")), "a failed Save As isn't a recent file");
         assert!(s.doc().unwrap().is_dirty(), "the document still has unsaved changes");
         assert!(checkpoint.exists(), "the recovery checkpoint stays");
         let _ = std::fs::remove_dir_all(&dir);
@@ -197,13 +197,13 @@ mod save_tests {
         let dir = std::env::temp_dir().join(format!("dc-save-non-finite-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("doc.designcraft");
+        let path = dir.join("doc.pliego");
         s.execute("file.save", &json!({"path": path.to_string_lossy()})).unwrap();
         let before = std::fs::read(&path).unwrap();
-        let id = designcraft_doc::ItemId(s.execute("frame.create", &json!({"rect": [36, 36, 300, 200]})).unwrap()["id"].as_u64().unwrap());
+        let id = pliego_doc::ItemId(s.execute("frame.create", &json!({"rect": [36, 36, 300, 200]})).unwrap()["id"].as_u64().unwrap());
         let st = s.doc_mut().unwrap();
-        let infinite = designcraft_geom::Rect::new(36.0, 36.0, f64::INFINITY, 200.0);
-        std::sync::Arc::make_mut(&mut st.doc).item_mut(id).unwrap().path = designcraft_geom::shapes::rectangle(infinite);
+        let infinite = pliego_geom::Rect::new(36.0, 36.0, f64::INFINITY, 200.0);
+        std::sync::Arc::make_mut(&mut st.doc).item_mut(id).unwrap().path = pliego_geom::shapes::rectangle(infinite);
         let e = s.execute("file.save", &json!({})).unwrap_err();
         assert!(e.to_string().contains("not a finite number"), "{e}");
         assert_eq!(std::fs::read(&path).unwrap(), before, "the saved file is untouched");

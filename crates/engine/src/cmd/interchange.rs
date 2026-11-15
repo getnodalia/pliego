@@ -7,7 +7,7 @@
 //! ([`crate::io::document_path`]). Only regular files that hold an image or a graphic format are
 //! read, and only up to [`MAX_LINKED_FILE_BYTES`].
 
-use designcraft_doc::Document;
+use pliego_doc::Document;
 use serde_json::{Value, json};
 
 use super::file::{base64_decode, base64_encode};
@@ -27,9 +27,9 @@ pub fn specs() -> Vec<CommandSpec> {
 
 fn export_idml(s: &mut Session, p: &Value) -> Result<Value> {
     let st = s.doc()?;
-    let opts = designcraft_idml::ExportOptions { embed_images: p.get("embedImages").and_then(Value::as_bool).unwrap_or(true) };
+    let opts = pliego_idml::ExportOptions { embed_images: p.get("embedImages").and_then(Value::as_bool).unwrap_or(true) };
     let layer_doc = with_pdf_layer_variants(&st.doc, opts.embed_images)?;
-    let bytes = designcraft_idml::export_idml_with(layer_doc.as_ref().unwrap_or(&st.doc), &opts);
+    let bytes = pliego_idml::export_idml_with(layer_doc.as_ref().unwrap_or(&st.doc), &opts);
     match str_param(p, "path") {
         Some(path) => {
             #[cfg(not(target_arch = "wasm32"))]
@@ -44,9 +44,9 @@ fn export_idml(s: &mut Session, p: &Value) -> Result<Value> {
 /// whose asset is a PDF. A choice left on an item that is no longer a placed PDF (its link was
 /// replaced with another format) is not one, so the package report does not name it.
 pub(crate) fn has_applicable_pdf_layer_overrides(doc: &Document) -> bool {
-    doc.placed_items().into_iter().any(|it| {
-        it.has_pdf_layer_override() && it.graphic().and_then(|g| doc.assets.get(&g.asset)).is_some_and(|a| designcraft_render::is_pdf(&a.data))
-    })
+    doc.placed_items()
+        .into_iter()
+        .any(|it| it.has_pdf_layer_override() && it.graphic().and_then(|g| doc.assets.get(&g.asset)).is_some_and(|a| pliego_render::is_pdf(&a.data)))
 }
 
 /// Each placement gets its own embedded variant so two frames sharing a PDF can
@@ -62,7 +62,7 @@ fn with_pdf_layer_variants(doc: &Document, embed: bool) -> Result<Option<Documen
         .into_iter()
         .filter(|it| it.has_pdf_layer_override())
         .filter_map(|it| {
-            let asset = it.graphic().and_then(|g| doc.assets.get(&g.asset)).filter(|a| designcraft_render::is_pdf(&a.data))?;
+            let asset = it.graphic().and_then(|g| doc.assets.get(&g.asset)).filter(|a| pliego_render::is_pdf(&a.data))?;
             Some((it.id, asset, it.pdf_hidden_layers.clone(), it.pdf_layer_override))
         })
         .collect();
@@ -85,10 +85,10 @@ fn with_pdf_layer_variants(doc: &Document, embed: bool) -> Result<Option<Documen
             continue;
         }
         expected.insert(id, signature);
-        let bytes = designcraft_render::pdf_hide_layers(&asset.data, &hidden)
+        let bytes = pliego_render::pdf_hide_layers(&asset.data, &hidden)
             .ok_or_else(|| EngineError::Other(format!("{}: PDF layer choices could not be applied", asset.name)))?;
         let mut variant = (**asset).clone();
-        variant.id = designcraft_doc::AssetId(out.alloc());
+        variant.id = pliego_doc::AssetId(out.alloc());
         variant.data = std::sync::Arc::new(bytes);
         variant.link = None;
         let aid = variant.id;
@@ -111,7 +111,7 @@ fn with_pdf_layer_variants(doc: &Document, embed: bool) -> Result<Option<Documen
                 conflicting_id = Some(it.id);
                 return;
             }
-            if let designcraft_doc::Content::Graphic(g) = &mut it.content
+            if let pliego_doc::Content::Graphic(g) = &mut it.content
                 && let Some(aid) = variants.get(&it.id)
             {
                 g.asset = *aid;
@@ -133,10 +133,10 @@ fn with_pdf_layer_variants(doc: &Document, embed: bool) -> Result<Option<Documen
     Ok(Some(out))
 }
 
-/// [`designcraft_idml::import_idml`] with the linked images read through [`crate::io`] from
+/// [`pliego_idml::import_idml`] with the linked images read through [`crate::io`] from
 /// beside `package` (the package's file, if it has one), so the automation read root applies to
 /// the paths the package names, and its PDF crops resolved.
-pub(crate) fn import_idml_confined(bytes: &[u8], package: Option<&std::path::Path>) -> designcraft_idml::Result<Document> {
+pub(crate) fn import_idml_confined(bytes: &[u8], package: Option<&std::path::Path>) -> pliego_idml::Result<Document> {
     let read = |link: &str| -> Option<Vec<u8>> {
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -148,7 +148,7 @@ pub(crate) fn import_idml_confined(bytes: &[u8], package: Option<&std::path::Pat
             None
         }
     };
-    let mut d = designcraft_idml::import_idml_with(bytes, &read)?;
+    let mut d = pliego_idml::import_idml_with(bytes, &read)?;
     resolve_pdf_crops(&mut d);
     Ok(d)
 }
@@ -168,7 +168,7 @@ fn import_report_with_previews(
     bytes: &[u8],
     package: Option<&std::path::Path>,
     previews: &std::collections::HashMap<String, std::sync::Arc<Vec<u8>>>,
-) -> Result<(Document, Vec<String>, std::collections::HashMap<String, designcraft_doc::StoryId>)> {
+) -> Result<(Document, Vec<String>, std::collections::HashMap<String, pliego_doc::StoryId>)> {
     #[cfg(not(target_arch = "wasm32"))]
     let resolved = std::cell::RefCell::new(std::collections::HashMap::new());
     let read = |link: &str| -> Option<Vec<u8>> {
@@ -184,8 +184,8 @@ fn import_report_with_previews(
             None
         }
     };
-    let designcraft_idml::Imported { mut document, warnings, story_ids } =
-        designcraft_idml::import_idml_report_with_previews(bytes, &read, previews).map_err(|e| EngineError::Other(e.to_string()))?;
+    let pliego_idml::Imported { mut document, warnings, story_ids } =
+        pliego_idml::import_idml_report_with_previews(bytes, &read, previews).map_err(|e| EngineError::Other(e.to_string()))?;
     resolve_pdf_crops(&mut document);
     #[cfg(not(target_arch = "wasm32"))]
     let document = {
@@ -205,13 +205,13 @@ fn import_report_with_previews(
 /// Placed PDFs read from IDML name their crop (`PDFCrop`): find where each box sits on its page,
 /// which the IDML reader can't (it doesn't parse PDFs). The box spans the graphic's
 /// `GraphicBounds`; a graphic without bounds takes the box's size. Bounding Box crops interpret
-/// the page's drawing to find the box, so they wait for drawing or export ([`designcraft_render::shown_box`],
+/// the page's drawing to find the box, so they wait for drawing or export ([`pliego_render::shown_box`],
 /// [`with_pdf_boxes`]) unless a graphic needs the box's size now.
 pub(crate) fn resolve_pdf_crops(d: &mut Document) {
     use std::collections::{HashMap, HashSet};
     use std::sync::Arc;
 
-    use designcraft_doc::{AssetId, Content, Item, PdfCrop};
+    use pliego_doc::{AssetId, Content, Item, PdfCrop};
     let mut no_bounds: HashSet<AssetId> = HashSet::new();
     for sp in d.spreads.iter().chain(&d.parents) {
         for it in &sp.items {
@@ -272,7 +272,7 @@ pub(crate) fn with_pdf_boxes(d: &Document) -> std::borrow::Cow<'_, Document> {
     for a in out.assets.values_mut() {
         if a.content_box_pending() {
             // No usable box: the whole page.
-            std::sync::Arc::make_mut(a).pdf_box = designcraft_render::shown_box(a);
+            std::sync::Arc::make_mut(a).pdf_box = pliego_render::shown_box(a);
         }
     }
     std::borrow::Cow::Owned(out)
@@ -338,7 +338,7 @@ fn packaged_link_candidates(link: &str, package: Option<&std::path::Path>) -> Ve
 /// Bytes an image or a graphic can be placed from (raster formats, PDF, SVG, PSD, EPS).
 #[cfg(not(target_arch = "wasm32"))]
 fn is_graphic(bytes: &[u8]) -> bool {
-    designcraft_images::mime(bytes) != "application/octet-stream" || designcraft_images::is_eps(bytes)
+    pliego_images::mime(bytes) != "application/octet-stream" || pliego_images::is_eps(bytes)
 }
 
 /// Embedded images do not call the IDML resource loader. Rebind their missing links
@@ -408,7 +408,7 @@ pub(crate) fn open_idml(s: &mut Session, p: &Value) -> Result<Value> {
         // What the converter can't read still comes over as IDML (#21).
         let conversion = indd::convert(&bytes, &file).map_err(|e| {
             EngineError::Other(format!(
-                "can't convert the InDesign file: {e}. In InDesign, choose File ▸ Export… ▸ InDesign Markup (IDML) and open the .idml in DesignCraft."
+                "can't convert the InDesign file: {e}. In InDesign, choose File ▸ Export… ▸ InDesign Markup (IDML) and open the .idml in Pliego."
             ))
         })?;
         warnings.extend(conversion.warnings.iter().map(|w| w.message().to_string()));
@@ -444,18 +444,14 @@ pub(crate) fn open_idml(s: &mut Session, p: &Value) -> Result<Value> {
 /// The frame an import warning is about, so it can be shown: the first frame of the story a
 /// "story …: …" warning names, by the converter's INDD id (`story 30892`, which it writes to the
 /// IDML as `u78ac`) or by its IDML `Self` (`story u78ac`).
-fn warning_item(
-    d: &Document,
-    story_ids: &std::collections::HashMap<String, designcraft_doc::StoryId>,
-    warning: &str,
-) -> Option<designcraft_doc::ItemId> {
+fn warning_item(d: &Document, story_ids: &std::collections::HashMap<String, pliego_doc::StoryId>, warning: &str) -> Option<pliego_doc::ItemId> {
     let name = warning.strip_prefix("story ")?.split([':', ' ']).next()?;
     let self_id = name.parse::<u32>().map_or_else(|_| name.to_string(), |uid| format!("u{uid:x}"));
     d.stories.get(story_ids.get(&self_id)?)?.frames.first().copied()
 }
 
 /// An InDesign document or template (.indd, .indt): known by its signature, or by its name when
-/// the bytes are neither a recognized DesignCraft document nor IDML. The converter explains
+/// the bytes are neither a recognized Pliego document nor IDML. The converter explains
 /// unrecognized data with an InDesign extension.
 pub(crate) fn is_indd(name: &str, bytes: &[u8]) -> bool {
     bytes.starts_with(&indd::header::SIGNATURE)
@@ -482,7 +478,7 @@ mod tests {
     use super::*;
 
     fn linked_idml(link: &str, embed_images: bool) -> Result<(Vec<u8>, Vec<u8>)> {
-        let png = designcraft_render::Rendered { width: 2, height: 2, pixels: vec![255; 16] }.to_png();
+        let png = pliego_render::Rendered { width: 2, height: 2, pixels: vec![255; 16] }.to_png();
         let mut session = Session::new();
         session.execute("file.new", &json!({}))?;
         session.execute("file.place", &json!({"base64": base64_encode(&png), "name": "logo.png"}))?;
@@ -491,7 +487,7 @@ mod tests {
             Arc::make_mut(asset).link = Some(link.into());
             Ok(Value::Null)
         })?;
-        let bytes = designcraft_idml::export_idml_with(&session.doc()?.doc, &designcraft_idml::ExportOptions { embed_images });
+        let bytes = pliego_idml::export_idml_with(&session.doc()?.doc, &pliego_idml::ExportOptions { embed_images });
         Ok((bytes, png))
     }
 
@@ -500,7 +496,7 @@ mod tests {
         let mut session = Session::new();
         session.execute("file.new", &json!({})).unwrap();
         session.execute("frame.create", &json!({"rect": [36, 36, 300, 200], "content": "text"})).unwrap();
-        let idml = designcraft_idml::export_idml_with(&session.doc().unwrap().doc, &designcraft_idml::ExportOptions { embed_images: true });
+        let idml = pliego_idml::export_idml_with(&session.doc().unwrap().doc, &pliego_idml::ExportOptions { embed_images: true });
         let (d, _, story_ids) = import_report_with_previews(&idml, None, &std::collections::HashMap::new()).unwrap();
         let (self_id, sid) = story_ids.iter().find(|(_, sid)| d.stories.get(*sid).is_some_and(|s| !s.frames.is_empty())).unwrap();
         let frame = d.stories[sid].frames[0];
@@ -618,7 +614,7 @@ mod tests {
         std::fs::create_dir_all(dir.join("Links")).unwrap();
         std::fs::create_dir_all(&outside).unwrap();
         let package = dir.join("x.idml");
-        let png = designcraft_render::Rendered { width: 2, height: 2, pixels: vec![255; 16] }.to_png();
+        let png = pliego_render::Rendered { width: 2, height: 2, pixels: vec![255; 16] }.to_png();
         std::fs::write(dir.join("Links").join("notes.png"), b"not an image").unwrap();
         std::fs::write(outside.join("notes.txt"), b"not an image").unwrap();
         #[cfg(unix)]
@@ -693,15 +689,15 @@ mod tests {
 mod nested_layer_tests {
     use std::{io::Read, sync::Arc};
 
-    use designcraft_doc::{AnchoredObject, ItemId, SpreadRef, Story, StoryId, Table};
-    use designcraft_geom::Rect;
+    use pliego_doc::{AnchoredObject, ItemId, SpreadRef, Story, StoryId, Table};
+    use pliego_geom::Rect;
 
     use super::*;
 
     // One default placement and two nested placements share bytes. The latter use a legacy
     // nonempty hidden list and explicit all-on, so each needs a different embedded variant.
     fn fixture(location: &str) -> (Session, ItemId, [ItemId; 2]) {
-        let pdf = designcraft_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
+        let pdf = pliego_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
         let mut session = Session::new();
         session.execute("file.new", &json!({})).unwrap();
         let placed = session.execute("file.place", &json!({"base64": base64_encode(&pdf), "name": "layers.pdf"})).unwrap();
@@ -758,14 +754,14 @@ mod nested_layer_tests {
         for (id, expected) in ids.into_iter().zip([states(false, true), states(true, true)]) {
             let item = copy.placed_items().into_iter().find(|i| i.id == id).unwrap();
             let asset = &copy.assets[&item.graphic().unwrap().asset];
-            assert_eq!(designcraft_render::pdf_layers(&asset.data), expected, "{location}: placement {id}");
+            assert_eq!(pliego_render::pdf_layers(&asset.data), expected, "{location}: placement {id}");
             assert_ne!(asset.id, original_asset);
             assert!(asset.link.is_none());
             assert!(!item.pdf_layer_override && item.pdf_hidden_layers.is_empty());
         }
         assert_eq!(copy.item(control).unwrap().graphic().unwrap().asset, original_asset);
         assert!(Arc::ptr_eq(&copy.assets[&original_asset], &source.assets[&original_asset]));
-        assert_eq!(designcraft_render::pdf_layers(&source.assets[&original_asset].data), states(true, false));
+        assert_eq!(pliego_render::pdf_layers(&source.assets[&original_asset].data), states(true, false));
         assert!(source.placed_items().into_iter().filter(|i| ids.contains(&i.id)).all(|i| i.has_pdf_layer_override()));
     }
 
@@ -774,9 +770,9 @@ mod nested_layer_tests {
         let original = session.doc().unwrap().doc.clone();
         let result = session.execute("file.exportIdml", &json!({})).unwrap();
         let bytes = base64_decode(result["base64"].as_str().unwrap());
-        let imported = designcraft_idml::import_idml(&bytes).unwrap();
+        let imported = pliego_idml::import_idml(&bytes).unwrap();
         let mut roundtrip: Vec<_> =
-            imported.assets.values().filter(|a| designcraft_render::is_pdf(&a.data)).map(|a| designcraft_render::pdf_layers(&a.data)).collect();
+            imported.assets.values().filter(|a| pliego_render::is_pdf(&a.data)).map(|a| pliego_render::pdf_layers(&a.data)).collect();
         let mut expected = vec![states(true, false), states(false, true), states(true, true)];
         roundtrip.sort();
         expected.sort();
@@ -792,8 +788,8 @@ mod nested_layer_tests {
             entry.read_to_string(&mut xml).unwrap();
             for cdata in xml.split("<![CDATA[").skip(1) {
                 let data = base64_decode(cdata.split("]]>").next().unwrap());
-                if designcraft_render::is_pdf(&data) {
-                    actual.push(designcraft_render::pdf_layers(&data));
+                if pliego_render::is_pdf(&data) {
+                    actual.push(pliego_render::pdf_layers(&data));
                 }
             }
         }
@@ -836,7 +832,7 @@ mod nested_layer_tests {
     // fresh id (#1522). Export must apply the choice to both.
     #[test]
     fn duplicated_frame_keeps_its_anchored_pdf_choice_in_idml() {
-        let pdf = designcraft_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
+        let pdf = pliego_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let placed = s.execute("file.place", &json!({"base64": base64_encode(&pdf), "name": "layers.pdf"})).unwrap();
@@ -859,9 +855,9 @@ mod nested_layer_tests {
         assert!(with_choice.contains(&chosen) && with_choice[0] != with_choice[1], "{with_choice:?}");
         doc.check().unwrap();
         let result = s.execute("file.exportIdml", &json!({})).unwrap();
-        let imported = designcraft_idml::import_idml(&base64_decode(result["base64"].as_str().unwrap())).unwrap();
+        let imported = pliego_idml::import_idml(&base64_decode(result["base64"].as_str().unwrap())).unwrap();
         let mut layers: Vec<_> =
-            imported.assets.values().filter(|a| designcraft_render::is_pdf(&a.data)).map(|a| designcraft_render::pdf_layers(&a.data)).collect();
+            imported.assets.values().filter(|a| pliego_render::is_pdf(&a.data)).map(|a| pliego_render::pdf_layers(&a.data)).collect();
         layers.sort();
         assert_eq!(layers, vec![states(false, true), states(true, false)]);
     }
@@ -872,7 +868,7 @@ mod nested_layer_tests {
     fn shared_id_with_divergent_pdf_choices_is_rejected() {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
-        let pdf = designcraft_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
+        let pdf = pliego_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
         let placed = s.execute("file.place", &json!({"base64": base64_encode(&pdf), "name": "layers.pdf"})).unwrap();
         let control = ItemId(placed["id"].as_u64().unwrap());
         let (frame, anchored) = {
@@ -914,7 +910,7 @@ mod nested_layer_tests {
     fn shared_id_with_different_pdf_assets_is_rejected() {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
-        let pdf = designcraft_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
+        let pdf = pliego_render::pdf_hide_layers(&super::super::pdflayers::tests::two_layer_pdf(), &["Red".into()]).unwrap();
         let a = s.execute("file.place", &json!({"base64": base64_encode(&pdf), "name": "a.pdf"})).unwrap()["id"].as_u64().unwrap();
         s.execute("object.layerOptions", &json!({"ids": [a], "hidden": ["Blue"]})).unwrap();
         let f = s.execute("frame.create", &json!({"rect": [72, 72, 400, 400], "content": "text", "text": "Hello"})).unwrap()["id"].as_u64().unwrap();

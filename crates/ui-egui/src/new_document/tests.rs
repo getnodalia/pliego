@@ -1,7 +1,7 @@
 use super::*;
 
 fn app() -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.newDocumentDialog", json!({})).unwrap();
     app
 }
@@ -185,7 +185,7 @@ fn units_reformat_the_measures_and_linked_edges_follow() {
 /// popup open.
 fn window_with_preset_popup() -> egui_kittest::Harness<'static, crate::test_window::Window> {
     use egui_kittest::kittest::Queryable as _;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.newDocumentDialog", json!({})).unwrap();
     let mut h = crate::test_window::open(app, vec2(1440.0, 900.0));
     // The dialog takes a couple of frames to settle where it opens.
@@ -219,7 +219,7 @@ fn enter_in_the_preset_popup_saves_the_preset_and_keeps_the_dialog() {
 #[test]
 fn saved_preset_delete_buttons_keep_the_preview_and_never_create_a_document() {
     use egui_kittest::kittest::Queryable as _;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.savePreset", json!({"name":"Portrait draft","pages":3,"facingPages":false})).unwrap();
     app.run("file.savePreset", json!({"name":"Landscape draft","width":792,"height":612,"pages":2})).unwrap();
     app.run("app.newDocumentDialog", json!({})).unwrap();
@@ -291,8 +291,8 @@ fn escape(app: &mut DesignApp, ctx: &egui::Context) {
 }
 
 /// Documents A and B with A active, and the New Document window open over them.
-fn two_documents() -> (DesignApp, egui::Context, designcraft_engine::DocState) {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+fn two_documents() -> (DesignApp, egui::Context, pliego_engine::DocState) {
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "A"})).unwrap();
     app.run("file.new", json!({"title": "B"})).unwrap();
     app.session.set_active(0);
@@ -387,7 +387,7 @@ fn closing_the_start_screen_preview_leaves_no_document() {
 
 #[test]
 fn create_keeps_the_previewed_document_with_the_final_settings() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "A"})).unwrap();
     app.run("app.newDocumentDialog", json!({})).unwrap();
     let ctx = context();

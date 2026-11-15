@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-use designcraft_doc::story::{BASIC_PARAGRAPH, NO_CHAR_STYLE};
-use designcraft_doc::{CharAttrs, CharFormat, ListCounter, ListType, ParaAttrs, ParaFormat, ParaProps, Story, StoryId, Table};
+use pliego_doc::story::{BASIC_PARAGRAPH, NO_CHAR_STYLE};
+use pliego_doc::{CharAttrs, CharFormat, ListCounter, ListType, ParaAttrs, ParaFormat, ParaProps, Story, StoryId, Table};
 use quick_xml::events::Event;
 
 use crate::docx_numbering::{ListPara, Numbering};
@@ -191,20 +191,20 @@ fn run_attrs(rpr: Option<&El>) -> CharAttrs {
         a.strikethrough = Some(s);
     }
     // Half-points; a size the engine cannot mean is dropped (#1593).
-    if let Some(pt) = r.val("sz").and_then(|v| v.parse::<f64>().ok()).map(|sz| sz / 2.0).and_then(designcraft_doc::attrs::imported_type_size) {
+    if let Some(pt) = r.val("sz").and_then(|v| v.parse::<f64>().ok()).map(|sz| sz / 2.0).and_then(pliego_doc::attrs::imported_type_size) {
         a.size = Some(pt);
     }
     if let Some(f) = r.child("rFonts").and_then(|f| f.attr("ascii").or(f.attr("hAnsi"))) {
         a.font_family = Some(f.to_string());
     }
     if r.on("caps") == Some(true) {
-        a.capitalization = Some(designcraft_doc::Capitalization::AllCaps);
+        a.capitalization = Some(pliego_doc::Capitalization::AllCaps);
     }
     if let Some(v) = r.val("vertAlign") {
         a.position = Some(match v.as_str() {
-            "superscript" => designcraft_doc::Position::Superscript,
-            "subscript" => designcraft_doc::Position::Subscript,
-            _ => designcraft_doc::Position::Normal,
+            "superscript" => pliego_doc::Position::Superscript,
+            "subscript" => pliego_doc::Position::Subscript,
+            _ => pliego_doc::Position::Normal,
         });
     }
     a
@@ -215,7 +215,7 @@ fn para_attrs(ppr: Option<&El>) -> ParaAttrs {
     let mut a = ParaAttrs::default();
     let Some(p) = ppr else { return a };
     // Twips, clamped: a file can hold 1e300, which became a 5e298 pt indent (#1593).
-    let tw = |v: Option<&str>| v.and_then(|v| v.parse::<f64>().ok()).map(|v| v / 20.0).and_then(designcraft_doc::attrs::imported_measure);
+    let tw = |v: Option<&str>| v.and_then(|v| v.parse::<f64>().ok()).map(|v| v / 20.0).and_then(pliego_doc::attrs::imported_measure);
     if let Some(sp) = p.child("spacing") {
         a.space_before = tw(sp.attr("before"));
         a.space_after = tw(sp.attr("after"));
@@ -227,10 +227,10 @@ fn para_attrs(ppr: Option<&El>) -> ParaAttrs {
     }
     if let Some(j) = p.val("jc") {
         a.align = Some(match j.as_str() {
-            "center" => designcraft_doc::Align::Center,
-            "right" | "end" => designcraft_doc::Align::Right,
-            "both" | "distribute" => designcraft_doc::Align::LeftJustified,
-            _ => designcraft_doc::Align::Left,
+            "center" => pliego_doc::Align::Center,
+            "right" | "end" => pliego_doc::Align::Right,
+            "both" | "distribute" => pliego_doc::Align::LeftJustified,
+            _ => pliego_doc::Align::Left,
         });
     }
     a
@@ -378,7 +378,7 @@ impl Ctx {
                 "p" => {
                     let mut st = Story::new(StoryId(0));
                     self.inline(e, &mut st, false);
-                    let is_break = |c: char| matches!(c, designcraft_doc::PAGE_BREAK | designcraft_doc::COLUMN_BREAK);
+                    let is_break = |c: char| matches!(c, pliego_doc::PAGE_BREAK | pliego_doc::COLUMN_BREAK);
                     out.push(st.text.chars().map(|c| if is_break(c) { '\n' } else { c }).collect());
                 }
                 "sdt" => {
@@ -459,9 +459,9 @@ impl Ctx {
                 "t" => e.text(),
                 "tab" => "\t".into(),
                 "br" => match e.attr("type") {
-                    Some("page") => designcraft_doc::PAGE_BREAK.to_string(),
-                    Some("column") => designcraft_doc::COLUMN_BREAK.to_string(),
-                    _ => designcraft_doc::FORCED_LINE_BREAK.to_string(),
+                    Some("page") => pliego_doc::PAGE_BREAK.to_string(),
+                    Some("column") => pliego_doc::COLUMN_BREAK.to_string(),
+                    _ => pliego_doc::FORCED_LINE_BREAK.to_string(),
                 },
                 "noBreakHyphen" => "\u{2011}".into(),
                 "softHyphen" => "\u{AD}".into(),

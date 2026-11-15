@@ -20,7 +20,7 @@
 use std::fmt;
 use std::ops::Range;
 
-use designcraft_doc::story;
+use pliego_doc::story;
 
 /// Longest pattern accepted, in bytes.
 pub const MAX_PATTERN: usize = 4096;

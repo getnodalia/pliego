@@ -13,7 +13,7 @@ fn harness(app: DesignApp) -> Harness<'static, DesignApp> {
 }
 
 fn fill_tint(app: &DesignApp, id: u64) -> f32 {
-    app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.tint
+    app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill.tint
 }
 
 /// The Tint row is the panel's first value field, above the C/M/Y/K fields.
@@ -39,7 +39,7 @@ fn typed(h: &Harness<'static, DesignApp>) -> Option<String> {
 /// clamped when the field loses focus.
 #[test]
 fn a_typed_tint_is_kept_while_typing_and_applied_on_enter_or_leaving_the_field() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     app.run("object.fill", json!({"ids": [id], "swatch": "C=100 M=0 Y=0 K=0"})).unwrap();
@@ -58,7 +58,7 @@ fn a_typed_tint_is_kept_while_typing_and_applied_on_enter_or_leaving_the_field()
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     assert!((fill_tint(h.state(), id) - 0.6).abs() < 1e-6, "Enter applies 60 %: {}", fill_tint(h.state(), id));
-    assert_eq!(h.state().session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, "C=100 M=0 Y=0 K=0");
+    assert_eq!(h.state().session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, "C=100 M=0 Y=0 K=0");
     // Out of range: clamped to 100 % when focus moves away.
     click_tint_field(&mut h);
     h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
@@ -87,7 +87,7 @@ fn a_typed_tint_is_kept_while_typing_and_applied_on_enter_or_leaving_the_field()
 #[test]
 fn the_color_panel_edits_the_gradient_stop_selected_in_the_gradient_panel() {
     use super::swatches::{GRAD_SEL, RampSel};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -115,8 +115,8 @@ fn the_color_panel_edits_the_gradient_stop_selected_in_the_gradient_panel() {
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     let doc = h.state().session.doc().unwrap().doc.clone();
-    let fill = &doc.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch;
-    let g = designcraft_color::swatch::resolve_gradient(&doc.swatches, fill).cloned().expect("still a gradient");
-    assert_eq!(g.stops[1].color, designcraft_color::Color::cmyk(1.0, 0.0, 0.0, 1.0), "C 100 on the black stop");
-    assert_eq!(g.stops[0].color, designcraft_color::Gradient::default().stops[0].color, "the white stop stays");
+    let fill = &doc.item(pliego_doc::ItemId(id)).unwrap().fill.swatch;
+    let g = pliego_color::swatch::resolve_gradient(&doc.swatches, fill).cloned().expect("still a gradient");
+    assert_eq!(g.stops[1].color, pliego_color::Color::cmyk(1.0, 0.0, 0.0, 1.0), "C 100 on the black stop");
+    assert_eq!(g.stops[0].color, pliego_color::Gradient::default().stops[0].color, "the white stop stays");
 }

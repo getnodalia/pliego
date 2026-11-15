@@ -3,7 +3,7 @@ use super::*;
 
 impl Exporter<'_> {
     /// Fill `p` with an item's fill paint, overprinting when the fill does.
-    pub(super) fn fill_item_path(&mut self, s: &mut Surface, fill: &designcraft_doc::Fill, paint: krilla::paint::Paint, p: &Path) {
+    pub(super) fn fill_item_path(&mut self, s: &mut Surface, fill: &pliego_doc::Fill, paint: krilla::paint::Paint, p: &Path) {
         let op = self.overprints(&fill.swatch, fill.tint, fill.overprint);
         let pushed = self.push_overprint(s, op, false);
         s.set_stroke(None);
@@ -16,15 +16,15 @@ impl Exporter<'_> {
     }
 
     /// A swatch fill (solid or gradient) in the item's inner space. `None` for [None]/unknown.
-    pub(crate) fn fill_paint(&mut self, fill: &designcraft_doc::Fill, bounds: Rect) -> Option<krilla::paint::Paint> {
+    pub(crate) fn fill_paint(&mut self, fill: &pliego_doc::Fill, bounds: Rect) -> Option<krilla::paint::Paint> {
         self.fill_paint_in(fill, bounds, Affine::IDENTITY)
     }
 
     /// [`Self::fill_paint`] for a gradient laid out in a space that `xf` maps to the current one
     /// (text runs: the frame's text space under the run's origin).
-    pub(crate) fn fill_paint_in(&mut self, fill: &designcraft_doc::Fill, bounds: Rect, xf: Affine) -> Option<krilla::paint::Paint> {
+    pub(crate) fn fill_paint_in(&mut self, fill: &pliego_doc::Fill, bounds: Rect, xf: Affine) -> Option<krilla::paint::Paint> {
         let (swatch, tint) = (fill.swatch.as_str(), fill.tint);
-        if let Some(g) = designcraft_color::swatch::resolve_gradient(&self.doc.swatches, swatch) {
+        if let Some(g) = pliego_color::swatch::resolve_gradient(&self.doc.swatches, swatch) {
             let kind = g.kind;
             let overprint = self.overprints(swatch, tint, fill.overprint);
             let stops = match self.ink_gradient_stops(g, swatch, overprint) {
@@ -75,7 +75,7 @@ impl Exporter<'_> {
     }
 
     /// A gradient's stops in device colors: CMYK, RGB or Gray, as one space.
-    fn device_gradient_stops(&mut self, g: &designcraft_color::Gradient, swatch: &str) -> Vec<Stop> {
+    fn device_gradient_stops(&mut self, g: &pliego_color::Gradient, swatch: &str) -> Vec<Stop> {
         let mut expanded = g.expanded_stops();
         // Gray and CMYK stops blend as inks, so a gray stop beside a CMYK one is the K ink.
         if !self.rgb_only && expanded.iter().any(|(_, c, _)| matches!(c, Color::Cmyk { .. })) {
@@ -117,7 +117,7 @@ impl Exporter<'_> {
     pub(super) fn stroke(&mut self, s: &mut Surface, it: &Item, bp: &BezPath, path: &Path) {
         let st = &it.stroke;
         // A gradient swatch runs across the path's box, as on a fill.
-        let paint: krilla::paint::Paint = if designcraft_color::swatch::resolve_gradient(&self.doc.swatches, &st.swatch).is_some() {
+        let paint: krilla::paint::Paint = if pliego_color::swatch::resolve_gradient(&self.doc.swatches, &st.swatch).is_some() {
             let Some(p) = self.fill_paint(&st.as_fill(), bp.bounding_box()) else { return };
             p
         } else {
@@ -130,9 +130,9 @@ impl Exporter<'_> {
         let stroke_op = self.overprints(&st.swatch, st.tint, st.overprint);
         let gap_op = self.overprints(&st.gap_swatch, st.gap_tint, st.gap_overprint);
         let mut cap = match st.cap {
-            designcraft_doc::Cap::Butt => krilla::paint::LineCap::Butt,
-            designcraft_doc::Cap::Round => krilla::paint::LineCap::Round,
-            designcraft_doc::Cap::Projecting => krilla::paint::LineCap::Square,
+            pliego_doc::Cap::Butt => krilla::paint::LineCap::Butt,
+            pliego_doc::Cap::Round => krilla::paint::LineCap::Round,
+            pliego_doc::Cap::Projecting => krilla::paint::LineCap::Square,
         };
         let kind = self.doc.stroke_kind(&st.kind);
         // Stripes, wavy and hash strokes: a filled outline (gap colour under it).
@@ -141,7 +141,7 @@ impl Exporter<'_> {
         {
             s.set_stroke(None);
             if let Some(g) = self.swatch_color(&st.gap_swatch, st.gap_tint)
-                && st.gap_swatch != designcraft_color::swatch::NONE
+                && st.gap_swatch != pliego_color::swatch::NONE
             {
                 let pushed = self.push_overprint(s, gap_op, gap_op);
                 s.set_stroke(Some(Stroke { paint: g.into(), width: st.weight as f32, opacity: NormalizedF32::ONE, ..Default::default() }));
@@ -162,7 +162,7 @@ impl Exporter<'_> {
             return;
         }
         // Viewers expand dashes too: a degenerate pattern draws solid, as on screen.
-        let length = designcraft_doc::path_length_bound(bp);
+        let length = pliego_doc::path_length_bound(bp);
         let dash = match &kind {
             StrokeType::Dashed { pattern } if StrokeType::expandable_dashes(pattern, length) => {
                 let mut pat: Vec<f32> = pattern.iter().map(|v| v.max(0.0) as f32).collect();
@@ -177,7 +177,7 @@ impl Exporter<'_> {
             }
             _ => None,
         };
-        let arrows = designcraft_doc::arrow::apply(bp, st, closed);
+        let arrows = pliego_doc::arrow::apply(bp, st, closed);
         let trimmed = arrows.as_ref().and_then(|a| to_path(&a.0));
         let path = trimmed.as_ref().unwrap_or(path);
         let aligned = closed && st.align != StrokeAlign::Center;
@@ -220,9 +220,9 @@ impl Exporter<'_> {
             miter_limit: st.miter_limit.max(1.0) as f32,
             line_cap: cap,
             line_join: match st.join {
-                designcraft_doc::Join::Miter => krilla::paint::LineJoin::Miter,
-                designcraft_doc::Join::Round => krilla::paint::LineJoin::Round,
-                designcraft_doc::Join::Bevel => krilla::paint::LineJoin::Bevel,
+                pliego_doc::Join::Miter => krilla::paint::LineJoin::Miter,
+                pliego_doc::Join::Round => krilla::paint::LineJoin::Round,
+                pliego_doc::Join::Bevel => krilla::paint::LineJoin::Bevel,
             },
             opacity: NormalizedF32::ONE,
             dash,

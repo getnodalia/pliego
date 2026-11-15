@@ -1,9 +1,9 @@
 //! Text editing (Type tool) and character/paragraph formatting.
 
-use designcraft_compose as compose;
-use designcraft_doc::story::floor_char_boundary;
-use designcraft_doc::{CellAddr, CharAttrs, Content, ItemId, ParaAttrs, Selection, StoryId, TextSel};
-use designcraft_geom::Point;
+use pliego_compose as compose;
+use pliego_doc::story::floor_char_boundary;
+use pliego_doc::{CellAddr, CharAttrs, Content, ItemId, ParaAttrs, Selection, StoryId, TextSel};
+use pliego_geom::Point;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, bool_or, cmd, has_doc, has_text, has_text_or_frames, id_param, ok, point_param, str_param};
@@ -126,11 +126,11 @@ pub fn specs() -> Vec<CommandSpec> {
             has_doc,
             |s, p| {
                 let sid = story_of(s, p).ok_or_else(|| bad("story.setDirection", "no story"))?;
-                let direction: designcraft_doc::TextDirection =
+                let direction: pliego_doc::TextDirection =
                     serde_json::from_value(p.get("direction").cloned().ok_or_else(|| bad("story.setDirection", "missing direction"))?)
                         .map_err(|e| bad("story.setDirection", e.to_string()))?;
                 s.edit(|d, _| {
-                    let st = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+                    let st = d.story_mut(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
                     st.direction = direction;
                     st.rev = st.rev.wrapping_add(1);
                     ok()
@@ -176,7 +176,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 let text = super::text_param(p, "text");
                 s.edit(|d, sel| {
                     let len = {
-                        let st = d.story_mut(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+                        let st = d.story_mut(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
                         let n = st.len();
                         if a > b || b > n || !st.text.is_char_boundary(a) || !st.text.is_char_boundary(b) {
                             let msg =
@@ -199,7 +199,7 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!(query "story.get", "Get Story", [], None, "{story? | frame?} → text, frames, paragraphs, vertical, lines, overset (the UTF-8 byte offset into `text` where it stops fitting its frames, not a character index, null when it all fits) and oversetChars (how many characters that leaves, as preflight reports them)", has_doc, |s, p| {
             let st = s.doc()?;
             let sid = story_of(s, p).ok_or_else(|| bad("story.get", "no story"))?;
-            let mut v = st.doc.story_summary(sid).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+            let mut v = st.doc.story_summary(sid).ok_or(pliego_doc::DocError::NoStory(sid))?;
             let cs = s.cache.get(&st.doc, sid, None);
             // `overset` is where the text stops fitting, not how much is left over: the two were
             // read as the same number and disagreed with preflight's count (#1465).

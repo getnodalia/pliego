@@ -164,7 +164,7 @@ impl Default for PdfExportSettings {
 
 /// The viewport of New Window's OS window, which shows pane 1.
 pub(crate) fn second_window_viewport() -> egui::ViewportId {
-    egui::ViewportId::from_hash_of("designcraft_second_window")
+    egui::ViewportId::from_hash_of("pliego_second_window")
 }
 
 /// Persisted UI state.
@@ -180,7 +180,7 @@ pub struct UiState {
     pub presentation_view: Option<(u64, View)>,
     /// The page in that view and the place on it, for Go Back after leaving Presentation.
     #[serde(skip)]
-    pub presentation_page: Option<(designcraft_doc::ids::PageId, designcraft_geom::Vec2)>,
+    pub presentation_page: Option<(pliego_doc::ids::PageId, pliego_geom::Vec2)>,
     /// That view's Go Back / Go Forward history; leaving puts it back with one jump added.
     #[serde(skip)]
     pub(crate) presentation_history: Option<page_history::PageHistory>,
@@ -214,17 +214,17 @@ pub struct UiState {
     /// Duplicate Parent Spread, Parent Options and Delete Parent act on, with the uid of the
     /// document it belongs to (a selection never carries over to another document or session).
     #[serde(skip)]
-    pub pages_selected_parent: Option<(u64, designcraft_doc::SpreadId)>,
+    pub pages_selected_parent: Option<(u64, pliego_doc::SpreadId)>,
     /// The Pages panel's Panel Options.
     pub pages_panel: panels::pages::PanelOptions,
     /// Edit › Color Settings (re-applied at start).
-    pub color_settings: Option<designcraft_color::cms::ColorSettings>,
+    pub color_settings: Option<pliego_color::cms::ColorSettings>,
     /// ICC files loaded with Edit › Color Settings › Load Profile… (loaded again at start, before
     /// `color_settings`, so a loaded working space stays chosen).
     pub color_profiles: Vec<String>,
     /// View › Proof Colors and View › Proof Setup.
     pub proof_colors: bool,
-    pub proof_setup: designcraft_color::cms::ProofSetup,
+    pub proof_setup: pliego_color::cms::ProofSetup,
     /// Edit › Spelling › Dynamic Spelling: misspelled words underlined on the canvas.
     pub dynamic_spelling: bool,
     /// Preferences › Story Editor Display: text size (points).
@@ -241,14 +241,14 @@ pub struct UiState {
     /// File › Export PDF… options (persisted; see `PdfExportSettings`).
     pub pdf_export: PdfExportSettings,
     /// File › Export Layouts and Versions…: the last job exported (persisted).
-    pub export_batch: Option<designcraft_engine::cmd::export_batch::ExportJob>,
+    pub export_batch: Option<pliego_engine::cmd::export_batch::ExportJob>,
     /// The Preview checkbox of Paragraph/Character Style Options, remembered between openings.
     pub style_preview: bool,
     /// View › Separations Preview: the plate shown and the ink limit; `None` is off.
     #[serde(skip)]
     pub separations: Option<separations::Separations>,
     /// View › Display Performance.
-    pub display_quality: designcraft_render::DisplayQuality,
+    pub display_quality: pliego_render::DisplayQuality,
     /// Preferences › Interface › UI scaling (1 = 100%).
     pub ui_scale: f32,
     /// Preferences › Appearance of Black: 100% K on screen as rich black (InDesign's default,
@@ -314,7 +314,7 @@ pub struct UiState {
     /// Window › Workspace › New Workspace: saved panel arrangements.
     pub custom_workspaces: Vec<SavedWorkspace>,
     /// File › New › Document › Recent: the settings of the last documents made, newest first.
-    pub recent_new_documents: Vec<designcraft_doc::build::NewDocument>,
+    pub recent_new_documents: Vec<pliego_doc::build::NewDocument>,
     /// The folder of the last file saved or exported: where the save dialog starts for a
     /// document never saved.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -358,7 +358,7 @@ pub struct UiState {
     /// Where the Contextual Task Bar was last shown, like [`Self::task_bar_pin`].
     #[serde(skip)]
     pub task_bar_at: Option<[f32; 2]>,
-    /// Help › About DesignCraft is open.
+    /// Help › About Pliego is open.
     pub about: bool,
     /// The About window's tab: 0 About, 1 Contributors, 2 Models (`about::ABOUT_TABS`).
     #[serde(skip)]
@@ -432,7 +432,7 @@ impl Default for UiState {
             export_batch: None,
             style_preview: false,
             separations: None,
-            display_quality: designcraft_render::DisplayQuality::High,
+            display_quality: pliego_render::DisplayQuality::High,
             ui_scale: 1.0,
             rich_black: true,
             overprint_preview: false,
@@ -542,8 +542,8 @@ pub struct Shown {
 
 impl CanvasCache {
     pub fn new() -> Self {
-        let mut renderer = designcraft_render::Renderer::new();
-        renderer.threads = designcraft_render::default_threads();
+        let mut renderer = pliego_render::Renderer::new();
+        renderer.threads = pliego_render::default_threads();
         CanvasCache {
             renderer,
             texture: None,
@@ -557,7 +557,7 @@ impl CanvasCache {
             shown_doc: None,
             pending_doc: None,
             display_key: None,
-            patcher: designcraft_render::Renderer::new(),
+            patcher: pliego_render::Renderer::new(),
             patches: 0,
             separations: separations::Preview::default(),
         }
@@ -571,7 +571,7 @@ impl Default for CanvasCache {
 }
 
 pub struct CanvasCache {
-    pub renderer: designcraft_render::Renderer,
+    pub renderer: pliego_render::Renderer,
     pub texture: Option<egui::TextureHandle>,
     pub shown: Option<Shown>,
     /// The request in flight on the worker.
@@ -582,13 +582,13 @@ pub struct CanvasCache {
     pub worker_started: bool,
     pub last_ms: f64,
     /// The document the texture shows (to repaint only what an edit changed).
-    pub shown_doc: Option<std::sync::Arc<designcraft_doc::Document>>,
+    pub shown_doc: Option<std::sync::Arc<pliego_doc::Document>>,
     /// Document of the request in flight.
-    pub pending_doc: Option<std::sync::Arc<designcraft_doc::Document>>,
+    pub pending_doc: Option<std::sync::Arc<pliego_doc::Document>>,
     /// Display options the texture and the request in flight were rendered with.
     pub display_key: Option<canvas::DisplayKey>,
     /// Renders damaged regions (its own context: region sizes vary).
-    pub patcher: designcraft_render::Renderer,
+    pub patcher: pliego_render::Renderer,
     /// Partial repaints / full renders since start (perf readout).
     pub patches: u64,
     /// View › Separations Preview: the visible spreads' plates.

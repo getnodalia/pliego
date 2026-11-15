@@ -5,13 +5,13 @@
 
 use std::sync::Arc;
 
-use designcraft_color::swatch::apply_tint;
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Asset, AssetId, Content, Document, Fill, Graphic, Item, ItemId, Shape, SpreadRef, Stroke};
-use designcraft_geom::{Affine, Rect, shapes};
-use designcraft_render::{RenderOptions, Renderer, color_of};
 use image::{ExtendedColorType, ImageEncoder};
+use pliego_color::swatch::apply_tint;
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Asset, AssetId, Content, Document, Fill, Graphic, Item, ItemId, Shape, SpreadRef, Stroke};
+use pliego_geom::{Affine, Rect, shapes};
+use pliego_render::{RenderOptions, Renderer, color_of};
 
 const RED: &str = "C=15 M=100 Y=100 K=0";
 const CYAN: &str = "C=100 M=0 Y=0 K=0";

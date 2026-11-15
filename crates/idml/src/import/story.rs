@@ -49,7 +49,7 @@ impl<'r> Importer<'r> {
                 tables.insert(t.id, Arc::new(t));
             }
         }
-        let notes = notes.into_iter().enumerate().map(|(i, text)| Arc::new(designcraft_doc::Footnote { id: i as u64 + 1, text })).collect();
+        let notes = notes.into_iter().enumerate().map(|(i, text)| Arc::new(pliego_doc::Footnote { id: i as u64 + 1, text })).collect();
         let mut anchor_list = Vec::new();
         for (k, (me, name)) in anchors.into_iter().enumerate() {
             let aid = (id.0 << 24) | (k as u64 + 1);
@@ -63,7 +63,7 @@ impl<'r> Importer<'r> {
             } else {
                 self.anchor_ids.insert(me, aid);
             }
-            anchor_list.push(Arc::new(designcraft_doc::TextAnchor { id: aid, name }));
+            anchor_list.push(Arc::new(pliego_doc::TextAnchor { id: aid, name }));
         }
         let mut xref_list = Vec::new();
         for (k, x) in xrefs.into_iter().enumerate() {
@@ -73,15 +73,15 @@ impl<'r> Importer<'r> {
             // exactly is dropped to be generated again (`drop_generated_xref_text`), and text
             // typed over it is kept, as InDesign shows it until the cross-reference is updated.
             let saved = !x.text.is_empty();
-            xref_list.push(Arc::new(designcraft_doc::CrossRef { target: 0, format, text: saved.then_some(x.text), page: x.page.filter(|_| saved) }));
+            xref_list.push(Arc::new(pliego_doc::CrossRef { target: 0, format, text: saved.then_some(x.text), page: x.page.filter(|_| saved) }));
         }
         let pref = e.find("StoryPreference");
-        let optical_margin = designcraft_doc::OpticalMargin {
+        let optical_margin = pliego_doc::OpticalMargin {
             on: pref.and_then(|p| p.boolean("OpticalMarginAlignment")).unwrap_or(false),
             size: pref
                 .and_then(|p| p.num("OpticalMarginSize"))
-                .and_then(designcraft_doc::OpticalMargin::clamp_size)
-                .unwrap_or(designcraft_doc::OpticalMargin::DEFAULT_SIZE),
+                .and_then(pliego_doc::OpticalMargin::clamp_size)
+                .unwrap_or(pliego_doc::OpticalMargin::DEFAULT_SIZE),
         };
         let mut st = Story {
             id,
@@ -90,9 +90,9 @@ impl<'r> Importer<'r> {
             chars,
             frames: vec![],
             direction: if e.find("StoryPreference").and_then(|p| p.get("StoryDirection")) == Some("RightToLeftDirection") {
-                designcraft_doc::TextDirection::RightToLeft
+                pliego_doc::TextDirection::RightToLeft
             } else {
-                designcraft_doc::TextDirection::LeftToRight
+                pliego_doc::TextDirection::LeftToRight
             },
             vertical: e.find("StoryPreference").and_then(|p| p.get("StoryOrientation")) == Some("Vertical"),
             optical_margin,
@@ -211,10 +211,10 @@ impl<'r> Importer<'r> {
                     }
                     "HyperlinkTextDestination" | "ParagraphDestination" => {
                         b.anchors.push((c.get("Self").unwrap_or("").to_string(), c.get("Name").unwrap_or("Anchor").to_string()));
-                        b.push(&designcraft_doc::ANCHOR_MARK.to_string(), cf);
+                        b.push(&pliego_doc::ANCHOR_MARK.to_string(), cf);
                     }
                     "PageReference" => {
-                        use designcraft_doc::index::IndexRange as R;
+                        use pliego_doc::index::IndexRange as R;
                         let topic = c.get("ReferencedTopic").and_then(|r| self.index_topics.get(r)).cloned().unwrap_or_default();
                         let range = match c.get("PageReferenceType") {
                             Some("ToEndOfStory") | Some("ToEndOfDocument") | Some("ToEndOfSection") => R::ToEndOfStory,
@@ -222,8 +222,8 @@ impl<'r> Importer<'r> {
                             Some("SuppressPageNumbers") => R::SuppressPageRange,
                             _ => R::CurrentPage,
                         };
-                        b.index_refs.push(designcraft_doc::IndexRef { topics: topic.path, sort: topic.sort, range });
-                        b.push(&designcraft_doc::INDEX_MARK.to_string(), cf);
+                        b.index_refs.push(pliego_doc::IndexRef { topics: topic.path, sort: topic.sort, range });
+                        b.push(&pliego_doc::INDEX_MARK.to_string(), cf);
                     }
                     "CrossReferenceSource" => {
                         // The generated text is regenerated from the format.
@@ -238,7 +238,7 @@ impl<'r> Importer<'r> {
                         // A source at paragraph level wraps a range; inside a range it holds the
                         // text directly and takes that range's format.
                         let f = c.find("CharacterStyleRange").map_or_else(|| cf.clone(), |r| self.range_format(r, pchars, cf));
-                        b.push(&designcraft_doc::XREF_MARK.to_string(), &f);
+                        b.push(&pliego_doc::XREF_MARK.to_string(), &f);
                     }
                     "Footnote" => {
                         // The text starts with the number marker (ACE 4, dropped) and the separator.
@@ -251,12 +251,12 @@ impl<'r> Importer<'r> {
                         // The reference's position comes from the footnote options.
                         let mut rcf = cf.clone();
                         rcf.over.position = None;
-                        b.push(&designcraft_doc::FOOTNOTE_REF.to_string(), &rcf);
+                        b.push(&pliego_doc::FOOTNOTE_REF.to_string(), &rcf);
                     }
                     // Anchored page items, including groups containing text frames.
                     "Rectangle" | "Oval" | "Polygon" | "GraphicLine" | "Group" | "TextFrame" => {
-                        if let Some(item) = self.item(c, designcraft_geom::Affine::IDENTITY) {
-                            use designcraft_doc::anchored::AnchorAlign as A;
+                        if let Some(item) = self.item(c, pliego_geom::Affine::IDENTITY) {
+                            use pliego_doc::anchored::AnchorAlign as A;
                             // Each setting the item leaves unset comes from its object style chain,
                             // then from the IDML defaults.
                             let levels: Vec<&El> = std::iter::once(c).chain(self.object_style_chain(c)).collect();
@@ -275,7 +275,7 @@ impl<'r> Importer<'r> {
                             };
                             let get = |k: &str| s(k).trim().parse::<f64>().ok().filter(|v| v.is_finite()).unwrap_or(0.0);
                             let position = match s("AnchoredPosition") {
-                                "AboveLine" => designcraft_doc::AnchorPosition::AboveLine {
+                                "AboveLine" => pliego_doc::AnchorPosition::AboveLine {
                                     align: match s("HorizontalAlignment") {
                                         "CenterAlign" => A::Center,
                                         "RightAlign" => A::Right,
@@ -295,7 +295,7 @@ impl<'r> Importer<'r> {
                                         "BottomAlign" => 2,
                                         _ => 0,
                                     };
-                                    designcraft_doc::AnchorPosition::Custom {
+                                    pliego_doc::AnchorPosition::Custom {
                                         x_relative: names::anchor_rel_in(s("HorizontalReferencePoint")),
                                         y_relative: names::anchor_rel_in(s("VerticalReferencePoint")),
                                         // IDML measures a left-aligned object's X offset leftwards.
@@ -307,10 +307,10 @@ impl<'r> Importer<'r> {
                                         spine_relative: s("SpineRelative") == "true",
                                     }
                                 }
-                                _ => designcraft_doc::AnchorPosition::Inline { y_offset: get("AnchorYoffset") },
+                                _ => pliego_doc::AnchorPosition::Inline { y_offset: get("AnchorYoffset") },
                             };
-                            b.objects.push(designcraft_doc::AnchoredObject::new(item, position));
-                            b.push(&designcraft_doc::OBJECT_MARK.to_string(), cf);
+                            b.objects.push(pliego_doc::AnchoredObject::new(item, position));
+                            b.push(&pliego_doc::OBJECT_MARK.to_string(), cf);
                         }
                     }
                     "TextVariableInstance" => {
@@ -322,8 +322,8 @@ impl<'r> Importer<'r> {
                         // room in the layout.
                         let mut ncf = cf.clone();
                         match c.get("ChangeType") {
-                            Some("DeletedText") => ncf.over.change = Some(designcraft_doc::ChangeMark::Deleted),
-                            Some("InsertedText" | "MovedText") => ncf.over.change = Some(designcraft_doc::ChangeMark::Inserted),
+                            Some("DeletedText") => ncf.over.change = Some(pliego_doc::ChangeMark::Deleted),
+                            Some("InsertedText" | "MovedText") => ncf.over.change = Some(pliego_doc::ChangeMark::Inserted),
                             _ => {}
                         }
                         self.walk_story(c, b, pf, pchars, &ncf, brk);
@@ -406,7 +406,7 @@ impl<'r> Importer<'r> {
     /// cap style (the list's leading "through 1 Dropcap" entry, read into the drop cap style). A
     /// list of its own without that entry clears an inherited drop cap style.
     pub(super) fn clear_inherited_drop_cap_styles(&mut self) {
-        let clears = |a: &designcraft_doc::ParaAttrs| a.drop_cap_style.is_none() && a.nested_styles.is_some();
+        let clears = |a: &pliego_doc::ParaAttrs| a.drop_cap_style.is_none() && a.nested_styles.is_some();
         let cleared: Vec<String> = self
             .styles
             .paragraph
@@ -440,11 +440,11 @@ struct StoryBuilder {
     notes: Vec<Story>,
     /// Text destinations (Self, name) and cross-reference sources (Self, format Self) in order.
     anchors: Vec<(String, String)>,
-    index_refs: Vec<designcraft_doc::IndexRef>,
+    index_refs: Vec<pliego_doc::IndexRef>,
     xrefs: Vec<XrefSource>,
     /// `HyperlinkTextSource` Self and the byte range of the text it wrapped (#1446).
     link_srcs: Vec<(String, usize, usize)>,
-    objects: Vec<designcraft_doc::AnchoredObject>,
+    objects: Vec<pliego_doc::AnchoredObject>,
 }
 
 /// A cross-reference source as saved: its id, its format's id, and its text with each page number
@@ -474,7 +474,7 @@ fn xref_saved_text(e: &El, page_vars: &HashSet<String>, text: &mut String, page:
         match c.local() {
             "Content" => text.push_str(&c.text_content()),
             "TextVariableInstance" if is_xref_page_number(c, page_vars) => {
-                text.push_str(designcraft_doc::xref::PAGE_NUM_BLOCK);
+                text.push_str(pliego_doc::xref::PAGE_NUM_BLOCK);
                 if page.is_none() {
                     *page = c.get("ResultText").map(str::to_string);
                 }

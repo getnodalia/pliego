@@ -23,11 +23,11 @@ mod fonts;
 /// written). With `intent` (PDF/X), the working space is also the `GTS_PDFX` output intent, with
 /// `/Trapped /False`. The second value is a warning when the working space's profile was replaced.
 pub(crate) fn print_settings(intent: bool) -> crate::Result<(krilla::SerializeSettings, Option<String>)> {
-    print_settings_with(&designcraft_color::cms::active(), intent)
+    print_settings_with(&pliego_color::cms::active(), intent)
 }
 
 /// [`print_settings`] for the working spaces of `cms`.
-pub(crate) fn print_settings_with(cms: &designcraft_color::cms::Cms, intent: bool) -> crate::Result<(krilla::SerializeSettings, Option<String>)> {
+pub(crate) fn print_settings_with(cms: &pliego_color::cms::Cms, intent: bool) -> crate::Result<(krilla::SerializeSettings, Option<String>)> {
     let write = |color: PrintColor<'_>| if intent { print::settings(color) } else { print::cmyk_blending(color.profile) };
     let fogra39 = || write(PrintColor::fogra39(craft_cms::builtin::COATED_FOGRA39_ICC));
     let Ok(space) = cms.output_intent() else { return Ok((fogra39()?, None)) };

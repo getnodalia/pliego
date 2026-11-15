@@ -1,14 +1,14 @@
 //! Renderer caching/culling behaviour, and a render-time regression test (`#[ignore]`: wall-clock
 //! timings are only meaningful on an idle machine — run with
-//! `cargo test --release -p designcraft-render --test it perf:: -- --ignored`).
+//! `cargo test --release -p pliego-render --test it perf:: -- --ignored`).
 
 use std::time::Instant;
 
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, ParaFormat, SpreadRef};
-use designcraft_geom::{Affine, Rect, Vec2};
-use designcraft_render::{Placed, RenderOptions, Renderer};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Document, ParaFormat, SpreadRef};
+use pliego_geom::{Affine, Rect, Vec2};
+use pliego_render::{Placed, RenderOptions, Renderer};
 
 const WORDS: &[&str] = &["grid", "margin", "column", "rhythm", "baseline", "reader", "story", "frame", "quiet", "layout", "type", "texture"];
 

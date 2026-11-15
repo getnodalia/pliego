@@ -1,14 +1,14 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
-default-members = ["crates/*", "apps/designcraft", "apps/designcraft-cli", "xtask"]
+default-members = ["crates/*", "apps/pliego", "apps/pliego-cli", "xtask"]
 
 [workspace.package]
 version = "0.17.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
-repository = "https://github.com/storytold/designcraft"
+repository = "https://github.com/getnodalia/pliego"
 
 [workspace.dependencies]
 # Shared reader and writer; publish the immutable revision before this consumer.
@@ -20,24 +20,24 @@ craft-prepress = { git = "https://github.com/getnodalia/foundation", rev = "92d3
 # In-app updates from this app's GitHub releases, with the update windows for egui.
 nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "d066d5d351f18f704bdfd8aad6f04b9e96a155e4", features = ["egui"] }
 # internal
-designcraft-geom = { path = "crates/geom" }
-designcraft-color = { path = "crates/color" }
-designcraft-doc = { path = "crates/doc" }
-designcraft-fonts = { path = "crates/fonts" }
-designcraft-compose = { path = "crates/compose" }
-designcraft-images = { path = "crates/images" }
-designcraft-render = { path = "crates/render" }
-designcraft-pdf = { path = "crates/pdf" }
-designcraft-idml = { path = "crates/idml" }
-designcraft-epub = { path = "crates/epub" }
-designcraft-pptx = { path = "crates/pptx" }
-designcraft-textimport = { path = "crates/textimport" }
-designcraft-format = { path = "crates/format" }
-designcraft-tools = { path = "crates/tools" }
-designcraft-engine = { path = "crates/engine" }
-designcraft-ui-egui = { path = "crates/ui-egui" }
-designcraft-mcp = { path = "crates/mcp" }
-designcraft-testkit = { path = "crates/testkit" }
+pliego-geom = { path = "crates/geom" }
+pliego-color = { path = "crates/color" }
+pliego-doc = { path = "crates/doc" }
+pliego-fonts = { path = "crates/fonts" }
+pliego-compose = { path = "crates/compose" }
+pliego-images = { path = "crates/images" }
+pliego-render = { path = "crates/render" }
+pliego-pdf = { path = "crates/pdf" }
+pliego-idml = { path = "crates/idml" }
+pliego-epub = { path = "crates/epub" }
+pliego-pptx = { path = "crates/pptx" }
+pliego-textimport = { path = "crates/textimport" }
+pliego-format = { path = "crates/format" }
+pliego-tools = { path = "crates/tools" }
+pliego-engine = { path = "crates/engine" }
+pliego-ui-egui = { path = "crates/ui-egui" }
+pliego-mcp = { path = "crates/mcp" }
+pliego-testkit = { path = "crates/testkit" }
 
 # foundation
 kurbo = { version = "0.13", features = ["serde"] }
@@ -143,7 +143,7 @@ debug = 0
 [patch.crates-io]
 krilla = { git = "https://github.com/getnodalia/foundation", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0", version = "=0.8.2" }
 winit = { git = "https://github.com/getnodalia/foundation", rev = "a517b3846ee8457d84ee4975110bfda6797c44dc" }
-# The hayro crates from craft-libs' vendor/ directory (pdfcraft's, plus the plate mode and decode
+# The hayro crates from craft-libs' vendor/ directory (papel's, plus the plate mode and decode
 # limits craft-pdf and craft-prepress need); same revision as craft-pdf.
 hayro = { git = "https://github.com/getnodalia/foundation", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0", version = "=0.7.1" }
 hayro-interpret = { git = "https://github.com/getnodalia/foundation", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0", version = "=0.7.0" }

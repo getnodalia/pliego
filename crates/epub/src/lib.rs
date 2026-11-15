@@ -13,8 +13,8 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::io::Write;
 
-use designcraft_doc::geom::{Affine, Rect};
-use designcraft_doc::{
+use pliego_doc::geom::{Affine, Rect};
+use pliego_doc::{
     Align, AnchorPosition, AnchoredObject, CharAttrs, CharProps, Content, Document, ENDNOTE_REF, EpubSplit, FOOTNOTE_REF, Item, ItemId, OBJECT_MARK,
     ParaProps, SpreadRef, Story, StoryId, Styles, Table, story,
 };

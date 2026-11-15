@@ -1,7 +1,7 @@
 use super::swatches::{parse_color, value_name};
 use super::{CharAttrs, Result, Session, Styles, Swatch, SwatchValue, Value, bad, has_doc, json, str_param};
 
-fn gradient_json(name: &str, g: &designcraft_color::Gradient) -> Value {
+fn gradient_json(name: &str, g: &pliego_color::Gradient) -> Value {
     let stops: Vec<Value> = g
         .stops
         .iter()
@@ -13,11 +13,11 @@ fn gradient_json(name: &str, g: &designcraft_color::Gradient) -> Value {
             v
         })
         .collect();
-    json!({"swatch": name, "kind": if g.kind == designcraft_color::GradientKind::Radial { "radial" } else { "linear" }, "stops": stops})
+    json!({"swatch": name, "kind": if g.kind == pliego_color::GradientKind::Radial { "radial" } else { "linear" }, "stops": stops})
 }
 
 pub(super) fn apply_gradient(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_color::{GradientKind, GradientStop};
+    use pliego_color::{GradientKind, GradientStop};
     let kind = match str_param(p, "kind") {
         Some("radial") => Some(GradientKind::Radial),
         Some("linear") => Some(GradientKind::Linear),
@@ -35,7 +35,7 @@ pub(super) fn apply_gradient(s: &mut Session, p: &Value) -> Result<Value> {
                 let color = st.get("color").and_then(parse_color);
                 let (color, swatch) = match st.get("swatch").and_then(Value::as_str) {
                     Some(name) => {
-                        match doc.resolve_color(name, 1.0).filter(|_| designcraft_color::swatch::resolve_gradient(&doc.swatches, name).is_none()) {
+                        match doc.resolve_color(name, 1.0).filter(|_| pliego_color::swatch::resolve_gradient(&doc.swatches, name).is_none()) {
                             Some(c) => (c, Some(name.to_string())),
                             None => (color.ok_or_else(|| bad("object.gradient", format!("`{name}` isn't a color swatch")))?, None),
                         }
@@ -72,7 +72,7 @@ pub(super) fn apply_gradient(s: &mut Session, p: &Value) -> Result<Value> {
         for id in &ids {
             let Some(it) = d.item(*id) else { continue };
             let cur_name = if stroke { it.stroke.swatch.clone() } else { it.fill.swatch.clone() };
-            let cur = designcraft_color::swatch::resolve_gradient(&d.swatches, &cur_name).cloned();
+            let cur = pliego_color::swatch::resolve_gradient(&d.swatches, &cur_name).cloned();
             let mut g = cur.clone().unwrap_or_default();
             if let Some(k) = kind {
                 g.kind = k;
@@ -177,10 +177,10 @@ pub(super) fn apply_color(s: &mut Session, p: &Value) -> Result<Value> {
 /// A process swatch holding this colour to the precision its name shows (whole CMYK percents,
 /// 0-255 RGB), else a new unnamed one (hidden from the Swatches panel until Add to Swatches):
 /// values a fraction of a percent apart would otherwise add hidden "C=0 M=50 Y=100 K=0 2" twins.
-fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Color) -> String {
+fn color_swatch(d: &mut pliego_doc::Document, color: pliego_color::Color) -> String {
     let shown = value_name(color);
     let process = |w: &&Swatch| match &w.value {
-        SwatchValue::Color { color: c, color_type: designcraft_color::ColorType::Process } => Some(*c),
+        SwatchValue::Color { color: c, color_type: pliego_color::ColorType::Process } => Some(*c),
         _ => None,
     };
     let existing = d
@@ -199,7 +199,7 @@ fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Col
     let name = Styles::unique_name(|n| d.swatch(n).is_some(), &shown);
     d.swatches.push(Swatch {
         name: name.clone(),
-        value: SwatchValue::Color { color, color_type: designcraft_color::ColorType::Process },
+        value: SwatchValue::Color { color, color_type: pliego_color::ColorType::Process },
         locked: false,
         named: false,
         hidden: true,
@@ -207,7 +207,7 @@ fn color_swatch(d: &mut designcraft_doc::Document, color: designcraft_color::Col
     name
 }
 
-fn color_items(d: &mut designcraft_doc::Document, ids: &[designcraft_doc::ItemId], name: &str, stroke: bool) {
+fn color_items(d: &mut pliego_doc::Document, ids: &[pliego_doc::ItemId], name: &str, stroke: bool) {
     for id in ids {
         if let Some(it) = d.item_mut(*id) {
             if stroke {
@@ -258,28 +258,28 @@ pub(super) fn sample_color(s: &mut Session, p: &Value) -> Result<Value> {
 /// frame shows that point (locked ones too, as sampling changes nothing). (image frame, colour);
 /// None over no image, a transparent pixel, or a graphic that is not a raster (PDF, EPS).
 pub(crate) fn image_color_at(
-    d: &designcraft_doc::Document,
-    sr: designcraft_doc::SpreadRef,
-    at: designcraft_geom::Point,
-) -> Option<(designcraft_doc::ItemId, designcraft_color::Color)> {
+    d: &pliego_doc::Document,
+    sr: pliego_doc::SpreadRef,
+    at: pliego_geom::Point,
+) -> Option<(pliego_doc::ItemId, pliego_color::Color)> {
     let sp = d.spread(sr)?;
-    let mut items: Vec<&designcraft_doc::Item> = sp.items.iter().map(|i| &**i).collect();
+    let mut items: Vec<&pliego_doc::Item> = sp.items.iter().map(|i| &**i).collect();
     items.sort_by_key(|i| d.layer_rank(i.layer));
     items
         .into_iter()
         .rev()
         .filter(|it| d.layer(it.layer).is_none_or(|l| l.visible))
-        .find_map(|it| sample_item(d, it, designcraft_geom::Affine::IDENTITY, at, 0))
+        .find_map(|it| sample_item(d, it, pliego_geom::Affine::IDENTITY, at, 0))
 }
 
 fn sample_item(
-    d: &designcraft_doc::Document,
-    it: &designcraft_doc::Item,
-    outer: designcraft_geom::Affine,
-    at: designcraft_geom::Point,
+    d: &pliego_doc::Document,
+    it: &pliego_doc::Item,
+    outer: pliego_geom::Affine,
+    at: pliego_geom::Point,
     depth: usize,
-) -> Option<(designcraft_doc::ItemId, designcraft_color::Color)> {
-    use designcraft_doc::Content;
+) -> Option<(pliego_doc::ItemId, pliego_color::Color)> {
+    use pliego_doc::Content;
     if it.hidden || depth > 64 {
         return None;
     }
@@ -292,13 +292,13 @@ fn sample_item(
         }
         Content::Graphic(g) => {
             let inner = xf.inverse() * at;
-            if !designcraft_geom::hit::fill_contains(&it.path.to_bezpath(), designcraft_geom::FillRule::NonZero, inner) {
+            if !pliego_geom::hit::fill_contains(&it.path.to_bezpath(), pliego_geom::FillRule::NonZero, inner) {
                 return None;
             }
             // A clipping path hides the image outside it.
             if let Some((region, even_odd)) = g.clip_region() {
-                let rule = if even_odd { designcraft_geom::FillRule::EvenOdd } else { designcraft_geom::FillRule::NonZero };
-                if !designcraft_geom::hit::fill_contains(&region, rule, inner) {
+                let rule = if even_odd { pliego_geom::FillRule::EvenOdd } else { pliego_geom::FillRule::NonZero };
+                if !pliego_geom::hit::fill_contains(&region, rule, inner) {
                     return None;
                 }
             }
@@ -309,12 +309,12 @@ fn sample_item(
                 return None;
             }
             let asset = d.assets.get(&g.asset).filter(|a| a.is_raster())?;
-            let img = designcraft_images::decode_rgba(&asset.data)?;
+            let img = pliego_images::decode_rgba(&asset.data)?;
             let (pw, ph) = img.dimensions();
             let px = ((gp.x / w * f64::from(pw)) as u32).min(pw.checked_sub(1)?);
             let py = ((gp.y / h * f64::from(ph)) as u32).min(ph.checked_sub(1)?);
             let [r, gr, b, a] = img.get_pixel_checked(px, py)?.0;
-            (a > 0).then(|| (it.id, designcraft_color::Color::rgb8(r, gr, b)))
+            (a > 0).then(|| (it.id, pliego_color::Color::rgb8(r, gr, b)))
         }
         _ => None,
     }
@@ -322,8 +322,8 @@ fn sample_item(
 
 /// Renaming a swatch walks every text inside a story (table cells, notes): refuse the whole edit
 /// for nesting deeper than 32 levels rather than leave deeper references at a removed name.
-pub(super) fn check_text_nesting(d: &designcraft_doc::Document, id: &str) -> Result<()> {
-    fn within(st: &designcraft_doc::Story, depth: usize) -> bool {
+pub(super) fn check_text_nesting(d: &pliego_doc::Document, id: &str) -> Result<()> {
+    fn within(st: &pliego_doc::Story, depth: usize) -> bool {
         depth <= 32
             && st.tables.values().all(|t| t.cells.iter().all(|c| within(&c.text, depth + 1)))
             && st.notes.iter().chain(&st.endnotes).all(|n| within(&n.text, depth + 1))

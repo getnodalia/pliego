@@ -2,18 +2,18 @@ use super::common::{bool_s, pct, uid};
 use super::{Affine, CharFormat, Content, El, Ex, Item, ParaFormat, Shape, names, num};
 
 impl<'a> Ex<'a> {
-    pub(super) fn cell_stroke_attrs(&self, el: &mut El, prefix: &str, s: &designcraft_doc::CellStroke) {
+    pub(super) fn cell_stroke_attrs(&self, el: &mut El, prefix: &str, s: &pliego_doc::CellStroke) {
         el.set(&format!("{prefix}StrokeWeight"), num(s.weight));
         el.set(&format!("{prefix}StrokeColor"), self.sw(&s.color));
         el.set(&format!("{prefix}StrokeTint"), pct(s.tint as f64));
         el.set(&format!("{prefix}StrokeType"), names::stroke_type_out(&s.kind));
-        if s.gap_color != designcraft_color::swatch::NONE || s.gap_tint != 1.0 {
+        if s.gap_color != pliego_color::swatch::NONE || s.gap_tint != 1.0 {
             el.set(&format!("{prefix}StrokeGapColor"), self.sw(&s.gap_color));
             el.set(&format!("{prefix}StrokeGapTint"), pct(s.gap_tint as f64));
         }
     }
 
-    pub(super) fn partial_cell_stroke_attrs(&self, el: &mut El, prefix: &str, attrs: &designcraft_doc::CellStrokeAttrs) {
+    pub(super) fn partial_cell_stroke_attrs(&self, el: &mut El, prefix: &str, attrs: &pliego_doc::CellStrokeAttrs) {
         if let Some(value) = attrs.weight {
             el.set(&format!("{prefix}StrokeWeight"), num(value));
         }
@@ -34,7 +34,7 @@ impl<'a> Ex<'a> {
         }
     }
 
-    pub(super) fn partial_alt_fill_attrs(&self, el: &mut El, kind: &str, attrs: &designcraft_doc::AltFillsAttrs) {
+    pub(super) fn partial_alt_fill_attrs(&self, el: &mut El, kind: &str, attrs: &pliego_doc::AltFillsAttrs) {
         if let Some(value) = attrs.first {
             el.set(&format!("Start{kind}FillCount"), value);
         }
@@ -61,7 +61,7 @@ impl<'a> Ex<'a> {
         }
     }
 
-    pub(super) fn partial_alt_stroke_attrs(&self, el: &mut El, kind: &str, attrs: &designcraft_doc::AltStrokesAttrs) {
+    pub(super) fn partial_alt_stroke_attrs(&self, el: &mut El, kind: &str, attrs: &pliego_doc::AltStrokesAttrs) {
         if let Some(value) = attrs.first {
             el.set(&format!("Start{kind}StrokeCount"), value);
         }
@@ -85,7 +85,7 @@ impl<'a> Ex<'a> {
     }
 
     /// `<Table>` with rows, columns and cells (cell names are `column:row`).
-    pub(super) fn table_el(&mut self, t: &designcraft_doc::Table) -> El {
+    pub(super) fn table_el(&mut self, t: &pliego_doc::Table) -> El {
         let id = uid(t.id);
         let (h, f) = (t.header_rows(), t.footer_rows());
         let mut el = El::new("Table")
@@ -96,11 +96,11 @@ impl<'a> Ex<'a> {
             .attr("ColumnCount", t.ncols())
             .attr(
                 "AppliedTableStyle",
-                names::style_self("TableStyle", names::TABLE_BUILTINS, if t.style.is_empty() { designcraft_doc::BASIC_TABLE } else { &t.style }),
+                names::style_self("TableStyle", names::TABLE_BUILTINS, if t.style.is_empty() { pliego_doc::BASIC_TABLE } else { &t.style }),
             )
             .attr(
                 "TableDirection",
-                if t.options.direction == designcraft_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" },
+                if t.options.direction == pliego_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" },
             )
             .attr("SpaceBefore", num(t.options.space_before))
             .attr("SpaceAfter", num(t.options.space_after))
@@ -143,7 +143,7 @@ impl<'a> Ex<'a> {
             }
         }
         for (r, row) in t.rows.iter().enumerate() {
-            let exact = row.mode == designcraft_doc::RowHeightMode::Exactly;
+            let exact = row.mode == pliego_doc::RowHeightMode::Exactly;
             el.push(
                 El::new("Row")
                     .attr("Self", format!("{id}Row{r}"))
@@ -164,10 +164,10 @@ impl<'a> Ex<'a> {
                 }
                 let Some(cell) = t.cell(r, c) else { continue };
                 let vj = match cell.vj {
-                    designcraft_doc::VerticalJustification::Top => "TopAlign",
-                    designcraft_doc::VerticalJustification::Center => "CenterAlign",
-                    designcraft_doc::VerticalJustification::Bottom => "BottomAlign",
-                    designcraft_doc::VerticalJustification::Justify => "JustifyAlign",
+                    pliego_doc::VerticalJustification::Top => "TopAlign",
+                    pliego_doc::VerticalJustification::Center => "CenterAlign",
+                    pliego_doc::VerticalJustification::Bottom => "BottomAlign",
+                    pliego_doc::VerticalJustification::Justify => "JustifyAlign",
                 };
                 let mut ce = El::new("Cell")
                     .attr("Self", format!("{id}i{}", r * t.ncols() + c))
@@ -179,7 +179,7 @@ impl<'a> Ex<'a> {
                         names::style_self(
                             "CellStyle",
                             names::CELL_BUILTINS,
-                            if cell.style.is_empty() { designcraft_doc::NO_CELL_STYLE } else { &cell.style },
+                            if cell.style.is_empty() { pliego_doc::NO_CELL_STYLE } else { &cell.style },
                         ),
                     )
                     .attr("FillColor", self.sw(&cell.fill))
@@ -201,7 +201,7 @@ impl<'a> Ex<'a> {
                     if cell.stroke_defined[i]
                         || cell.border_overrides[i]
                         || cell.stroke_priorities[i] != 0
-                        || cell.strokes[i] != designcraft_doc::CellStroke::default()
+                        || cell.strokes[i] != pliego_doc::CellStroke::default()
                     {
                         self.cell_stroke_attrs(&mut ce, side, &cell.strokes[i]);
                     }
@@ -243,11 +243,11 @@ impl<'a> Ex<'a> {
 
     /// The frame of a table cell's graphic: an inline `Rectangle` around the shown image, or `None`
     /// when the graphic's asset is missing.
-    fn cell_graphic_el(&mut self, g: &designcraft_doc::Graphic) -> Option<El> {
+    fn cell_graphic_el(&mut self, g: &pliego_doc::Graphic) -> Option<El> {
         self.d.assets.get(&g.asset)?;
-        let shown = g.xf.transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
-        let layer = self.d.layers.first().map(|l| l.id).unwrap_or(designcraft_doc::ids::LayerId(0));
-        let mut item = Item::new(designcraft_doc::ids::ItemId(0), layer, Shape::Rectangle, designcraft_geom::shapes::rectangle(shown));
+        let shown = g.xf.transform_rect_bbox(pliego_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
+        let layer = self.d.layers.first().map(|l| l.id).unwrap_or(pliego_doc::ids::LayerId(0));
+        let mut item = Item::new(pliego_doc::ids::ItemId(0), layer, Shape::Rectangle, pliego_geom::shapes::rectangle(shown));
         item.content = Content::Graphic(g.clone());
         let mut el = self.item_el(&item, Affine::IDENTITY);
         el.set("Self", self.fresh());

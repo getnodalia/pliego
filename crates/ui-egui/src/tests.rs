@@ -4,7 +4,7 @@ use super::*;
 /// row hung below the panel and was cut off.
 #[test]
 fn control_bar_shows_its_second_row() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     app.run("file.newSample", json!({})).unwrap();
     app.ui.control_bar = true;
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
@@ -60,7 +60,7 @@ fn black_shows_as_rich_black_by_default() {
 /// they follow the active document's ruler units.
 #[test]
 fn tool_readouts_measure_in_the_documents_units() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     assert_eq!(app.view_info().unit, Unit::Picas, "no document: the UI's default");
     app.run("file.new", json!({})).unwrap();
     app.run("document.preferences", json!({"horizontalUnits": "inches", "verticalUnits": "millimeters"})).unwrap();
@@ -76,7 +76,7 @@ fn save_dialogs_start_beside_the_document_or_in_the_last_folder() {
     let elsewhere = tempfile::tempdir().unwrap();
     let asked: Rc<RefCell<Vec<String>>> = Rc::default();
     let answer: Rc<RefCell<Option<String>>> = Rc::default();
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     let (seen, reply) = (asked.clone(), answer.clone());
     app.answer_dialogs(move |request| {
         let craft_dialogs::Request::File(dialog) = request else { return craft_dialogs::Answer::Cancelled };
@@ -98,11 +98,11 @@ fn save_dialogs_start_beside_the_document_or_in_the_last_folder() {
     };
 
     app.run("file.new", json!({})).unwrap();
-    let untitled = format!("{}.designcraft", app.session.active().unwrap().doc.title);
+    let untitled = format!("{}.pliego", app.session.active().unwrap().doc.title);
     save_dialog(&mut app);
     assert_eq!(last(&asked), untitled, "never saved, nothing remembered: the system's own folder");
 
-    let saved = home.path().join("Brochure.designcraft");
+    let saved = home.path().join("Brochure.pliego");
     *answer.borrow_mut() = Some(saved.to_string_lossy().to_string());
     save_dialog(&mut app);
     assert_eq!(app.session.active().unwrap().path.as_deref(), Some(&*saved.to_string_lossy()));
@@ -114,7 +114,7 @@ fn save_dialogs_start_beside_the_document_or_in_the_last_folder() {
     assert_eq!(last(&asked), home.path().join("Report.pdf").to_string_lossy(), "a saved document exports beside itself");
 
     app.run("file.new", json!({})).unwrap();
-    let untitled = format!("{}.designcraft", app.session.active().unwrap().doc.title);
+    let untitled = format!("{}.pliego", app.session.active().unwrap().doc.title);
     save_dialog(&mut app);
     assert_eq!(last(&asked), elsewhere.path().join(untitled).to_string_lossy(), "a new document starts in the last folder used");
 }
@@ -124,7 +124,7 @@ fn save_dialogs_start_beside_the_document_or_in_the_last_folder() {
 #[test]
 fn save_dialog_suggestions_keep_the_folder_and_only_a_file_name() {
     let folder = tempfile::tempdir().unwrap();
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     app.ui.last_save_folder = Some(folder.path().join("Docs").to_string_lossy().to_string());
     assert_eq!(app.suggested_save_path(""), "");
     assert_eq!(app.suggested_save_path("Q1/Q2.pdf"), folder.path().join("Docs").join("Q2.pdf").to_string_lossy());
@@ -132,7 +132,7 @@ fn save_dialog_suggestions_keep_the_folder_and_only_a_file_name() {
 
 /// An app with one document that has an unsaved edit.
 fn app_with_unsaved_document() -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     app.run("file.new", json!({})).unwrap();
     assert!(!app.session.documents()[0].is_dirty(), "a new document has nothing to save");
     app.run("frame.create", json!({"rect": [36, 36, 136, 136]})).unwrap();
@@ -170,7 +170,7 @@ fn closing_without_saving_discards_the_document() {
 #[test]
 fn closing_with_save_writes_the_file_then_closes() {
     let mut app = app_with_unsaved_document();
-    let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.designcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-close-test-{}.pliego", std::process::id()));
     app.run("file.saveAs", json!({"path": path})).unwrap();
     let saved = std::fs::metadata(&path).unwrap().len();
     app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -195,7 +195,7 @@ fn a_cancelled_save_keeps_the_document_open() {
 
 #[test]
 fn closing_a_saved_document_does_not_ask() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     app.run("file.new", json!({})).unwrap();
     menus::activate(&mut app, "file.close", &Value::Null);
     assert!(app.session.documents().is_empty());
@@ -316,7 +316,7 @@ fn native_quit_prompts_restore_window_visibility_without_focusing_completed_quit
     let completed = quit_frame(&mut app, &ctx, true);
     assert!(app.session.documents().is_empty());
 
-    let mut clean = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut clean = DesignApp::new(pliego_engine::Session::new(), Services::default());
     clean.run("file.new", json!({})).unwrap();
     let clean_close = quit_frame(&mut clean, &ctx, true);
     let mut control = app_with_unsaved_document();
@@ -362,7 +362,7 @@ fn repeated_native_quit_requests_preserve_partial_approvals_and_cancel() {
         assert!(std::sync::Arc::ptr_eq(&document.doc, &original));
         assert!(document.is_dirty());
         assert!(!document.history.undo.is_empty());
-        assert!(directory.path().join(format!("{}.designcraft", document.uid)).exists());
+        assert!(directory.path().join(format!("{}.pliego", document.uid)).exists());
     }
     // A fresh Dock Quit must ask about the first document again after cancellation.
     assert!(quit_frame(&mut app, &ctx, true).contains(&egui::ViewportCommand::CancelClose));
@@ -376,7 +376,7 @@ fn repeated_native_quit_requests_save_and_discard_only_after_all_answers() {
     second_unsaved_document(&mut app);
     let uids: Vec<_> = app.session.documents().iter().map(|d| d.uid).collect();
     let directory = tempfile::tempdir().unwrap();
-    let path = directory.path().join("saved.designcraft");
+    let path = directory.path().join("saved.pliego");
     let chosen = path.to_string_lossy().to_string();
     app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(chosen.clone())));
     app.session.recovery_dir = Some(directory.path().join("recovery"));
@@ -393,11 +393,11 @@ fn repeated_native_quit_requests_save_and_discard_only_after_all_answers() {
     discard_quit_dialog(&mut app);
     assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
     assert_eq!(app.session.documents().len(), 2);
-    assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.designcraft", uids[1])).exists());
+    assert!(app.session.recovery_dir.as_ref().unwrap().join(format!("{}.pliego", uids[1])).exists());
     assert!(quit_frame(&mut app, &ctx, true).is_empty());
     assert!(app.session.documents().is_empty());
     assert!(path.exists());
-    assert_eq!(designcraft_engine::Session::new().execute("file.open", &json!({"path": path})).unwrap()["index"], 0);
+    assert_eq!(pliego_engine::Session::new().execute("file.open", &json!({"path": path})).unwrap()["index"], 0);
     assert_eq!(std::fs::read_dir(app.session.recovery_dir.as_ref().unwrap()).unwrap().count(), 0);
 }
 
@@ -437,9 +437,9 @@ fn quitting_save_failure_after_discard_keeps_documents_and_can_retry() {
     let mut app = app_with_unsaved_document();
     second_unsaved_document(&mut app);
     let path = std::env::temp_dir()
-        .join(format!("designcraft-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
+        .join(format!("pliego-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
         .join("missing")
-        .join("document.designcraft");
+        .join("document.pliego");
     assert!(!path.parent().unwrap().exists());
     let picked = path.to_string_lossy().to_string();
     app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(picked.clone())));
@@ -494,7 +494,7 @@ fn quitting_save_then_later_cancel_keeps_saved_document_open() {
     let mut app = app_with_unsaved_document();
     second_unsaved_document(&mut app);
     let first = app.session.documents()[0].uid;
-    let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.designcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-quit-save-{}-{first}.pliego", std::process::id()));
     let picked = path.to_string_lossy().to_string();
     app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(picked.clone())));
     quit_frame(&mut app, &ctx, true);
@@ -548,7 +548,7 @@ fn quitting_pending_save_uses_dialog_uid_after_tab_switch() {
     let mut app = app_with_unsaved_document();
     second_unsaved_document(&mut app);
     let first = app.session.documents()[0].uid;
-    let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.designcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-quit-uid-{}-{first}.pliego", std::process::id()));
     let picked = path.to_string_lossy().to_string();
     app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(picked.clone())));
     quit_frame(&mut app, &ctx, true);
@@ -568,10 +568,10 @@ fn quitting_discard_preserves_recovery_until_final_commit() {
     let ctx = egui::Context::default();
     let mut app = app_with_unsaved_document();
     let uid = app.session.active().unwrap().uid;
-    let dir = std::env::temp_dir().join(format!("designcraft-quit-recovery-{}-{uid}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("pliego-quit-recovery-{}-{uid}", std::process::id()));
     app.session.recovery_dir = Some(dir.clone());
     app.run("file.recovery.save", json!({})).unwrap();
-    let entry = dir.join(format!("{uid}.designcraft"));
+    let entry = dir.join(format!("{uid}.pliego"));
     quit_frame(&mut app, &ctx, true);
     discard_quit_dialog(&mut app);
     assert!(quit_frame(&mut app, &ctx, false).contains(&egui::ViewportCommand::Close));
@@ -634,7 +634,7 @@ fn quitting_native_exit_retains_incomplete_stale_and_new_document_plans() {
 #[test]
 fn quitting_without_unsaved_changes_closes_at_once() {
     let ctx = egui::Context::default();
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     app.run("file.new", json!({})).unwrap();
     // Quit (⌘Q) closes the window like its close button.
     app.run("app.quit", json!({})).unwrap();
@@ -670,7 +670,7 @@ fn opening_missing_fonts_offers_repeated_replacement_and_keeps_errors_visible() 
         f.over.font_family = Some("Unavailable Test Family".into());
         f.over.font_style = Some("Regular".into());
     });
-    let path = std::env::temp_dir().join(format!("designcraft-font-open-{}.designcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-font-open-{}.pliego", std::process::id()));
     app.run("file.save", json!({"path":path})).unwrap();
     app.run("file.open", json!({"path":path})).unwrap();
     let dialog = app.ui.dialog.as_mut().unwrap();
@@ -739,7 +739,7 @@ fn pdf_export_settings_survive_missing_key() {
 
 /// A temporary file named `name` whose bytes aren't a document or a graphic.
 fn unreadable_file(name: &str) -> std::path::PathBuf {
-    let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-ui-{}-{name}", std::process::id()));
     std::fs::write(&path, b"neither a document nor a graphic").unwrap();
     path
 }
@@ -753,7 +753,7 @@ fn alert(app: &DesignApp) -> (String, String) {
 
 #[test]
 fn dropped_documents_open_and_the_rest_is_placed() {
-    for name in ["a.designcraft", "B.IDML", "c.indd", "D.INDT"] {
+    for name in ["a.pliego", "B.IDML", "c.indd", "D.INDT"] {
         assert!(opens_as_document(name), "{name}");
     }
     for name in ["a.png", "b.pdf", "idml.txt", "c.idml.zip", "e.indd.zip"] {
@@ -765,10 +765,10 @@ fn dropped_documents_open_and_the_rest_is_placed() {
 /// for by the operating system, they wait for the window and then open as documents.
 #[test]
 fn extensionless_documents_open_by_content() {
-    let path = std::env::temp_dir().join(format!("designcraft-ui-{}-Brochure", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-ui-{}-Brochure", std::process::id()));
     let mut app = DesignApp::new(Session::new(), Services::default());
     app.run("file.new", json!({})).unwrap();
-    let bytes = designcraft_engine::cmd::base64_decode(app.run("file.serialize", json!({})).unwrap()["base64"].as_str().unwrap());
+    let bytes = pliego_engine::cmd::base64_decode(app.run("file.serialize", json!({})).unwrap()["base64"].as_str().unwrap());
     std::fs::write(&path, bytes).unwrap();
     let p = path.to_string_lossy().to_string();
     app.open_dropped(&p).unwrap();
@@ -798,7 +798,7 @@ fn status_messages_follow_the_interface_language_but_engine_errors_stay_english(
 #[test]
 fn dropping_an_unreadable_file_alerts() {
     // A document opens, so it says it can't be opened.
-    let path = unreadable_file("broken.designcraft");
+    let path = unreadable_file("broken.pliego");
     let mut app = DesignApp::new(Session::new(), Services::default());
     let r = app.open_dropped(&path.to_string_lossy());
     let _ = std::fs::remove_file(&path);
@@ -837,9 +837,9 @@ fn dropping_an_ase_file_loads_its_swatches() {
     source.execute("file.new", &json!({})).unwrap();
     source.execute("swatch.create", &json!({"name": "Dropped Teal", "color": "#108080"})).unwrap();
     let data = source.execute("swatch.save", &json!({"names": ["Dropped Teal"]})).unwrap();
-    let bytes = designcraft_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
+    let bytes = pliego_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
     for name in ["palette.ase", "PALETTE.ASE"] {
-        let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}", std::process::id()));
+        let path = std::env::temp_dir().join(format!("pliego-ui-{}-{name}", std::process::id()));
         std::fs::write(&path, &bytes).unwrap();
         let mut app = DesignApp::new(Session::new(), Services::default());
         app.run("file.new", json!({})).unwrap();
@@ -869,17 +869,17 @@ fn app_with_drop_item(command: &str, params: serde_json::Value) -> (DesignApp, u
     let _ = app.view_mut();
     let (view, rect) = (app.view().unwrap(), app.canvas_rect.unwrap());
     let st = app.session.active().unwrap();
-    let layout = designcraft_tools::CanvasLayout::new(&st.doc, false);
-    let slot = layout.slot(designcraft_doc::SpreadRef::Doc(0)).unwrap();
+    let layout = pliego_tools::CanvasLayout::new(&st.doc, false);
+    let slot = layout.slot(pliego_doc::SpreadRef::Doc(0)).unwrap();
     let xf = canvas::Xf::new(rect, view);
-    let inside = xf.to_screen(slot.to_canvas(designcraft_geom::Point::new(80.0, 80.0)));
-    let outside = xf.to_screen(slot.to_canvas(designcraft_geom::Point::new(300.0, 300.0)));
+    let inside = xf.to_screen(slot.to_canvas(pliego_geom::Point::new(80.0, 80.0)));
+    let outside = xf.to_screen(slot.to_canvas(pliego_geom::Point::new(300.0, 300.0)));
     (app, frame, inside, outside)
 }
 
 fn dropped_png(name: &str) -> std::path::PathBuf {
-    let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}.png", std::process::id()));
-    std::fs::write(&path, designcraft_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
+    let path = std::env::temp_dir().join(format!("pliego-ui-{}-{name}.png", std::process::id()));
+    std::fs::write(&path, pliego_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
     path
 }
 
@@ -891,14 +891,14 @@ fn a_graphic_dropped_on_a_frame_with_a_nested_image_replaces_it() {
     let path = dropped_png("drop-nested-old");
     app.open_dropped_at(&path.to_string_lossy(), Some(inside)).unwrap();
     let _ = std::fs::remove_file(&path);
-    let id = designcraft_doc::ItemId(frame);
+    let id = pliego_doc::ItemId(frame);
     app.session
         .edit(|d, _| {
             let it = d.item_mut(id).unwrap();
             let mut image = it.clone();
-            image.id = designcraft_doc::ItemId(9_999);
-            image.xf = designcraft_geom::Affine::IDENTITY;
-            it.content = designcraft_doc::Content::Group { items: vec![std::sync::Arc::new(image)] };
+            image.id = pliego_doc::ItemId(9_999);
+            image.xf = pliego_geom::Affine::IDENTITY;
+            it.content = pliego_doc::Content::Group { items: vec![std::sync::Arc::new(image)] };
             Ok(())
         })
         .unwrap();
@@ -909,7 +909,7 @@ fn a_graphic_dropped_on_a_frame_with_a_nested_image_replaces_it() {
     let _ = std::fs::remove_file(&path);
     let d = &app.session.doc().unwrap().doc;
     assert_eq!(d.spreads[0].items.len(), 1, "no new object");
-    let designcraft_doc::Content::Graphic(g) = &d.item(id).unwrap().content else { panic!("the frame holds the new graphic") };
+    let pliego_doc::Content::Graphic(g) = &d.item(id).unwrap().content else { panic!("the frame holds the new graphic") };
     assert!(d.assets[&g.asset].name.contains("drop-nested-new"));
 }
 
@@ -922,17 +922,17 @@ fn a_graphic_dropped_on_a_frame_fills_it() {
     assert_eq!(r.unwrap()["id"].as_u64(), Some(frame), "the frame under the pointer is filled");
     let d = &app.session.doc().unwrap().doc;
     assert_eq!(d.spreads[0].items.len(), 1, "no new object");
-    assert!(matches!(d.item(designcraft_doc::ItemId(frame)).unwrap().content, designcraft_doc::Content::Graphic(_)));
+    assert!(matches!(d.item(pliego_doc::ItemId(frame)).unwrap().content, pliego_doc::Content::Graphic(_)));
     assert!(canvas::drop_frame(&app, Some(outside)).is_none(), "an empty spot on the page is no frame");
     // Text dropped there gets a frame of its own and leaves the image in place.
-    let text = std::env::temp_dir().join(format!("designcraft-ui-{}-dropframe.txt", std::process::id()));
+    let text = std::env::temp_dir().join(format!("pliego-ui-{}-dropframe.txt", std::process::id()));
     std::fs::write(&text, "Dropped words").unwrap();
     let r = app.open_dropped_at(&text.to_string_lossy(), Some(inside));
     let _ = std::fs::remove_file(&text);
     r.unwrap();
     let d = &app.session.doc().unwrap().doc;
     assert_eq!(d.spreads[0].items.len(), 2, "the text has a new frame");
-    assert!(matches!(d.item(designcraft_doc::ItemId(frame)).unwrap().content, designcraft_doc::Content::Graphic(_)));
+    assert!(matches!(d.item(pliego_doc::ItemId(frame)).unwrap().content, pliego_doc::Content::Graphic(_)));
 }
 
 /// A file dragged in from the Finder brings no pointer events (winit sends none during a drag on
@@ -958,7 +958,7 @@ fn a_file_dropped_without_pointer_events_fills_the_frame_under_the_system_pointe
         assert!(app.pending_drops.is_empty());
         let d = &app.session.doc().unwrap().doc;
         assert_eq!(d.spreads[0].items.len(), 1, "no new object at {zoom}");
-        let designcraft_doc::Content::Graphic(g) = &d.item(designcraft_doc::ItemId(frame)).unwrap().content else {
+        let pliego_doc::Content::Graphic(g) = &d.item(pliego_doc::ItemId(frame)).unwrap().content else {
             panic!("the frame under the pointer is filled at {zoom}")
         };
         assert!(d.assets[&g.asset].name.contains("drop-system-pointer"));
@@ -971,7 +971,7 @@ fn a_file_dropped_without_pointer_events_fills_the_frame_under_the_system_pointe
 #[test]
 fn graphics_dropped_on_a_line_leave_the_line_alone() {
     let (mut app, line, on_line, _) = app_with_drop_item("line.create", json!({"a": [36, 80], "b": [136, 80]}));
-    let id = designcraft_doc::ItemId(line);
+    let id = pliego_doc::ItemId(line);
     let before = serde_json::to_value(app.session.doc().unwrap().doc.item(id).unwrap()).unwrap();
     assert!(canvas::drop_frame(&app, Some(on_line)).is_none(), "a line is no frame");
     let (first, second) = (dropped_png("drop-on-line-first"), dropped_png("drop-on-line-second"));
@@ -980,15 +980,15 @@ fn graphics_dropped_on_a_line_leave_the_line_alone() {
     assert!(!frame_free, "the first graphic is under the pointer now");
     let b = app.place_dropped(&second.to_string_lossy(), Some(on_line), &mut frame_free);
     let _ = (std::fs::remove_file(&first), std::fs::remove_file(&second));
-    let a = designcraft_doc::ItemId(a.unwrap()["id"].as_u64().unwrap());
-    let b = designcraft_doc::ItemId(b.unwrap()["id"].as_u64().unwrap());
+    let a = pliego_doc::ItemId(a.unwrap()["id"].as_u64().unwrap());
+    let b = pliego_doc::ItemId(b.unwrap()["id"].as_u64().unwrap());
     assert!(a != id && b != id && a != b, "each graphic has a new frame: {a:?} {b:?}");
     let d = &app.session.doc().unwrap().doc;
     assert_eq!(d.spreads[0].items.len(), 3);
     assert_eq!(serde_json::to_value(d.item(id).unwrap()).unwrap(), before, "the line is unchanged");
     for (placed, name) in [(a, "drop-on-line-first"), (b, "drop-on-line-second")] {
         let it = d.item(placed).unwrap();
-        let designcraft_doc::Content::Graphic(g) = &it.content else { panic!("{name} is in its frame") };
+        let pliego_doc::Content::Graphic(g) = &it.content else { panic!("{name} is in its frame") };
         assert!(d.assets[&g.asset].name.contains(name), "{name}");
         assert!(it.path.encloses_area() && it.bounds().height() > 1.0, "a real frame, not a zero-height one: {:?}", it.bounds());
     }
@@ -1004,7 +1004,7 @@ fn a_locked_frame_is_not_a_drop_target() {
     let _ = std::fs::remove_file(&path);
     r.unwrap();
     let d = &app.session.doc().unwrap().doc;
-    assert!(matches!(d.item(designcraft_doc::ItemId(frame)).unwrap().content, designcraft_doc::Content::Unassigned), "the locked frame stays empty");
+    assert!(matches!(d.item(pliego_doc::ItemId(frame)).unwrap().content, pliego_doc::Content::Unassigned), "the locked frame stays empty");
     assert_eq!(d.spreads[0].items.len(), 2, "the graphic became a new object");
 }
 
@@ -1021,7 +1021,7 @@ fn only_the_first_graphic_of_a_drop_fills_the_frame() {
     assert_ne!(b.unwrap()["id"].as_u64(), Some(frame), "the second graphic doesn't replace the first");
     let d = &app.session.doc().unwrap().doc;
     assert_eq!(d.spreads[0].items.len(), 2, "the second graphic is a new object");
-    assert!(matches!(d.item(designcraft_doc::ItemId(frame)).unwrap().content, designcraft_doc::Content::Graphic(_)));
+    assert!(matches!(d.item(pliego_doc::ItemId(frame)).unwrap().content, pliego_doc::Content::Graphic(_)));
 }
 
 #[test]
@@ -1031,8 +1031,8 @@ fn a_file_dropped_while_a_parent_is_open_lands_on_the_parent() {
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1400.0, 900.0)));
     app.run("layout.parents.edit", json!({"on": true})).unwrap();
     let _ = app.view_mut();
-    let path = std::env::temp_dir().join(format!("designcraft-ui-{}-drop.png", std::process::id()));
-    std::fs::write(&path, designcraft_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
+    let path = std::env::temp_dir().join(format!("pliego-ui-{}-drop.png", std::process::id()));
+    std::fs::write(&path, pliego_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
     let r = app.open_dropped(&path.to_string_lossy());
     let _ = std::fs::remove_file(&path);
     r.unwrap();
@@ -1043,7 +1043,7 @@ fn a_file_dropped_while_a_parent_is_open_lands_on_the_parent() {
 
 #[test]
 fn file_open_failures_show_an_alert() {
-    let path = unreadable_file("open.designcraft");
+    let path = unreadable_file("open.pliego");
     let picked = path.to_string_lossy().to_string();
     let mut app = DesignApp::new(Session::new(), Services::default());
     app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(picked)));
@@ -1063,11 +1063,11 @@ fn file_open_failures_show_an_alert() {
 #[test]
 fn other_command_errors_stay_in_the_status_line() {
     let mut app = DesignApp::new(Session::new(), Services::default());
-    assert!(app.run("file.open", json!({"path": "/nonexistent/x.designcraft"})).is_err());
+    assert!(app.run("file.open", json!({"path": "/nonexistent/x.pliego"})).is_err());
     assert!(app.ui.dialog.is_none(), "a scripted file.open doesn't raise an alert");
     assert!(!app.ui.status.is_empty());
     // The control channel's app.open answers with the error; no alert waits for a click.
-    let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.designcraft"}));
+    let (req, _rx) = control::ControlRequest::new("app.open", json!({"path": "/nonexistent/x.pliego"}));
     let control::Outcome::Done(r) = control::handle(&mut app, &egui::Context::default(), &req) else { panic!("app.open answers") };
     assert_eq!(r["ok"], json!(false), "{r}");
     assert!(app.ui.dialog.is_none(), "a control-channel app.open doesn't raise an alert");
@@ -1087,18 +1087,18 @@ fn paste_lands_on_the_spread_in_view() {
     };
     // Nothing is in view before the canvas is laid out: the first spread, as in a script.
     app.run("edit.paste", json!({})).unwrap();
-    assert_eq!(pasted_on(&app), designcraft_doc::SpreadRef::Doc(0));
+    assert_eq!(pasted_on(&app), pliego_doc::SpreadRef::Doc(0));
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1400.0, 900.0)));
     canvas::go_to_page(&mut app, 2);
     menus::activate(&mut app, "edit.pasteInPlace", &Value::Null);
-    assert_eq!(pasted_on(&app), designcraft_doc::SpreadRef::Doc(2));
+    assert_eq!(pasted_on(&app), pliego_doc::SpreadRef::Doc(2));
     canvas::go_to_page(&mut app, 1);
     app.run("edit.paste", json!({})).unwrap();
-    assert_eq!(pasted_on(&app), designcraft_doc::SpreadRef::Doc(1));
+    assert_eq!(pasted_on(&app), pliego_doc::SpreadRef::Doc(1));
     // A parent spread while parents are edited.
     app.run("layout.parents.edit", json!({"on": true})).unwrap();
     app.run("edit.paste", json!({})).unwrap();
-    assert_eq!(pasted_on(&app), designcraft_doc::SpreadRef::Parent(0));
+    assert_eq!(pasted_on(&app), pliego_doc::SpreadRef::Parent(0));
     // With an insertion point Paste still goes into the text, where the object is anchored.
     let story = app.run("frame.create", json!({"rect": [36, 200, 300, 400], "content": "text", "text": "ab"})).unwrap()["story"].clone();
     app.run("text.select", json!({"story": story, "anchor": 2})).unwrap();
@@ -1210,7 +1210,7 @@ fn screenshot_app() -> (DesignApp, egui::Context, std::sync::Arc<std::sync::Mute
 fn screenshot_callback_stays_weak_and_writes_only_from_logic() {
     let (mut app, ctx, writes) = screenshot_app();
     let (reply, replies) = std::sync::mpsc::channel();
-    let path = std::env::temp_dir().join(format!("designcraft-shot-{}.png", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pliego-shot-{}.png", std::process::id()));
     app.admit_screenshot(Some(path.to_string_lossy().to_string()), reply).unwrap();
     app.queued_shots[0].1 = 0.0;
     let mut callback = None;
@@ -1600,7 +1600,7 @@ fn a_document_switch_before_the_ui_pass_drops_the_pending_batch() {
 #[cfg(not(target_arch = "wasm32"))]
 fn prepare_revert(app: &mut DesignApp) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    app.run("file.saveAs", json!({"path": dir.path().join("revert.designcraft")})).unwrap();
+    app.run("file.saveAs", json!({"path": dir.path().join("revert.pliego")})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 144, 144], "content": "text", "text": "unsaved"})).unwrap();
     assert!(app.session.active().unwrap().is_dirty());
     dir
@@ -1660,7 +1660,7 @@ fn document_with_a_frame() -> Vec<u8> {
     session.execute("file.new", &json!({"title": "Incoming"})).unwrap();
     session.execute("frame.create", &json!({"rect": [10, 10, 50, 50]})).unwrap();
     let serialized = session.execute("file.serialize", &json!({})).unwrap();
-    designcraft_engine::cmd::base64_decode(serialized["base64"].as_str().unwrap())
+    pliego_engine::cmd::base64_decode(serialized["base64"].as_str().unwrap())
 }
 
 /// One host iteration in eframe's order: `raw_input_hook`, then `run_ui` calling
@@ -1765,7 +1765,7 @@ fn design_host_order_native_revert_precedes_the_deferred_os_open() {
     let (mut app, ctx, _writes) = screenshot_app();
     let dir = prepare_revert(&mut app);
     let original = app.session.active().unwrap().uid;
-    let path = dir.path().join("incoming.designcraft");
+    let path = dir.path().join("incoming.pliego");
     std::fs::write(&path, document_with_a_frame()).unwrap();
     app.open_documents_later([path.to_string_lossy().to_string()]);
     app.control_synthetic.push(egui::Event::PointerMoved(egui::pos2(10.0, 10.0)));
@@ -1837,7 +1837,7 @@ fn design_host_order_arriving_native_event_blocks_an_os_open_without_synthetic_i
     let (mut app, ctx, _writes) = screenshot_app();
     let dir = prepare_revert(&mut app);
     let original = app.session.active().unwrap().uid;
-    let path = dir.path().join("incoming.designcraft");
+    let path = dir.path().join("incoming.pliego");
     std::fs::write(&path, document_with_a_frame()).unwrap();
     app.open_documents_later([path.to_string_lossy().to_string()]);
     let mut actions = std::collections::VecDeque::from([("file.revert".to_owned(), json!({}))]);
@@ -1896,7 +1896,7 @@ fn design_host_order_inbox_open_must_not_receive_a_pending_shortcut() {
     let (mut app, ctx, _writes) = screenshot_app();
     app.services.inbox = Some(Inbox::default());
     let request = app.import_request("open");
-    let file = ImportedFile { request, name: "incoming.designcraft".into(), bytes: document_with_a_frame() };
+    let file = ImportedFile { request, name: "incoming.pliego".into(), bytes: document_with_a_frame() };
     app.services.inbox.as_ref().unwrap().lock().unwrap().push(file);
     app.control_synthetic.extend(command_key(egui::Key::A));
     run_host_frame(&mut app, &ctx, visible_raw());
@@ -1911,7 +1911,7 @@ fn design_host_order_inbox_open_must_not_receive_a_pending_shortcut() {
 fn design_host_order_os_document_must_not_receive_a_pending_shortcut() {
     let (mut app, ctx, _writes) = screenshot_app();
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("incoming.designcraft");
+    let path = dir.path().join("incoming.pliego");
     std::fs::write(&path, document_with_a_frame()).unwrap();
     app.open_documents_later([path.to_string_lossy().to_string()]);
     app.control_synthetic.extend(command_key(egui::Key::A));
@@ -1929,7 +1929,7 @@ fn design_host_order_inbox_delivery_waits_for_a_settled_batch_then_runs() {
     let (mut app, ctx, _writes) = screenshot_app();
     app.services.inbox = Some(Inbox::default());
     let request = app.import_request("open");
-    let file = ImportedFile { request, name: "incoming.designcraft".into(), bytes: document_with_a_frame() };
+    let file = ImportedFile { request, name: "incoming.pliego".into(), bytes: document_with_a_frame() };
     app.services.inbox.as_ref().unwrap().lock().unwrap().push(file);
     app.control_synthetic.push(egui::Event::PointerMoved(egui::pos2(10.0, 10.0)));
     run_host_frame(&mut app, &ctx, visible_raw());
@@ -1944,7 +1944,7 @@ fn design_host_order_inbox_delivery_waits_for_a_settled_batch_then_runs() {
 fn design_host_order_os_document_waits_for_a_settled_batch_then_runs() {
     let (mut app, ctx, _writes) = screenshot_app();
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("incoming.designcraft");
+    let path = dir.path().join("incoming.pliego");
     std::fs::write(&path, document_with_a_frame()).unwrap();
     app.open_documents_later([path.to_string_lossy().to_string()]);
     app.control_synthetic.push(egui::Event::PointerMoved(egui::pos2(10.0, 10.0)));
@@ -1961,7 +1961,7 @@ fn design_revert_discards_a_buffered_native_drop() {
     let (mut app, ctx) = drop_test_app();
     let dir = prepare_revert(&mut app);
     let path = dir.path().join("drop.png");
-    std::fs::write(&path, designcraft_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
+    std::fs::write(&path, pliego_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
     let mut raw = visible_raw_with_drop(&[&path]);
     app.raw_input_hook(&ctx, &mut raw);
     assert_eq!(app.pending_drops.len(), 1);
@@ -2151,8 +2151,8 @@ fn drop_test_app() -> (DesignApp, egui::Context) {
 /// Write a tiny unique PNG for drop tests.
 #[cfg(not(target_arch = "wasm32"))]
 fn temporary_png(name: &str) -> std::path::PathBuf {
-    let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}.png", std::process::id()));
-    std::fs::write(&path, designcraft_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
+    let path = std::env::temp_dir().join(format!("pliego-ui-{}-{name}.png", std::process::id()));
+    std::fs::write(&path, pliego_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
     path
 }
 

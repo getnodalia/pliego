@@ -1,8 +1,8 @@
 //! Where spreads sit on the canvas (the pasteboard): stacked vertically, spines aligned at x = 0,
 //! parents shown on their own canvas when a parent spread is being edited.
 
-use designcraft_doc::{Document, Selection, SpreadRef};
-use designcraft_geom::{Affine, Point, Rect, Vec2};
+use pliego_doc::{Document, Selection, SpreadRef};
+use pliego_geom::{Affine, Point, Rect, Vec2};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -164,7 +164,7 @@ fn dist_y(r: Rect, y: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_doc::build::NewDocument;
+    use pliego_doc::build::NewDocument;
 
     #[test]
     fn spreads_stack_on_the_spine() {

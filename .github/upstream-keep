@@ -13,3 +13,5 @@ NODALIA_MIGRATION.md
 .github/pull_request_template.md
 .github/CODEOWNERS
 CONTRIBUTING.md
+.github/rebrand.toml
+scripts/rebrand.py

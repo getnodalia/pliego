@@ -1,4 +1,4 @@
-//! DesignCraft renderer: spreads → premultiplied RGBA pixels with `vello_cpu`.
+//! Pliego renderer: spreads → premultiplied RGBA pixels with `vello_cpu`.
 //!
 //! The renderer draws *document content only* (paper, page items, parent items, composed text,
 //! placed images). Non-printing chrome — guides, frame edges, ports, selection — is drawn by the
@@ -12,11 +12,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use designcraft_color::BlendMode as DcBlend;
-use designcraft_compose::{Cache, ComposedStory, ShownOn};
-use designcraft_doc::{Content, Document, Item, PageSide, SpreadRef, StoryId, StrokeAlign, StrokeType};
-use designcraft_geom::corners;
-use designcraft_geom::{Affine, BezPath, Rect, Shape, Vec2};
+use pliego_color::BlendMode as DcBlend;
+use pliego_compose::{Cache, ComposedStory, ShownOn};
+use pliego_doc::{Content, Document, Item, PageSide, SpreadRef, StoryId, StrokeAlign, StrokeType};
+use pliego_geom::corners;
+use pliego_geom::{Affine, BezPath, Rect, Shape, Vec2};
 use vello_cpu::kurbo;
 use vello_cpu::peniko::{self, BlendMode, Compose, Mix};
 use vello_cpu::{Pixmap, RenderContext, Resources};
@@ -151,7 +151,7 @@ pub struct Renderer {
     glyphs: text::GlyphCache,
     /// Composed stories looked up during the current render.
     stories: HashMap<(StoryId, ShownOn), Arc<ComposedStory>>,
-    drawing_items: Vec<designcraft_doc::ItemId>,
+    drawing_items: Vec<pliego_doc::ItemId>,
     cmyk_view: Option<blendspace::CachedView>,
     /// Whether the last render ran the CMYK ink passes (only then is its view worth keeping).
     cmyk_ran: bool,

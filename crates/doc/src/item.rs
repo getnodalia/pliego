@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use designcraft_color::BlendMode;
-use designcraft_geom::corners::CornerOptions;
-use designcraft_geom::{Affine, PathData, Point, Rect};
+use pliego_color::BlendMode;
+use pliego_geom::corners::CornerOptions;
+use pliego_geom::{Affine, PathData, Point, Rect};
 use serde::{Deserialize, Serialize};
 
 use crate::ids::{AssetId, ItemId, LayerId, StoryId};
@@ -393,7 +393,7 @@ impl Item {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_geom::shapes;
+    use pliego_geom::shapes;
 
     /// Shadows and glows saved before they had a blend mode read Normal, as they were drawn;
     /// new ones start as InDesign's: Multiply for shadows, Screen for the outer glow.
@@ -480,13 +480,13 @@ mod tests {
             it.stroke = Stroke { weight: 4.0, align, swatch: swatch.into(), ..Stroke::default() };
             it.text_area()
         };
-        let black = designcraft_color::swatch::BLACK;
+        let black = pliego_color::swatch::BLACK;
         // The part of the stroke inside the frame, on every edge, then the inset.
         assert_eq!(stroked(StrokeAlign::Center, black), Rect::new(8.0, 7.0, 90.0, 41.0));
         assert_eq!(stroked(StrokeAlign::Inside, black), Rect::new(10.0, 9.0, 88.0, 39.0));
         assert_eq!(stroked(StrokeAlign::Outside, black), unstroked);
         // A stroke without a colour doesn't count.
-        assert_eq!(stroked(StrokeAlign::Inside, designcraft_color::swatch::NONE), unstroked);
+        assert_eq!(stroked(StrokeAlign::Inside, pliego_color::swatch::NONE), unstroked);
         // Nor does a weight that isn't a number.
         it.stroke = Stroke { weight: f64::NAN, ..Stroke::default() };
         assert_eq!(it.text_area(), unstroked);

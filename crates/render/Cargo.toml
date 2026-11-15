@@ -1,24 +1,24 @@
 [package]
-name = "designcraft-render"
+name = "pliego-render"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft renderer: spreads, pages, frames, composed text and images to pixels (vello_cpu)"
+description = "Pliego renderer: spreads, pages, frames, composed text and images to pixels (vello_cpu)"
 
 [lints]
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
+pliego-geom = { workspace = true }
+pliego-color = { workspace = true }
+pliego-doc = { workspace = true }
+pliego-fonts = { workspace = true }
+pliego-compose = { workspace = true }
 vello_cpu = { workspace = true }
 vello_common = { workspace = true }
 image = { workspace = true }
 craft-pdf = { workspace = true, features = ["raster"] }
-designcraft-images = { workspace = true }
+pliego-images = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

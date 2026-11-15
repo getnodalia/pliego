@@ -37,7 +37,7 @@ pub(super) enum FontBytes {
 /// Where a face's font came from.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FontSource {
-    /// Compiled into DesignCraft.
+    /// Compiled into Pliego.
     Bundled,
     /// Font data handed to [`FontDb::add_font`], with no file behind it.
     Memory,

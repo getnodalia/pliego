@@ -1,4 +1,4 @@
-use designcraft_doc::PageSide::{self, Left, Right};
+use pliego_doc::PageSide::{self, Left, Right};
 
 use super::*;
 
@@ -127,6 +127,6 @@ fn single_sided_pages_show_the_parent_page_in_their_place() {
     assert_eq!(shown_heads(&d, 2), ["Right head"]);
     // What the renderer draws behind each page of the second spread.
     let (ppi, _) = d.parent_page_for(1).unwrap();
-    assert_eq!(d.shown_parent_pages(designcraft_doc::SpreadRef::Doc(1), 0), [(ppi, 0)]);
-    assert_eq!(d.shown_parent_pages(designcraft_doc::SpreadRef::Doc(1), 1), [(ppi, 1)]);
+    assert_eq!(d.shown_parent_pages(pliego_doc::SpreadRef::Doc(1), 0), [(ppi, 0)]);
+    assert_eq!(d.shown_parent_pages(pliego_doc::SpreadRef::Doc(1), 1), [(ppi, 1)]);
 }

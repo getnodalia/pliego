@@ -37,7 +37,7 @@ fn epub_split_document_setting() {
     assert_eq!(s.execute("document.epubSplit", &json!({"split": {"style": "Chapter"}})).unwrap()["split"], json!({"style": "Chapter"}));
     assert_eq!(files(&mut s, json!({})), 2);
     assert_eq!(files(&mut s, json!({"split": "off"})), 1);
-    assert_eq!(s.doc().unwrap().doc.settings.epub_split, designcraft_doc::EpubSplit::Style("Chapter".into()), "the override isn't stored");
+    assert_eq!(s.doc().unwrap().doc.settings.epub_split, pliego_doc::EpubSplit::Style("Chapter".into()), "the override isn't stored");
     s.execute("style.paragraph.edit", &json!({"name": "Chapter", "rename": "Part"})).unwrap();
     assert_eq!(s.execute("document.epubSplit", &json!({})).unwrap()["split"], json!({"style": "Part"}));
     assert_eq!(files(&mut s, json!({})), 2);
@@ -123,10 +123,10 @@ fn epub_font_fallbacks_and_embedding() {
 /// and a Semibold style asks for the Semibold face's weight, not Bold's.
 #[test]
 fn epub_embedding_follows_bitmap_only_licences_and_weights() {
-    use designcraft_fonts::testing::{font_with, with_fs_type};
+    use pliego_fonts::testing::{font_with, with_fs_type};
     const BITMAP: &str = "DocFont Epub Bitmap Only";
     for fs_type in [0x0200, 0x0208] {
-        designcraft_fonts::FontDb::global().add_font(with_fs_type(font_with(&format!("{BITMAP} {fs_type:04x}"), &['W']).unwrap(), fs_type).unwrap());
+        pliego_fonts::FontDb::global().add_font(with_fs_type(font_with(&format!("{BITMAP} {fs_type:04x}"), &['W']).unwrap(), fs_type).unwrap());
     }
     let mut s = Session::new();
     s.execute("file.new", &json!({"pages": 1})).unwrap();
@@ -268,7 +268,7 @@ fn x1a_export_flattens_in_inks() {
     let r = s.execute("file.exportPdf", &json!({"standard": "x1a", "flatten": "low"})).unwrap();
     let pdf = super::super::file::base64_decode(r["base64"].as_str().unwrap());
     let text = String::from_utf8_lossy(&pdf).to_string();
-    assert_eq!(designcraft_pdf::check_pdfx1a(&pdf), Vec::<String>::new());
+    assert_eq!(pliego_pdf::check_pdfx1a(&pdf), Vec::<String>::new());
     assert!(pdf.starts_with(b"%PDF-1.4") && text.contains("/GTS_PDFXVersion(PDF/X-1:2003)") && text.contains("/S/GTS_PDFX"));
     assert!(text.contains("/GTS_PDFXConformance(PDF/X-1a:2003)"), "the conformance level");
     let warnings = r["warnings"].to_string();
@@ -306,9 +306,9 @@ fn flattener_rasterises_spreads_with_transparency() {
     assert!(r["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("flattened: 1 ")), "{r}");
     assert_eq!(r["pages"], 3);
     let bytes = super::super::file::base64_decode(r["base64"].as_str().unwrap());
-    assert_eq!(designcraft_render::pdf_page_count(&bytes), Some(3));
+    assert_eq!(pliego_render::pdf_page_count(&bytes), Some(3));
     // The document itself is untouched.
-    assert!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(id.as_u64().unwrap())).is_some());
+    assert!(s.doc().unwrap().doc.item(pliego_doc::ItemId(id.as_u64().unwrap())).is_some());
     assert!(s.execute("file.exportPdf", &json!({"flatten": 5})).is_err());
     // Interactive view options land in the catalog and on the pages.
     let r = s.execute("file.exportPdf", &json!({"fullScreen": true, "pageLayout": "single", "view": "fitPage", "advanceSeconds": 5})).unwrap();
@@ -337,20 +337,20 @@ fn objects_with_soft_effects_keep_their_text_wrap_in_pdf() {
     s.execute("object.fill", &json!({"swatch": "[Black]", "ids": [a]})).unwrap();
     s.execute("object.textWrap", &json!({"ids": [a], "mode": "contour", "contour": "sameAsClipping", "offset": 6})).unwrap();
     // A feathered frame whose placed graphic has a bounding-box wrap.
-    let png = designcraft_render::Rendered { width: 40, height: 40, pixels: vec![90; 40 * 40 * 4] }.to_png();
+    let png = pliego_render::Rendered { width: 40, height: 40, pixels: vec![90; 40 * 40 * 4] }.to_png();
     let b = s.execute("frame.create", &json!({"rect": [300, 400, 400, 500]})).unwrap()["id"].as_u64().unwrap();
     s.execute("file.place", &json!({"base64": super::super::file::base64_encode(&png), "name": "a.png", "frame": b})).unwrap();
     s.execute("object.textWrap", &json!({"ids": [b], "content": true, "mode": "boundingBox", "offset": 6})).unwrap();
     s.execute("object.feather", &json!({"ids": [a, b], "width": 14})).unwrap();
 
     let d = &s.doc().unwrap().doc;
-    let sid = d.item(designcraft_doc::ItemId(t)).and_then(|it| it.text_frame()).unwrap().story;
-    let before = designcraft_compose::frame_specs(d, sid)[0].exclusions.clone();
+    let sid = d.item(pliego_doc::ItemId(t)).and_then(|it| it.text_frame()).unwrap().story;
+    let before = pliego_compose::frame_specs(d, sid)[0].exclusions.clone();
     assert_eq!(before.len(), 2);
     let (fx, n) = super::rasterize_effects(d, &s.cache, &Default::default());
     assert_eq!(n, 2);
     let fx = fx.unwrap();
-    assert_eq!(designcraft_compose::frame_specs(&fx, sid)[0].exclusions, before);
+    assert_eq!(pliego_compose::frame_specs(&fx, sid)[0].exclusions, before);
     // The objects that keep the wrap don't print; their images do.
     let sp = &fx.spreads[0];
     assert_eq!(sp.items.iter().filter(|it| it.nonprinting).count(), 2);
@@ -377,11 +377,11 @@ fn export_story_as_text_and_rtf() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
-fn linked_effect_frame() -> (Session, designcraft_doc::ItemId) {
+fn linked_effect_frame() -> (Session, pliego_doc::ItemId) {
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 72, "height": 72})).unwrap();
     let frame = s.execute("frame.create", &json!({"rect": [10, 10, 30, 30], "content": "text", "text": "Link", "caret": false})).unwrap();
-    let id = designcraft_doc::ItemId(frame["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(frame["id"].as_u64().unwrap());
     s.execute("hyperlink.create", &json!({"url": "https://example.com", "ids": [id.0]})).unwrap();
     s.execute("object.feather", &json!({"ids": [id.0], "width": 2})).unwrap();
     (s, id)
@@ -402,7 +402,7 @@ fn rasterized_links_leave_no_stand_in_for_other_formats() {
     }
 }
 
-fn assert_link_stand_in_is_inert(item: &designcraft_doc::Item) {
+fn assert_link_stand_in_is_inert(item: &pliego_doc::Item) {
     assert!(item.nonprinting, "every stand-in item is nonprinting");
     assert!(item.form_field.is_none(), "stand-ins must not emit form fields");
     assert!(item.button.is_none(), "stand-ins must not emit buttons");
@@ -417,7 +417,7 @@ fn rasterized_links_clear_interactivity_on_frames() {
     let (mut s, id) = linked_effect_frame();
     let d = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc);
     let item = d.item_mut(id).unwrap();
-    item.button = Some(designcraft_doc::ButtonAction::GoToFirstPage);
+    item.button = Some(pliego_doc::ButtonAction::GoToFirstPage);
     item.media = Some(Default::default());
     let story = item.text_frame().unwrap().story;
     let (copy, n) = super::rasterize_effects(&s.doc().unwrap().doc, &s.cache, &Default::default());
@@ -438,8 +438,8 @@ fn rasterized_links_clear_interactivity_in_nested_groups() {
     s.execute("object.feather", &json!({"ids": [group], "width": 2})).unwrap();
     let d = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc);
     let child = d.item_mut(id).unwrap();
-    child.form_field = Some(designcraft_doc::FormField {
-        kind: designcraft_doc::FieldKind::TextField,
+    child.form_field = Some(pliego_doc::FormField {
+        kind: pliego_doc::FieldKind::TextField,
         name: "Field".into(),
         value: String::new(),
         options: Vec::new(),
@@ -447,13 +447,13 @@ fn rasterized_links_clear_interactivity_in_nested_groups() {
         required: false,
         font_size: 0.0,
     });
-    child.button = Some(designcraft_doc::ButtonAction::GoToFirstPage);
+    child.button = Some(pliego_doc::ButtonAction::GoToFirstPage);
     child.media = Some(Default::default());
     let story = child.text_frame().unwrap().story;
     let (copy, n) = super::rasterize_effects(&s.doc().unwrap().doc, &s.cache, &Default::default());
     assert_eq!(n, 1);
     let copy = copy.unwrap();
-    assert_link_stand_in_is_inert(copy.item(designcraft_doc::ItemId(group)).unwrap());
+    assert_link_stand_in_is_inert(copy.item(pliego_doc::ItemId(group)).unwrap());
     assert_eq!(copy.item(id).unwrap().text_frame().unwrap().story, story);
 }
 
@@ -492,5 +492,5 @@ fn rasterized_links_keep_exactly_one_wrapping_stand_in() {
     assert_eq!(copy.spreads[0].items.len(), 2);
     assert_eq!(copy.spreads[0].items.iter().filter(|it| it.nonprinting).count(), 1);
     assert_eq!(copy.item(id).unwrap().wrap, before);
-    assert_ne!(before.mode, designcraft_doc::WrapMode::None);
+    assert_ne!(before.mode, pliego_doc::WrapMode::None);
 }

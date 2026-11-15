@@ -64,7 +64,7 @@ pub struct QuickItem {
 }
 
 /// Quick Apply matches (styles first, as InDesign lists them), at most 14.
-pub fn quick_apply_items(session: &designcraft_engine::Session, query: &str, cjk: bool) -> Vec<QuickItem> {
+pub fn quick_apply_items(session: &pliego_engine::Session, query: &str, cjk: bool) -> Vec<QuickItem> {
     let ql = query.to_lowercase();
     let hit = |label: &str, id: &str| quick_match(&ql, &[label, id]);
     let mut out = Vec::new();
@@ -140,7 +140,7 @@ const NOT_SEARCHED: &[&str] = &[
     "view.zoom",
     // Where to pin the Contextual Task Bar.
     "window.taskBarPin",
-    // Shared docking commands DesignCraft doesn't provide, those that need a panel or a name,
+    // Shared docking commands Pliego doesn't provide, those that need a panel or a name,
     // and older ids that share a label with a searched docking command.
     "window.panel",
     "window.panel.window",
@@ -157,7 +157,7 @@ const NOT_SEARCHED: &[&str] = &[
 
 /// The commands Quick Apply and the application bar's search find: (id, label, default shortcut).
 pub(super) fn quick_commands() -> impl Iterator<Item = (&'static str, &'static str, Option<&'static str>)> {
-    designcraft_engine::command_specs()
+    pliego_engine::command_specs()
         .iter()
         .filter(|c| !c.menu.is_empty() || c.shortcut.is_some())
         .map(|c| (c.id, c.label, c.shortcut))

@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn paragraph_style_settings_show_captured_color_and_pending_spacing_without_changing_the_document() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect":[36,36,300,200],"content":"text","text":"Heading"})).unwrap();
     app.run("text.select", json!({"story":f["story"],"anchor":0,"focus":7})).unwrap();
@@ -30,11 +30,11 @@ fn paragraph_style_settings_show_captured_color_and_pending_spacing_without_chan
 /// tells the two apart.
 #[test]
 fn layer_options_confirm_without_the_menu_fields_keeps_file_defaults() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 100, "height": 100, "pages": 1})).unwrap();
     let pdf = app.run("file.exportPdf", json!({})).unwrap()["base64"].clone();
     let placed = app.run("file.place", json!({"base64": pdf, "name": "plain.pdf", "x": 0, "y": 0, "width": 100})).unwrap();
-    let id = designcraft_doc::ItemId(placed["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(placed["id"].as_u64().unwrap());
     app.run("selection.set", json!({"ids": [placed["id"]]})).unwrap();
     app.ui.dialog = Some(Dialog::new("layerOptions", json!({})));
     confirm(&mut app).unwrap();
@@ -49,16 +49,16 @@ fn layer_options_confirm_without_the_menu_fields_keeps_file_defaults() {
 
 #[test]
 fn paragraph_style_settings_compare_with_the_chosen_parent() {
-    let mut styles = designcraft_doc::Styles::default();
-    styles.paragraph.push(designcraft_doc::ParagraphStyle {
+    let mut styles = pliego_doc::Styles::default();
+    styles.paragraph.push(pliego_doc::ParagraphStyle {
         name: "Parent".into(),
-        chars: designcraft_doc::CharAttrs { size: Some(20.0), ..Default::default() },
+        chars: pliego_doc::CharAttrs { size: Some(20.0), ..Default::default() },
         based_on: None,
         next_style: None,
         para: Default::default(),
         shortcut: String::new(),
     });
-    let style = designcraft_doc::ParagraphStyle {
+    let style = pliego_doc::ParagraphStyle {
         name: "Child".into(),
         based_on: Some("Parent".into()),
         next_style: None,
@@ -72,7 +72,7 @@ fn paragraph_style_settings_compare_with_the_chosen_parent() {
 
 #[test]
 fn step_and_repeat_dialog_previews_and_makes_the_copies_as_one_undo_step() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 600, 540, 640]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -125,7 +125,7 @@ fn step_and_repeat_dialog_previews_and_makes_the_copies_as_one_undo_step() {
     let r = confirm(&mut app).unwrap();
     assert_eq!((items(&app), undo(&app)), (n0 + 2, u0 + 1));
     let last = r["ids"][1].as_u64().unwrap();
-    let top = app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(last)).unwrap().bounds().min_y();
+    let top = app.session.doc().unwrap().doc.item(pliego_doc::ItemId(last)).unwrap().bounds().min_y();
     assert!((top - (600.0 - 108.0)).abs() < 1e-6, "{top}");
     // Create as a grid: Rows × Columns cells, the original being one.
     app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -147,7 +147,7 @@ fn step_and_repeat_dialog_previews_and_makes_the_copies_as_one_undo_step() {
 
 /// A three-page document in `units` with Document Setup open.
 fn document_setup_app(units: &str) -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 3})).unwrap();
     app.run("document.preferences", json!({"horizontalUnits": units, "verticalUnits": units})).unwrap();
     crate::menus::activate(&mut app, "layout.documentSetup", &Value::Null);
@@ -166,7 +166,7 @@ fn setup_fields(app: &mut DesignApp, fields: Value) {
 #[test]
 fn file_info_dialog_stores_the_fields_and_titles_the_pdf() {
     use std::sync::{Arc, Mutex};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "flyer-v3"})).unwrap();
     app.run("file.info", json!({"author": "Ana Ruiz", "keywords": ["spring", "shoes"]})).unwrap();
     crate::menus::activate(&mut app, "file.info", &Value::Null);
@@ -204,7 +204,7 @@ fn file_info_dialog_stores_the_fields_and_titles_the_pdf() {
     app.answer_dialogs(move |request| match request {
         craft_dialogs::Request::File(dialog) => {
             asked.lock().unwrap().push(dialog.file_name.clone().unwrap_or_default());
-            craft_dialogs::Answer::Paths(vec!["/tmp/designcraft-file-info.pdf".into()])
+            craft_dialogs::Answer::Paths(vec!["/tmp/pliego-file-info.pdf".into()])
         }
         craft_dialogs::Request::Message(_) => craft_dialogs::Answer::Message(craft_dialogs::MessageResult::Yes),
     });
@@ -229,7 +229,7 @@ fn file_info_dialog_stores_the_fields_and_titles_the_pdf() {
 /// another document became active meanwhile; once that document has closed, OK stores nothing.
 #[test]
 fn file_info_dialog_stores_into_the_document_it_was_opened_for() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "first"})).unwrap();
     crate::menus::activate(&mut app, "file.info", &Value::Null);
     app.run("file.new", json!({"title": "second"})).unwrap();
@@ -251,7 +251,7 @@ fn file_info_dialog_stores_into_the_document_it_was_opened_for() {
 /// the others keep what the document holds.
 #[test]
 fn file_info_opened_with_some_fields_keeps_the_others() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("file.info", json!({"documentTitle": "Spring Catalog", "keywords": ["spring", "shoes"]})).unwrap();
     assert_eq!(ctl(&mut app, "ui.dialog.open", json!({"id": "fileInfo", "fields": {"author": "Ana Ruiz", "description": ""}}))["ok"], true);
@@ -265,7 +265,7 @@ fn file_info_opened_with_some_fields_keeps_the_others() {
 /// keyword list stays a list, and `null` clears a field.
 #[test]
 fn file_info_opened_with_a_keyword_list_stores_the_list() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("file.info", json!({"author": "Ana Ruiz"})).unwrap();
     let fields = json!({"keywords": ["Washington, DC", "map"], "author": null});
@@ -280,11 +280,11 @@ fn file_info_opened_with_a_keyword_list_stores_the_list() {
 /// Data Merge preview showing the record it showed.
 #[test]
 fn file_info_for_another_document_keeps_the_active_preview() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "first"})).unwrap();
     crate::menus::activate(&mut app, "file.info", &Value::Null);
     app.run("file.new", json!({"title": "second"})).unwrap();
-    let csv = designcraft_engine::cmd::base64_encode(b"Name\nAda\nGrace\n");
+    let csv = pliego_engine::cmd::base64_encode(b"Name\nAda\nGrace\n");
     app.run("data.source.select", json!({"bytes": csv, "name": "people.csv"})).unwrap();
     app.run("data.preview", json!({"record": 2})).unwrap();
     setup_fields(&mut app, json!({"author": "Ana Ruiz"}));
@@ -308,7 +308,7 @@ fn document_setup_ok_applies_margins_bleed_and_size_in_one_step() {
     );
     confirm(&mut app).unwrap();
     assert!(app.ui.dialog.is_none());
-    let mm = designcraft_geom::units::PT_PER_MM;
+    let mm = pliego_geom::units::PT_PER_MM;
     let doc = &app.session.active().unwrap().doc;
     assert!((doc.settings.page_width - 210.0 * mm).abs() < 1e-6 && (doc.settings.bleed[2] - 3.0 * mm).abs() < 1e-6);
     assert!(doc.spreads.iter().flat_map(|s| &s.pages).all(|p| (p.margins.top - 20.0 * mm).abs() < 1e-6), "every page");
@@ -322,7 +322,7 @@ fn document_setup_reads_a_bare_number_in_the_documents_units() {
     let mut app = document_setup_app("millimeters");
     setup_fields(&mut app, json!({"bleedTop": "5", "bleedBottom": "5", "bleedInside": "5", "bleedOutside": "5", "width": "210"}));
     confirm(&mut app).unwrap();
-    let mm = designcraft_geom::units::PT_PER_MM;
+    let mm = pliego_geom::units::PT_PER_MM;
     let settings = &app.session.active().unwrap().doc.settings;
     assert!(settings.bleed.iter().all(|b| (b - 5.0 * mm).abs() < 1e-6), "5 mm, not 5 picas: {:?}", settings.bleed);
     assert!((settings.page_width - 210.0 * mm).abs() < 1e-6, "{}", settings.page_width);
@@ -330,7 +330,7 @@ fn document_setup_reads_a_bare_number_in_the_documents_units() {
 
 #[test]
 fn document_setup_keeps_each_pages_margins_unless_they_are_edited() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 3, "margins": 36})).unwrap();
     app.run("layout.marginsAndColumns", json!({"pages": [1], "margins": 90})).unwrap();
     let margins =
@@ -382,13 +382,13 @@ fn document_setup_links_edges_and_adjust_layout_applies() {
     click_dialog(&mut app, &ctx, screen, visible_label(&labels, screen, "Adjust Layout").center());
     assert!(app.ui.dialog.is_none(), "applied");
     let doc = &app.session.active().unwrap().doc;
-    let b = doc.item(designcraft_doc::ItemId(f["id"].as_u64().unwrap())).unwrap().bounds();
+    let b = doc.item(pliego_doc::ItemId(f["id"].as_u64().unwrap())).unwrap().bounds();
     assert!((b.y0 - 72.0).abs() < 1e-6 && doc.page(0).unwrap().margins.outside == 72.0, "{b:?}");
 }
 
 #[test]
 fn cell_options_dialog_draws_and_applies_only_changed_values_to_the_chosen_edges() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 400, 400], "content": "text", "caret": true})).unwrap();
     let tid = app.run("table.insert", json!({"rows": 2, "cols": 2})).unwrap()["table"].as_u64().unwrap();
@@ -415,7 +415,7 @@ fn cell_options_dialog_draws_and_applies_only_changed_values_to_the_chosen_edges
 
 #[test]
 fn cell_options_edge_changes_reseed_every_stroke_field_and_survive_a_bad_seed() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 400, 400], "content": "text", "caret": true})).unwrap();
     let tid = app.run("table.insert", json!({"rows": 2, "cols": 2})).unwrap()["table"].as_u64().unwrap();
@@ -445,7 +445,7 @@ fn preferences_ok_saves_a_story_editor_size_that_loads_back() {
     // `ui.dialog.set` takes any value; a size that isn't finite is saved as `null`.
     let sizes = [(json!("nan"), 20.0), (json!("inf"), 20.0), (json!(null), 20.0), (json!(1e39), 36.0), (json!(3), 8.0), (json!(11), 11.0)];
     for (size, want) in sizes {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.ui.story_editor_size = 20.0;
         app.run("app.preferences", json!({})).unwrap();
@@ -460,7 +460,7 @@ fn preferences_ok_saves_a_story_editor_size_that_loads_back() {
 fn preferences_ok_sets_only_the_ruler_units_it_is_given() {
     // `ui.dialog.open` takes any fields, so the vertical units can be missing.
     for (vertical, want) in [(None, "inches"), (Some("points"), "points")] {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("document.preferences", json!({"verticalUnits": "inches"})).unwrap();
         let mut fields = json!({"horizontalUnits": "millimeters", "bg.relativeTo": "topOfPage"});
@@ -476,7 +476,7 @@ fn preferences_ok_sets_only_the_ruler_units_it_is_given() {
 
 #[test]
 fn enter_and_escape_close_the_style_menu_not_numbering_and_section_options() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 2})).unwrap();
     crate::menus::activate(&mut app, "layout.section", &Value::Null);
     let ctx = dialog_context("en");
@@ -510,7 +510,7 @@ fn enter_and_escape_close_the_style_menu_not_numbering_and_section_options() {
 fn numbering_and_section_options_keep_their_actions_in_view() {
     for language in ["en", "ar"] {
         for size in [egui::vec2(1178.0, 814.0), egui::vec2(392.0, 271.0)] {
-            let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+            let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
             app.ui.language = language.into();
             app.run("file.new", json!({"pages": 2})).unwrap();
             crate::menus::activate(&mut app, "layout.section", &Value::Null);
@@ -550,7 +550,7 @@ fn select_all_key() -> egui::Event {
 
 /// The Color Picker over a new document's selected frame, a few frames in.
 fn picker(fields: Value) -> (DesignApp, egui::Context, egui::Rect, u64) {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [36, 36, 200, 200]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -571,9 +571,9 @@ fn type_slowly(app: &mut DesignApp, ctx: &egui::Context, screen: egui::Rect, tex
     }
 }
 
-fn fill(app: &DesignApp, id: u64) -> designcraft_color::Color {
+fn fill(app: &DesignApp, id: u64) -> pliego_color::Color {
     let d = &app.session.active().unwrap().doc;
-    d.resolve_color(&d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
+    d.resolve_color(&d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
 }
 
 fn key_press(key: egui::Key) -> egui::Event {
@@ -592,7 +592,7 @@ fn the_color_picker_enter_confirms_and_escape_cancels_even_in_a_field() {
         dialog_frame(&mut app, &ctx, screen, vec![]);
         assert!(app.ui.dialog.is_none(), "{key:?} closes the picker");
         let d = &app.session.active().unwrap().doc;
-        let swatch = d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch.clone();
+        let swatch = d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch.clone();
         let hex = d.resolve_color(&swatch, 1.0).map(|c| c.to_hex());
         assert_eq!(hex.as_deref() == Some("#f59019"), applied, "{key:?}: {hex:?}");
     }
@@ -633,7 +633,7 @@ fn typed_channel_values_are_kept_while_typing() {
     assert_eq!(app.ui.dialog.as_ref().unwrap().fields["rgb"][1], json!(2.0));
     assert_eq!(app.ui.dialog.as_ref().unwrap().s("hex"), "#0d0203");
     confirm(&mut app).unwrap();
-    let designcraft_color::Color::Rgb { r, .. } = fill(&app, id) else { panic!("not RGB") };
+    let pliego_color::Color::Rgb { r, .. } = fill(&app, id) else { panic!("not RGB") };
     assert!((r - 12.5 / 255.0).abs() < 1e-6, "{r}");
 }
 
@@ -648,7 +648,7 @@ fn a_cmyk_colour_stays_cmyk_unless_rgb_values_are_typed() {
     dialog_frame(&mut app, &ctx, screen, vec![select_all_key()]);
     type_slowly(&mut app, &ctx, screen, "3366cc");
     confirm(&mut app).unwrap();
-    assert!(matches!(fill(&app, id), designcraft_color::Color::Cmyk { .. }), "{:?}", fill(&app, id));
+    assert!(matches!(fill(&app, id), pliego_color::Color::Cmyk { .. }), "{:?}", fill(&app, id));
     // A typed C/M/Y/K percent is a percent: M 1 is 1 %.
     let (mut app, ctx, screen, id) = picker(cmyk.clone());
     let labels = dialog_frame(&mut app, &ctx, screen, vec![]);
@@ -657,7 +657,7 @@ fn a_cmyk_colour_stays_cmyk_unless_rgb_values_are_typed() {
     dialog_frame(&mut app, &ctx, screen, vec![select_all_key()]);
     type_slowly(&mut app, &ctx, screen, "1");
     confirm(&mut app).unwrap();
-    let designcraft_color::Color::Cmyk { c, m, y, k } = fill(&app, id) else { panic!("not CMYK") };
+    let pliego_color::Color::Cmyk { c, m, y, k } = fill(&app, id) else { panic!("not CMYK") };
     assert!(c == 0.0 && (m - 0.01).abs() < 1e-6 && (y - 1.0).abs() < 1e-6 && k == 0.0, "{c} {m} {y} {k}");
     // Typed R/G/B values: RGB.
     let (mut app, ctx, screen, id) = picker(cmyk);
@@ -669,15 +669,15 @@ fn a_cmyk_colour_stays_cmyk_unless_rgb_values_are_typed() {
     dialog_frame(&mut app, &ctx, screen, vec![select_all_key()]);
     type_slowly(&mut app, &ctx, screen, "10");
     confirm(&mut app).unwrap();
-    assert!(matches!(fill(&app, id), designcraft_color::Color::Rgb { .. }), "{:?}", fill(&app, id));
+    assert!(matches!(fill(&app, id), pliego_color::Color::Rgb { .. }), "{:?}", fill(&app, id));
 }
 
 #[test]
 fn ok_without_edits_leaves_the_fill_alone() {
     let (mut app, _, _, id) = picker(json!({"target": "fill", "hex": "#ff8000", "model": "cmyk", "cmyk": [0, 50, 100, 0]}));
-    let before = app.session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.clone();
+    let before = app.session.active().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill.clone();
     confirm(&mut app).unwrap();
-    assert_eq!(app.session.active().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill, before);
+    assert_eq!(app.session.active().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill, before);
 }
 
 #[test]
@@ -707,7 +707,7 @@ fn draw(app: &mut DesignApp, ctx: &egui::Context) {
 
 /// A paragraph styled "Ruled Child", whose Rule Below comes from its parent "Ruled".
 fn ruled_paragraph() -> (DesignApp, Value) {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let rule = json!({"on": true, "weight": 3.0, "color": "[Black]", "tint": 0.5, "columnWidth": false, "offset": 4.0, "leftIndent": 6.0, "rightIndent": 2.0});
     app.run("style.paragraph.create", json!({"name": "Ruled", "para": {"ruleBelow": rule}})).unwrap();
@@ -824,14 +824,14 @@ fn paragraph_style_options_bullets_and_span_sections_reach_the_styled_paragraph(
     assert_eq!(para["numberExpression"], "^#)^t");
     assert_eq!(para["startAt"], 3);
     assert_eq!(para["spanColumns"], json!({"kind": "split", "columns": 3}));
-    let props: designcraft_doc::ParaProps = serde_json::from_value(para).unwrap();
+    let props: pliego_doc::ParaProps = serde_json::from_value(para).unwrap();
     assert_eq!(props.number_label(3), "III)\t");
 }
 
 #[test]
 fn paragraph_style_options_ignore_optical_margin_is_set_on_ok() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.paragraph.create", json!({"name": "Flush"})).unwrap();
     app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": "Flush", "section": "indents"})));
@@ -894,7 +894,7 @@ fn paragraph_style_options_show_a_refused_rename_on_general_and_trim_a_new_name(
 
 /// A frame with two paragraphs of [Basic Paragraph]; the first has a local Word Spacing minimum.
 fn two_paragraphs() -> (DesignApp, Value) {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let r = app.run("frame.create", json!({"rect": [72, 72, 300, 400], "content": "text", "text": "One\nTwo"})).unwrap();
     app.run("text.select", json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
@@ -917,7 +917,7 @@ fn hyphenation_settings_preview_apply_and_cancel_on_the_selected_paragraph() {
     let (mut app, story) = two_paragraphs();
     let ctx = dialog_context("en");
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1400.0, 900.0));
-    let sid = designcraft_doc::StoryId(story.as_u64().unwrap());
+    let sid = pliego_doc::StoryId(story.as_u64().unwrap());
     let weight = |app: &DesignApp, para: usize| {
         let d = &app.session.doc().unwrap().doc;
         d.styles.resolve_para(&d.story(sid).unwrap().paras[para]).0.hyph_weight
@@ -971,7 +971,7 @@ fn hyphenation_settings_preview_apply_and_cancel_on_the_selected_paragraph() {
     assert_eq!((weight(&app, 0), weight(&app, 1)), (0.9, 0.5));
     assert_eq!(undo_steps(&app), before + 1, "one undo step");
     // Paragraph Style Options › Hyphenation has the same form.
-    app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": designcraft_doc::story::BASIC_PARAGRAPH, "section": "hyph"})));
+    app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": pliego_doc::story::BASIC_PARAGRAPH, "section": "hyph"})));
     for _ in 0..3 {
         dialog_frame(&mut app, &ctx, screen, vec![]);
     }
@@ -1067,7 +1067,7 @@ fn justification_dialog_applies_to_a_local_paragraph_and_cancel_changes_nothing(
     assert_eq!(para_attr(&mut app, &story, 0, "wordSpaceDesired"), 1.1);
     assert_eq!(para_attr(&mut app, &story, 0, "wordSpaceMin"), 0.7, "unedited fields stay");
     assert_eq!(para_attr(&mut app, &story, 4, "wordSpaceDesired"), 1.0, "only the selected paragraph");
-    let style = app.session.doc().unwrap().doc.styles.resolve_para_style(designcraft_doc::story::BASIC_PARAGRAPH).0.word_space_desired;
+    let style = app.session.doc().unwrap().doc.styles.resolve_para_style(pliego_doc::story::BASIC_PARAGRAPH).0.word_space_desired;
     assert_eq!(style, 1.0, "the paragraph style keeps its value");
 
     // Cancel (Escape) leaves the paragraph alone.
@@ -1131,7 +1131,7 @@ fn justification_dialog_leaves_mixed_fields_alone_and_refuses_bad_values() {
 }
 
 fn command_app(id: &str, fields: Value) -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.dialog = Some(Dialog::new(&format!("cmd:{id}"), fields));
     app
 }
@@ -1167,7 +1167,7 @@ fn generic_new_document_preserves_typed_values_and_text_entry() {
 
 #[test]
 fn numbering_commands_document_their_fields() {
-    let names = |id: &str| command_fields(designcraft_engine::find_command(id).unwrap().params).into_iter().map(|f| f.key).collect::<Vec<_>>();
+    let names = |id: &str| command_fields(pliego_engine::find_command(id).unwrap().params).into_iter().map(|f| f.key).collect::<Vec<_>>();
     assert_eq!(names("layout.section"), ["page", "startNumber", "style", "prefix", "includePrefix", "marker", "remove"]);
     assert_eq!(names("layout.chapterNumbering"), ["style", "start", "source"]);
 }
@@ -1180,7 +1180,7 @@ fn generic_command_preserves_array_geometry() {
     confirm(&mut app).unwrap();
     let doc = &app.session.active().unwrap().doc;
     let item = doc.spreads.iter().flat_map(|s| &s.items).next().unwrap();
-    assert_eq!(item.bounds(), designcraft_geom::Rect::new(10.0, 20.0, 110.0, 220.0));
+    assert_eq!(item.bounds(), pliego_geom::Rect::new(10.0, 20.0, 110.0, 220.0));
 }
 
 #[test]
@@ -1208,7 +1208,7 @@ fn generic_invalid_number_retains_dialog_without_creating_document() {
 #[test]
 fn style_options_preview_choice_is_remembered_on_reopen() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.paragraph.create", json!({"name":"Tutorial","chars":{"size":10}})).unwrap();
     open_style_options(&mut app, true, "Tutorial");
@@ -1236,7 +1236,7 @@ fn style_options_preview_choice_is_remembered_on_reopen() {
 fn style_options_preview_updates_all_uses_cancels_and_commits_once() {
     use egui_kittest::{Harness, kittest::Queryable};
     for paragraph in [true, false] {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let f = app.run("frame.create", json!({"rect":[36,36,300,300],"content":"text","text":"First\nSecond"})).unwrap();
         app.run("text.select", json!({"story":f["story"],"anchor":0,"focus":12})).unwrap();
@@ -1299,10 +1299,10 @@ fn style_options_preview_updates_all_uses_cancels_and_commits_once() {
 
 #[test]
 fn style_preview_refuses_justification_spacing_ok_would_refuse() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let before = app.session.doc().unwrap().doc.clone();
-    let mut d = Dialog::new("paragraphStyleOptions", json!({"name": designcraft_doc::BASIC_PARAGRAPH, "preview": true, "p.wordSpaceDesired": 1.1}));
+    let mut d = Dialog::new("paragraphStyleOptions", json!({"name": pliego_doc::BASIC_PARAGRAPH, "preview": true, "p.wordSpaceDesired": 1.1}));
     style_options_preview(&mut app, &mut d);
     assert_ne!(app.session.doc().unwrap().doc, before, "a valid value previews");
     // Minimum above Desired: the page goes back and the dialog says why.
@@ -1315,7 +1315,7 @@ fn style_preview_refuses_justification_spacing_ok_would_refuse() {
 
 #[test]
 fn invalid_style_preview_leaves_the_starting_document_and_can_be_cancelled() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.character.create", json!({"name":"Emphasis"})).unwrap();
     let before = app.session.doc().unwrap().doc.clone();
@@ -1331,13 +1331,13 @@ fn invalid_style_preview_leaves_the_starting_document_and_can_be_cancelled() {
 
 #[test]
 fn style_preview_rejects_conflicting_scalar_and_nested_rule_fields_without_panicking() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let before = app.session.doc().unwrap().doc.clone();
     let mut dialog = Dialog::new(
         "paragraphStyleOptions",
         json!({
-            "name": designcraft_doc::BASIC_PARAGRAPH, "preview": true,
+            "name": pliego_doc::BASIC_PARAGRAPH, "preview": true,
             "p.ruleAbove": false, "p.ruleAbove.weight": 2
         }),
     );
@@ -1351,11 +1351,11 @@ fn style_preview_rejects_conflicting_scalar_and_nested_rule_fields_without_panic
 
 #[test]
 fn text_frame_options_set_columns_baseline_and_wrap_as_indesign_does() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     // A 300 pt frame, 2 columns, 12 pt gutter (picas in the dialog).
     let r = app.run("frame.create", json!({"rect": [36, 36, 336, 236], "content": "text", "text": "Hello"})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     app.run("object.textFrameOptions", json!({"ids": [id.0], "columns": 2, "gutter": 12})).unwrap();
     let opts = |app: &DesignApp| app.session.doc().unwrap().doc.item(id).unwrap().text_frame().unwrap().options.clone();
     let mut d = Dialog::new("textFrameOptions", json!({}));
@@ -1375,9 +1375,9 @@ fn text_frame_options_set_columns_baseline_and_wrap_as_indesign_does() {
     app.ui.dialog = Some(d);
     confirm(&mut app).unwrap();
     let o = opts(&app);
-    assert_eq!(o.columns_kind, designcraft_doc::ColumnsKind::FixedWidth);
+    assert_eq!(o.columns_kind, pliego_doc::ColumnsKind::FixedWidth);
     assert_eq!((o.column_width, o.first_baseline_min, o.columns), (120.0, 6.0, 2));
-    assert_eq!(o.first_baseline, designcraft_doc::FirstBaseline::CapHeight);
+    assert_eq!(o.first_baseline, pliego_doc::FirstBaseline::CapHeight);
     assert!(o.balance_columns && o.ignore_wrap);
     // Fixed Number again: the width isn't sent.
     let mut d = Dialog::new("textFrameOptions", json!({}));
@@ -1386,15 +1386,15 @@ fn text_frame_options_set_columns_baseline_and_wrap_as_indesign_does() {
     d.fields.insert("columnsKind".into(), json!("fixedNumber"));
     app.ui.dialog = Some(d);
     confirm(&mut app).unwrap();
-    assert_eq!((opts(&app).columns_kind, opts(&app).column_width), (designcraft_doc::ColumnsKind::FixedNumber, 120.0));
+    assert_eq!((opts(&app).columns_kind, opts(&app).column_width), (pliego_doc::ColumnsKind::FixedNumber, 120.0));
 }
 
 #[test]
 fn baseline_grid_increment_error_explains_the_positive_measure_rule() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let r = app.run("frame.create", json!({"rect": [36, 36, 336, 236], "content": "text", "text": "Hello"})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     for increment in ["0", "-1 pt", "not a measure"] {
         let mut d = Dialog::new("textFrameOptions", json!({}));
         seed_text_frame_options(&app, &mut d);
@@ -1409,11 +1409,11 @@ fn baseline_grid_increment_error_explains_the_positive_measure_rule() {
 
 #[test]
 fn text_frame_options_set_a_custom_baseline_grid_relative_to() {
-    use designcraft_doc::{FrameBaselineGrid, FrameGridRelative};
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    use pliego_doc::{FrameBaselineGrid, FrameGridRelative};
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let r = app.run("frame.create", json!({"rect": [36, 36, 336, 236], "content": "text", "text": "Hello"})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     let grid = |app: &DesignApp| app.session.doc().unwrap().doc.item(id).unwrap().text_frame().unwrap().options.baseline_grid;
     let open = |app: &mut DesignApp, fields: &[(&str, Value)]| {
         let mut d = Dialog::new("textFrameOptions", json!({}));
@@ -1438,10 +1438,10 @@ fn text_frame_options_set_a_custom_baseline_grid_relative_to() {
 
 #[test]
 fn text_frame_options_change_only_what_was_edited() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let r = app.run("frame.create", json!({"rect": [36, 36, 336, 236], "content": "text", "text": "Hello"})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     app.run("object.textFrameOptions", json!({"ids": [id.0], "columns": 2, "inset": [1, 2, 3, 4]})).unwrap();
     let opts = |app: &DesignApp| app.session.doc().unwrap().doc.item(id).unwrap().text_frame().unwrap().options.clone();
     let before = opts(&app);
@@ -1477,7 +1477,7 @@ fn text_frame_options_change_only_what_was_edited() {
     // An unknown swatch is an error and the dialog stays open.
     let e = open(&mut app, &[("columnRuleColor", json!("Mauve"))]).unwrap_err();
     assert!(e.contains("Mauve") && app.ui.dialog.is_some(), "{e}");
-    assert_eq!(opts(&app).column_rule_color, designcraft_color::swatch::BLACK);
+    assert_eq!(opts(&app).column_rule_color, pliego_color::swatch::BLACK);
     // Each OK is one undo step.
     for _ in 0..4 {
         app.run("edit.undo", json!({})).unwrap();
@@ -1487,7 +1487,7 @@ fn text_frame_options_change_only_what_was_edited() {
 
 #[test]
 fn toc_dialog_adds_a_style_and_ok_makes_the_table_of_contents() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.newSample", json!({})).unwrap();
     crate::menus::activate(&mut app, "toc.generate", &Value::Null);
     assert_eq!(app.ui.dialog.as_ref().map(|d| d.id.as_str()), Some(TOC));
@@ -1512,7 +1512,7 @@ fn toc_dialog_adds_a_style_and_ok_makes_the_table_of_contents() {
     assert!(app.ui.dialog.is_none());
     let d = &app.session.doc().unwrap().doc;
     let toc = d.toc.clone().unwrap();
-    assert_eq!(toc.entries, vec![designcraft_doc::TocEntry::new("Headline", 1)]);
+    assert_eq!(toc.entries, vec![pliego_doc::TocEntry::new("Headline", 1)]);
     let text = &d.story(toc.story).unwrap().text;
     assert!(text.starts_with("Contents\n") && text.contains("\nNotes on the Grid\t"), "{text}");
     assert_eq!(app.session.doc().unwrap().history.undo.len(), undo + 1);
@@ -1527,7 +1527,7 @@ fn toc_dialog_adds_a_style_and_ok_makes_the_table_of_contents() {
 fn margins_and_columns_link_arithmetic_preview_and_one_undo_step() {
     // Adobe's "Set up a modern magazine layout" (1:41–3:04): linked margins to 0.4375 in, then
     // 5 columns with a 0.1875 in gutter, unlinked, and "*2" typed after the outside margin.
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"preset": "A4", "pages": 3, "facingPages": true, "margins": 36})).unwrap();
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1000.0, 800.0)));
     open_margins_and_columns(&mut app);
@@ -1600,7 +1600,7 @@ fn margins_and_columns_link_arithmetic_preview_and_one_undo_step() {
 
 #[test]
 fn create_guides_reads_like_indesigns_and_previews() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 1, "facingPages": false})).unwrap();
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1000.0, 800.0)));
     open_create_guides(&mut app);
@@ -1728,20 +1728,20 @@ fn scope_click(app: &mut DesignApp, ctx: &egui::Context, screen: egui::Rect, lab
     click_dialog(app, ctx, screen, pos);
 }
 
-fn scope_dialog() -> (DesignApp, egui::Context, egui::Rect, designcraft_engine::doc::StoryId) {
+fn scope_dialog() -> (DesignApp, egui::Context, egui::Rect, pliego_engine::doc::StoryId) {
     scope_dialog_with_selection("red red | red", 7)
 }
 
-fn scope_dialog_with_selection(text: &str, end: usize) -> (DesignApp, egui::Context, egui::Rect, designcraft_engine::doc::StoryId) {
+fn scope_dialog_with_selection(text: &str, end: usize) -> (DesignApp, egui::Context, egui::Rect, pliego_engine::doc::StoryId) {
     scope_dialog_with_tool(text, end, None)
 }
 
-fn scope_dialog_with_tool(text: &str, end: usize, tool: Option<&str>) -> (DesignApp, egui::Context, egui::Rect, designcraft_engine::doc::StoryId) {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+fn scope_dialog_with_tool(text: &str, end: usize, tool: Option<&str>) -> (DesignApp, egui::Context, egui::Rect, pliego_engine::doc::StoryId) {
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.language = "en".into();
     app.run("file.new", json!({})).unwrap();
     let frame = app.run("frame.create", json!({"rect": [36, 36, 100, 100], "content": "text", "text": text})).unwrap();
-    let sid = designcraft_engine::doc::StoryId(frame["story"].as_u64().unwrap());
+    let sid = pliego_engine::doc::StoryId(frame["story"].as_u64().unwrap());
     let ctx = dialog_context("en");
     if let Some(tool) = tool {
         scope_control(&mut app, &ctx, "ui.tool.select", json!({"tool": tool}));
@@ -1761,12 +1761,12 @@ fn scope_dialog_with_tool(text: &str, end: usize, tool: Option<&str>) -> (Design
     (app, ctx, screen, sid)
 }
 
-fn scope_selected(app: &DesignApp, sid: designcraft_engine::doc::StoryId, a: usize, b: usize) {
+fn scope_selected(app: &DesignApp, sid: pliego_engine::doc::StoryId, a: usize, b: usize) {
     let t = app.session.doc().unwrap().selection.text.unwrap();
     assert_eq!((t.story, t.range(), t.cell), (sid, a..b, None));
 }
 
-fn scope_state_unchanged(app: &DesignApp, before: &designcraft_engine::DocState) {
+fn scope_state_unchanged(app: &DesignApp, before: &pliego_engine::DocState) {
     let after = app.session.doc().unwrap();
     assert!(std::sync::Arc::ptr_eq(&before.doc, &after.doc));
     assert_eq!(after.uid, before.uid);
@@ -1887,7 +1887,7 @@ fn find_scope_dialog_explicit_story_transitions_reset_cursor() {
         scope_click(&mut app, &ctx, screen, "Find Next");
         scope_selected(&app, sid, 2, 2);
         assert_eq!(app.session.doc().unwrap().doc.story(sid).unwrap().text, "é🙂");
-        let other_sid = designcraft_engine::doc::StoryId(other["story"].as_u64().unwrap());
+        let other_sid = pliego_engine::doc::StoryId(other["story"].as_u64().unwrap());
         assert_eq!(app.session.doc().unwrap().doc.story(other_sid).unwrap().text, "other");
     }
 }
@@ -1928,7 +1928,7 @@ fn find_scope_dialog_tool_replacement_releases_bounds() {
         scope_selected(&app, sid, 0, 3);
         let before = app.session.doc().unwrap().clone();
         let active = (app.session.active_index(), app.session.documents().len());
-        let off = app.session.layout().xf(designcraft_engine::doc::SpreadRef::Doc(0)).translation();
+        let off = app.session.layout().xf(pliego_engine::doc::SpreadRef::Doc(0)).translation();
         let x = off.x + before.doc.spreads[0].pages[0].x + 200.0;
         let y = off.y + 200.0;
         // The Page tool opens Page Size on a double-click (a click selects the page).
@@ -2181,7 +2181,7 @@ fn find_scope_dialog_buttons_retain_nonempty_hits_and_change_all() {
     assert_eq!(app.session.doc().unwrap().doc.story(sid).unwrap().text, "red red | red");
     app.run("edit.redo", json!({})).unwrap();
     let native = app.run("file.serialize", json!({})).unwrap();
-    app.run("file.openBytes", json!({"name": "scope.designcraft", "base64": native["base64"]})).unwrap();
+    app.run("file.openBytes", json!({"name": "scope.pliego", "base64": native["base64"]})).unwrap();
     assert_eq!(app.session.doc().unwrap().doc.story(sid).unwrap().text, "blue blue | red");
 }
 
@@ -2269,10 +2269,10 @@ fn find_scope_dialog_word_reselection_limits_count_and_change_buttons() {
     let point = {
         let st = app.session.doc().unwrap();
         let cs = app.session.cache.get(&st.doc, sid, None);
-        let (fi, x, baseline, ascent, _) = designcraft_compose::caret(&cs, 1).unwrap();
-        let inner = designcraft_geom::Point::new(x, baseline - ascent * 0.5);
+        let (fi, x, baseline, ascent, _) = pliego_compose::caret(&cs, 1).unwrap();
+        let inner = pliego_geom::Point::new(x, baseline - ascent * 0.5);
         assert_eq!(cs.frames[fi].frame, frame);
-        assert_eq!(designcraft_compose::hit(&cs, fi, inner), Some(1));
+        assert_eq!(pliego_compose::hit(&cs, fi, inner), Some(1));
         let loc = st.doc.find(frame).unwrap();
         st.doc.parent_xf(&loc) * st.doc.text_xf(st.doc.item(frame).unwrap()) * inner
     };
@@ -2294,7 +2294,7 @@ fn find_scope_dialog_word_reselection_limits_count_and_change_buttons() {
 #[test]
 fn find_scope_dialog_failed_native_drop_alert_releases_bounds() {
     let directory = tempfile::tempdir().unwrap();
-    let path = directory.path().join("broken.designcraft");
+    let path = directory.path().join("broken.pliego");
     std::fs::write(&path, b"not a native document").unwrap();
     for dismissal in ["OK", "Escape", "control"] {
         let (mut app, ctx, screen, sid) = scope_dialog();
@@ -2430,7 +2430,7 @@ fn dialog_title_and_actions_fit_scaled_viewports() {
             for (command, title, ok, cancel) in
                 [("app.preferences", "Preferences", "OK", "Cancel"), ("app.newDocumentDialog", "New Document", "Create", "Close")]
             {
-                let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+                let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
                 app.ui.language = language.into();
                 app.run("file.new", json!({})).unwrap();
                 app.run(command, json!({})).unwrap();
@@ -2450,7 +2450,7 @@ fn dialog_title_and_actions_fit_scaled_viewports() {
 
 #[test]
 fn preferences_first_setting_switches_interface_language() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.preferences", json!({})).unwrap();
     let ctx = dialog_context("");
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1178.0, 814.0));
@@ -2514,7 +2514,7 @@ fn preferences_first_setting_switches_interface_language() {
 /// iconic column's menu.
 #[test]
 fn preferences_set_auto_collapse_iconic_panels() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.preferences", json!({})).unwrap();
     assert_eq!(app.ui.dialog.as_ref().unwrap().fields["autoCollapseIconicPanels"], json!(false));
     app.ui.dialog.as_mut().unwrap().fields.insert("autoCollapseIconicPanels".into(), json!(true));
@@ -2526,7 +2526,7 @@ fn preferences_set_auto_collapse_iconic_panels() {
 
 #[test]
 fn preferences_sidebar_scroll_keeps_selected_options_visible() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("app.preferences", json!({})).unwrap();
     let ctx = dialog_context("en");
@@ -2550,7 +2550,7 @@ fn preferences_sidebar_scroll_keeps_selected_options_visible() {
 
 #[test]
 fn preferences_horizontal_scroll_reaches_clipped_options() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.preferences", json!({})).unwrap();
     let ctx = dialog_context("en");
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(360.0, 280.0));
@@ -2588,7 +2588,7 @@ fn scroll_to_label(app: &mut DesignApp, ctx: &egui::Context, screen: egui::Rect,
 
 #[test]
 fn new_document_vertical_scroll_reaches_every_field_and_preset() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("app.newDocumentDialog", json!({})).unwrap();
     let ctx = dialog_context("en");
     let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(392.0, 271.0));
@@ -2613,7 +2613,7 @@ fn new_document_vertical_scroll_reaches_every_field_and_preset() {
 #[test]
 fn arabic_new_document_fields_remain_reachable_and_editable() {
     for size in [egui::vec2(392.0, 271.0), egui::vec2(360.0, 280.0), egui::vec2(1178.0, 814.0)] {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.ui.language = "ar".into();
         app.run("app.newDocumentDialog", json!({})).unwrap();
         let fields = [("height", "66p1"), ("gutter", "1p2"), ("marginBottom", "3p3"), ("marginOutside", "3p4")];
@@ -2661,7 +2661,7 @@ fn resized_dialogs_cancel_and_reopen_without_applying_edits() {
     for (command, title, field, ok, cancel) in
         [("app.preferences", "Preferences", "recoveryMinutes", "OK", "Cancel"), ("app.newDocumentDialog", "New Document", "pages", "Create", "Close")]
     {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run(command, json!({})).unwrap();
         let original = app.ui.dialog.as_ref().unwrap().fields[field].clone();
         app.ui.dialog.as_mut().unwrap().fields.insert(field.into(), json!(42));
@@ -2747,13 +2747,13 @@ fn parses_command_params() {
     assert_eq!(f[0].hint, "%");
     assert_eq!(f[2].hint, "parent items (default: all)");
     // Every command with a "…" label parses without panicking.
-    for c in designcraft_engine::command_specs() {
+    for c in pliego_engine::command_specs() {
         let _ = command_fields(c.params);
     }
 }
 
 fn test_app() -> crate::DesignApp {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({"pages": 1})).unwrap();
     app
 }
@@ -2801,13 +2801,13 @@ fn paragraph_style_options_dialog_saves_edits() {
     app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": name, "p.align": "center"})));
     confirm(&mut app).expect("OK saves the style edit");
     let st = app.session.active().unwrap();
-    assert_eq!(st.doc.styles.para(&name).unwrap().para.align, Some(designcraft_doc::Align::Center));
+    assert_eq!(st.doc.styles.para(&name).unwrap().para.align, Some(pliego_doc::Align::Center));
 }
 
 #[test]
 fn paragraph_style_options_align_to_grid_shows_and_sets_the_style_grid_alignment() {
-    use designcraft_doc::GridAlign;
     use egui_kittest::kittest::Queryable;
+    use pliego_doc::GridAlign;
     let mut app = test_app();
     app.session.execute("style.paragraph.create", &json!({"name": "Grid Body", "para": {"gridAlign": "firstLineOnly"}})).unwrap();
     app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": "Grid Body", "section": "indents"})));
@@ -2837,12 +2837,12 @@ fn delete_paragraph_style_dialog_removes_the_style_and_reassigns_text() {
     app.session.execute("text.insert", &json!({"text": "Hello"})).unwrap();
     app.session.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 0})).unwrap();
     app.session.execute("style.paragraph.apply", &json!({"name": name})).unwrap();
-    app.ui.dialog = Some(Dialog::new("deleteParagraphStyle", json!({"name": name, "replaceWith": designcraft_doc::BASIC_PARAGRAPH})));
+    app.ui.dialog = Some(Dialog::new("deleteParagraphStyle", json!({"name": name, "replaceWith": pliego_doc::BASIC_PARAGRAPH})));
     confirm(&mut app).expect("OK deletes the style");
     let st = app.session.active().unwrap();
     assert!(st.doc.styles.para(&name).is_none(), "style removed");
-    let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).unwrap();
-    assert_eq!(story.paras[0].style, designcraft_doc::BASIC_PARAGRAPH, "text reassigned to the replacement style");
+    let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).unwrap();
+    assert_eq!(story.paras[0].style, pliego_doc::BASIC_PARAGRAPH, "text reassigned to the replacement style");
 }
 
 #[test]
@@ -2874,12 +2874,12 @@ fn delete_character_style_dialog_removes_the_style_and_reassigns_text() {
     app.session.execute("text.insert", &json!({"text": "Hello"})).unwrap();
     app.session.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 5})).unwrap();
     app.session.execute("style.character.apply", &json!({"name": name})).unwrap();
-    app.ui.dialog = Some(Dialog::new("deleteCharacterStyle", json!({"name": name, "replaceWith": designcraft_doc::NO_CHAR_STYLE})));
+    app.ui.dialog = Some(Dialog::new("deleteCharacterStyle", json!({"name": name, "replaceWith": pliego_doc::NO_CHAR_STYLE})));
     confirm(&mut app).expect("OK deletes the style");
     let st = app.session.active().unwrap();
     assert!(st.doc.styles.char_style(&name).is_none(), "style removed");
-    let story = st.doc.stories.get(&designcraft_doc::StoryId(sid)).unwrap();
-    assert_eq!(story.chars[0].format.style, designcraft_doc::NO_CHAR_STYLE, "text reassigned to the replacement style");
+    let story = st.doc.stories.get(&pliego_doc::StoryId(sid)).unwrap();
+    assert_eq!(story.chars[0].format.style, pliego_doc::NO_CHAR_STYLE, "text reassigned to the replacement style");
 }
 
 #[test]
@@ -2920,7 +2920,7 @@ fn epub_export_passes_its_options_to_the_engine() {
     z.by_name("OEBPS/content.opf").unwrap().read_to_string(&mut opf).unwrap();
     assert!(opf.contains("properties=\"cover-image\""), "the first page is the cover: {opf}");
     assert!(z.by_name("OEBPS/content2.xhtml").is_ok(), "the split override reaches the export");
-    assert_eq!(app.session.active().unwrap().doc.settings.epub_split, designcraft_doc::EpubSplit::Off, "an override is not stored");
+    assert_eq!(app.session.active().unwrap().doc.settings.epub_split, pliego_doc::EpubSplit::Off, "an override is not stored");
     crate::menus::export_epub(&mut app, &json!({"path": "book.epub", "cover": false})).unwrap();
     let bytes = written.lock().unwrap().clone();
     let mut z = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();
@@ -2931,13 +2931,13 @@ fn epub_export_passes_its_options_to_the_engine() {
 
 #[test]
 fn epub_export_options_store_split_document() {
-    use designcraft_doc::EpubSplit;
+    use pliego_doc::EpubSplit;
     let mut app = test_app();
     app.session.execute("style.paragraph.create", &json!({"name": "Chapter"})).unwrap();
     let undo_steps = |app: &crate::DesignApp| app.session.active().map(|st| st.history.undo.len());
     app.run("app.exportEpub", json!({})).unwrap();
     let d = app.ui.dialog.as_mut().unwrap();
-    assert_eq!((d.id.as_str(), d.b("split"), d.s("style").as_str()), ("epubExport", false, designcraft_doc::BASIC_PARAGRAPH));
+    assert_eq!((d.id.as_str(), d.b("split"), d.s("style").as_str()), ("epubExport", false, pliego_doc::BASIC_PARAGRAPH));
     d.fields.insert("split".into(), json!(true));
     d.fields.insert("style".into(), json!("Chapter"));
     let before = undo_steps(&app);
@@ -3117,7 +3117,7 @@ fn pdf_export_preset_pdf_a2b_keeps_flatten() {
 
 #[test]
 fn open_pdf_export_seeds_fields_from_settings() {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.pdf_export.standard = "x4".into();
     app.ui.pdf_export.tagged = false;
     app.ui.pdf_export.marks_crop = true;
@@ -3158,7 +3158,7 @@ fn pdf_export_preset_custom_changes_nothing() {
 #[test]
 fn confirm_pdf_export_writes_file_and_persists_settings() {
     use std::sync::{Arc, Mutex};
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let writes: Arc<Mutex<Vec<(String, Vec<u8>)>>> = Arc::new(Mutex::new(Vec::new()));
     let sink = writes.clone();
@@ -3166,7 +3166,7 @@ fn confirm_pdf_export_writes_file_and_persists_settings() {
         sink.lock().unwrap().push((path.to_string(), bytes.to_vec()));
         Ok(())
     }));
-    app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some("/tmp/designcraft-test.pdf".into())));
+    app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some("/tmp/pliego-test.pdf".into())));
 
     app.ui.dialog = Some(Dialog::new("pdfExport", json!({})));
     {
@@ -3182,7 +3182,7 @@ fn confirm_pdf_export_writes_file_and_persists_settings() {
 
     let got = writes.lock().unwrap();
     assert_eq!(got.len(), 1, "confirming the dialog writes exactly one file");
-    assert_eq!(got[0].0, "/tmp/designcraft-test.pdf");
+    assert_eq!(got[0].0, "/tmp/pliego-test.pdf");
     assert!(got[0].1.starts_with(b"%PDF"), "the written bytes are a PDF");
     drop(got);
 
@@ -3199,11 +3199,11 @@ fn update_link_asks_before_replacing_edits_made_in_the_layout() {
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("note.txt");
     std::fs::write(&path, "One").unwrap();
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let r = app.session.execute("file.place", &json!({"path": path.to_string_lossy(), "link": true, "rect": [72, 72, 300, 200]})).unwrap();
     let sid = r["story"].as_u64().unwrap();
-    let text = |app: &crate::DesignApp| app.session.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text.clone();
+    let text = |app: &crate::DesignApp| app.session.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text.clone();
 
     // Not edited in the layout: updates without asking.
     std::fs::write(&path, "Two").unwrap();
@@ -3232,7 +3232,7 @@ fn update_link_asks_before_replacing_edits_made_in_the_layout() {
 #[test]
 fn confirm_pdf_export_cancelled_save_writes_nothing() {
     use std::sync::{Arc, Mutex};
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.session.execute("file.new", &json!({})).unwrap();
     let writes: Arc<Mutex<Vec<(String, Vec<u8>)>>> = Arc::new(Mutex::new(Vec::new()));
     let sink = writes.clone();
@@ -3249,11 +3249,11 @@ fn confirm_pdf_export_cancelled_save_writes_nothing() {
     assert!(writes.lock().unwrap().is_empty(), "cancelling the save picker must not write");
 }
 
-use designcraft_doc::{CharAttrs, CharacterStyle};
+use pliego_doc::{CharAttrs, CharacterStyle};
 
 /// A document with character styles Base (bold) and Emphasis (italic) on the first two letters.
 fn styled_app() -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.character.create", json!({"name": "Base", "chars": {"fontStyle": "Bold"}})).unwrap();
     app.run("style.character.create", json!({"name": "Emphasis", "chars": {"fontStyle": "Italic"}})).unwrap();
@@ -3333,10 +3333,10 @@ fn new_paragraph_style_opens_its_options_and_creates_the_style() {
     let d = app.ui.dialog.clone().unwrap();
     assert_eq!((d.id.as_str(), d.b("new"), d.s("rename").as_str()), ("paragraphStyleOptions", true, "Paragraph Style 1"));
     ctl(&mut app, "ui.dialog.set", json!({"field": "c.size", "value": 20}));
-    ctl(&mut app, "ui.dialog.set", json!({"field": "basedOn", "value": designcraft_doc::BASIC_PARAGRAPH}));
+    ctl(&mut app, "ui.dialog.set", json!({"field": "basedOn", "value": pliego_doc::BASIC_PARAGRAPH}));
     assert_eq!(ctl(&mut app, "ui.dialog.confirm", json!({}))["ok"], true);
     let st = app.session.active().unwrap().doc.styles.para("Paragraph Style 1").cloned().unwrap();
-    assert_eq!(st.based_on.as_deref(), Some(designcraft_doc::BASIC_PARAGRAPH));
+    assert_eq!(st.based_on.as_deref(), Some(pliego_doc::BASIC_PARAGRAPH));
     // The selected text's own Italic comes along, as InDesign's New Paragraph Style takes it.
     assert_eq!(st.chars, CharAttrs { size: Some(20.0), font_style: Some("Italic".into()), ..Default::default() });
 }
@@ -3347,9 +3347,9 @@ fn style_rows_open_their_options_except_none() {
     open_style_options(&mut app, false, "Emphasis");
     let d = app.ui.dialog.take().unwrap();
     assert_eq!((d.id.as_str(), d.s("name").as_str()), ("characterStyleOptions", "Emphasis"));
-    open_style_options(&mut app, false, designcraft_doc::NO_CHAR_STYLE);
+    open_style_options(&mut app, false, pliego_doc::NO_CHAR_STYLE);
     assert!(app.ui.dialog.is_none());
-    open_style_options(&mut app, true, designcraft_doc::BASIC_PARAGRAPH);
+    open_style_options(&mut app, true, pliego_doc::BASIC_PARAGRAPH);
     assert_eq!(app.ui.dialog.take().unwrap().id, "paragraphStyleOptions");
 }
 
@@ -3417,7 +3417,7 @@ fn dragging_the_title_moves_the_dialog_and_dragging_the_body_does_not() {
         h.run_steps(3);
     }
     let rect = |h: &Harness<'static, DesignApp>| h.ctx.memory(|m| m.area_rect(egui::Id::unique("dialog"))).unwrap();
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.ui.dialog = Some(Dialog::new("insertTable", Value::Null));
     let mut ready = false;
@@ -3470,7 +3470,7 @@ fn the_new_document_window_drags_mostly_aside_and_keeps_its_preview() {
     use egui::{Event, Modifiers, PointerButton, vec2};
     use egui_kittest::{Harness, kittest::Queryable};
     let rect = |h: &Harness<'static, DesignApp>| h.ctx.memory(|m| m.area_rect(egui::Id::unique("dialog"))).unwrap();
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "A"})).unwrap();
     app.ui.new_document_preview = true;
     app.run("app.newDocumentDialog", json!({})).unwrap();
@@ -3514,7 +3514,7 @@ fn the_new_document_window_drags_mostly_aside_and_keeps_its_preview() {
 
 #[test]
 fn margins_dialog_reads_bare_numbers_in_the_ruler_unit() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("document.preferences", json!({"horizontalUnits": "millimeters"})).unwrap();
     crate::menus::activate(&mut app, "layout.marginsAndColumns", &Value::Null);
@@ -3526,7 +3526,7 @@ fn margins_dialog_reads_bare_numbers_in_the_ruler_unit() {
     assert!((top - 15.0 * 72.0 / 25.4).abs() < 0.01, "top margin was {top} pt");
 }
 fn facing_app(pages: u64) -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": pages, "facingPages": true})).unwrap();
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1400.0, 900.0)));
     app
@@ -3542,7 +3542,7 @@ fn guide_counts(app: &DesignApp) -> Vec<usize> {
 #[test]
 fn the_eyedropper_samples_what_proof_colors_and_the_ink_limit_show() {
     use egui_kittest::Harness;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("swatch.create", json!({"name": "Vivid Green", "color": [0, 255, 0]})).unwrap();
     let id = app.run("frame.create", json!({"rect": [36, 36, 560, 700], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
@@ -3559,15 +3559,15 @@ fn the_eyedropper_samples_what_proof_colors_and_the_ink_limit_show() {
     let target = {
         let app = h.state();
         let doc = &app.session.doc().unwrap().doc;
-        let layout = designcraft_tools::CanvasLayout::new(doc, false);
+        let layout = pliego_tools::CanvasLayout::new(doc, false);
         let v = *app.view().unwrap();
-        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * designcraft_geom::Point::new(300.0, 600.0))
+        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * pliego_geom::Point::new(300.0, 600.0))
     };
     let ctx = h.ctx.clone();
     let sample = |h: &mut Harness<'_, DesignApp>| crate::canvas::color_at(h.state_mut(), &ctx, target).expect("on the page");
     // What a view makes of the plain colour, as the canvas texture gets it.
-    let shown = |c: [u8; 3], view: &dyn Fn(&mut designcraft_render::Rendered)| {
-        let mut img = designcraft_render::Rendered { width: 1, height: 1, pixels: vec![c[0], c[1], c[2], 255] };
+    let shown = |c: [u8; 3], view: &dyn Fn(&mut pliego_render::Rendered)| {
+        let mut img = pliego_render::Rendered { width: 1, height: 1, pixels: vec![c[0], c[1], c[2], 255] };
         view(&mut img);
         [img.pixels[0], img.pixels[1], img.pixels[2]]
     };
@@ -3575,7 +3575,7 @@ fn the_eyedropper_samples_what_proof_colors_and_the_ink_limit_show() {
     h.state_mut().ui.proof_colors = true;
     let setup = h.state().ui.proof_setup.clone();
     let proofed = sample(&mut h);
-    assert_eq!(proofed, shown(plain, &|img| designcraft_render::proof_view(img, &setup)));
+    assert_eq!(proofed, shown(plain, &|img| pliego_render::proof_view(img, &setup)));
     assert_ne!(proofed, plain, "the proof changes this green");
 }
 
@@ -3584,7 +3584,7 @@ fn the_eyedropper_samples_what_proof_colors_and_the_ink_limit_show() {
 #[test]
 fn the_color_pickers_eyedropper_takes_a_colour_off_the_page() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [36, 36, 560, 700], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     app.run("swatch.create", json!({"name": "Eyedrop Red", "color": {"c": 0, "m": 100, "y": 100, "k": 0}})).unwrap();
@@ -3603,9 +3603,9 @@ fn the_color_pickers_eyedropper_takes_a_colour_off_the_page() {
     let target = {
         let app = h.state();
         let doc = &app.session.doc().unwrap().doc;
-        let layout = designcraft_tools::CanvasLayout::new(doc, false);
+        let layout = pliego_tools::CanvasLayout::new(doc, false);
         let v = *app.view().unwrap();
-        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * designcraft_geom::Point::new(300.0, 600.0))
+        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * pliego_geom::Point::new(300.0, 600.0))
     };
     let from = h.get_by_label("Eyedropper: drag it onto the page").rect().center();
     h.hover_at(from);
@@ -3654,7 +3654,7 @@ fn the_color_pickers_eyedropper_takes_a_colour_off_the_page() {
 
 fn the_color_picker_keeps_a_typed_cmyk_value_the_colour_shown_does_not_change_with() {
     use egui_kittest::kittest::Queryable;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.ui.dialog = Some(Dialog::new("colorPicker", json!({"target": "fill", "cmyk": [0.0, 0.0, 0.0, 100.0], "text": false})));
     let mut h = crate::test_window::open(app, egui::vec2(1400.0, 900.0));
@@ -3673,10 +3673,10 @@ fn the_color_picker_keeps_a_typed_cmyk_value_the_colour_shown_does_not_change_wi
 #[test]
 fn the_color_picker_picks_on_its_field_and_slider_and_adds_a_cmyk_swatch() {
     use egui_kittest::kittest::Queryable;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 200, 200], "shape": "rectangle"})).unwrap();
-    app.run("object.color", json!({"color":designcraft_color::Color::from_hex("#7c1315").unwrap(),"target":"fill"})).unwrap();
+    app.run("object.color", json!({"color":pliego_color::Color::from_hex("#7c1315").unwrap(),"target":"fill"})).unwrap();
     app.ui.dialog = Some(Dialog::new("colorPicker", json!({"target": "fill", "hex": "#7c1315", "text": false})));
     let mut h = crate::test_window::open(app, egui::vec2(1400.0, 900.0));
     h.run_steps(3);
@@ -3713,19 +3713,14 @@ fn the_color_picker_picks_on_its_field_and_slider_and_adds_a_cmyk_swatch() {
     h.run_steps(3);
     let doc = &h.state().app.session.active().unwrap().doc;
     assert_eq!(doc.swatches.len(), before + 1);
-    assert!(matches!(
-        doc.swatches.last().unwrap().value,
-        designcraft_color::swatch::SwatchValue::Color { color: designcraft_color::Color::Cmyk { .. }, .. }
-    ));
+    assert!(matches!(doc.swatches.last().unwrap().value, pliego_color::swatch::SwatchValue::Color { color: pliego_color::Color::Cmyk { .. }, .. }));
     // The percentages the C/M/Y/K fields show, exactly (not the colour converted back).
     h.state_mut().app.ui.dialog.as_mut().unwrap().fields.insert("cmyk".into(), json!([0.0, 50.0, 100.0, 0.0]));
     h.run_steps(2);
     h.get_by_label("Add CMYK Swatch").click();
     h.run_steps(3);
     let doc = &h.state().app.session.active().unwrap().doc;
-    let designcraft_color::swatch::SwatchValue::Color { color: designcraft_color::Color::Cmyk { c, m, y, k }, .. } =
-        doc.swatches.last().unwrap().value
-    else {
+    let pliego_color::swatch::SwatchValue::Color { color: pliego_color::Color::Cmyk { c, m, y, k }, .. } = doc.swatches.last().unwrap().value else {
         panic!("a CMYK swatch")
     };
     assert_eq!([c, m, y, k].map(|v| (v * 100.0).round()), [0.0, 50.0, 100.0, 0.0]);
@@ -3744,7 +3739,7 @@ fn the_color_picker_picks_on_its_field_and_slider_and_adds_a_cmyk_swatch() {
 #[test]
 fn the_color_picker_remembers_its_component() {
     use egui_kittest::kittest::Queryable;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 200, 200], "shape": "rectangle"})).unwrap();
     assert_eq!(app.ui.color_picker_component, "r", "R at first, as before");
@@ -3828,13 +3823,13 @@ fn character_style_options_set_the_digits() {
     ctl(&mut app, "ui.dialog.open", json!({"id": "characterStyleOptions", "fields": {"name": "Emphasis"}}));
     ctl(&mut app, "ui.dialog.set", json!({"field": "c.digits", "value": "farsi"}));
     assert_eq!(ctl(&mut app, "ui.dialog.confirm", json!({}))["ok"], true);
-    assert_eq!(char_style(&app, "Emphasis").unwrap().chars.digits, Some(designcraft_doc::Digits::Farsi));
+    assert_eq!(char_style(&app, "Emphasis").unwrap().chars.digits, Some(pliego_doc::Digits::Farsi));
 }
 
 #[test]
 fn import_warning_show_selects_the_frame_it_is_about() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 300, 200], "content": "text"})).unwrap();
     app.run("selection.set", json!({"ids": []})).unwrap();
@@ -3862,7 +3857,7 @@ fn import_warning_show_selects_the_frame_it_is_about() {
     h.run_steps(3);
     let app = h.state();
     assert!(app.ui.dialog.is_none(), "Show closes the warnings");
-    assert_eq!(app.session.doc().unwrap().selection.items, vec![designcraft_doc::ItemId(f["id"].as_u64().unwrap())]);
+    assert_eq!(app.session.doc().unwrap().selection.items, vec![pliego_doc::ItemId(f["id"].as_u64().unwrap())]);
 }
 
 /// Replace the text of the field beside the `nth` label `label` (on its row, to its right) with
@@ -3947,8 +3942,8 @@ fn paragraph_border_sides_and_corners_link_as_indesigns() {
 /// offsets.
 #[test]
 fn paragraph_shading_page_is_laid_out_as_indesigns() {
-    use designcraft_geom::corners::CornerShape;
     use egui_kittest::kittest::Queryable;
+    use pliego_geom::corners::CornerShape;
     let (app, _) = ruled_paragraph();
     let mut h = crate::test_window::open(app, egui::vec2(1400.0, 900.0));
     h.state_mut().app.ui.dialog =
@@ -3976,7 +3971,7 @@ fn paragraph_shading_page_is_laid_out_as_indesigns() {
         h.get_by_label("Rounded").click();
         h.run_steps(2);
     }
-    let corners: [designcraft_geom::corners::Corner; 4] = serde_json::from_value(field(&h, "shadingCorners")).unwrap();
+    let corners: [pliego_geom::corners::Corner; 4] = serde_json::from_value(field(&h, "shadingCorners")).unwrap();
     assert_eq!(
         corners.map(|c| (c.shape, c.size)),
         [(CornerShape::Rounded, 10.0), (CornerShape::Rounded, 10.0), (CornerShape::None, 0.0), (CornerShape::None, 0.0)]
@@ -3996,7 +3991,7 @@ fn paragraph_shading_page_is_laid_out_as_indesigns() {
 /// go back to it; Gap Color lists only swatches.
 #[test]
 fn the_rule_colour_menu_offers_text_color() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let doc = app.session.doc().unwrap().doc.clone();
     let menu = |ctx: &egui::Context, text: Option<&str>, click: Option<egui::Pos2>| {
@@ -4031,7 +4026,7 @@ fn the_rule_colour_menu_offers_text_color() {
         assert_eq!(item.is_some(), text.is_some(), "{labels:?}");
         if let Some(pos) = item {
             let (picked, _) = menu(&ctx, text, Some(pos));
-            assert_eq!(picked.as_deref(), Some(designcraft_doc::TEXT_COLOR));
+            assert_eq!(picked.as_deref(), Some(pliego_doc::TEXT_COLOR));
         }
     }
 }
@@ -4052,7 +4047,7 @@ fn paragraph_style_rules_take_a_type_and_a_gap_colour() {
     draw(&mut app, &ctx);
     confirm(&mut app).unwrap();
     let r = app.session.doc().unwrap().doc.styles.resolve_para_style("Ruled Child").0.rule_below;
-    assert_eq!((r.kind, r.weight, r.gap_color.as_str()), (designcraft_doc::StrokeType::Wavy, 3.0, "[Paper]"));
+    assert_eq!((r.kind, r.weight, r.gap_color.as_str()), (pliego_doc::StrokeType::Wavy, 3.0, "[Paper]"));
 }
 
 /// A rule's Gap Tint shows 100% at its default (the rule's JSON leaves a full gap tint out).
@@ -4083,7 +4078,7 @@ fn a_rules_default_gap_tint_shows_100() {
 /// Reset To Base are set from General.
 #[test]
 fn a_new_paragraph_style_starts_from_the_selected_text() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": "Egg Recipes\rBoil them."})).unwrap();
     app.run("text.select", json!({"story": f["story"], "anchor": 0, "focus": 11})).unwrap();
@@ -4098,17 +4093,17 @@ fn a_new_paragraph_style_starts_from_the_selected_text() {
     assert!(d.b("apply") && !d.fields.contains_key("c.fontFamily"), "only what differs from [No Paragraph Style]");
     if let Some(d) = app.ui.dialog.as_mut() {
         d.fields.insert("rename".into(), json!("Recipe Categories"));
-        d.fields.insert("nextStyle".into(), json!(designcraft_doc::BASIC_PARAGRAPH));
+        d.fields.insert("nextStyle".into(), json!(pliego_doc::BASIC_PARAGRAPH));
     }
     confirm(&mut app).unwrap();
     let a = app.run("type.selectionAttrs", json!({})).unwrap();
     assert_eq!(a["paragraphStyle"], "Recipe Categories", "applied to the selection");
     assert_eq!(a["paraOverrides"].as_u64().unwrap_or(0) + a["charOverrides"].as_u64().unwrap_or(0), 0);
     let style = |app: &DesignApp| app.session.doc().unwrap().doc.styles.para("Recipe Categories").cloned().unwrap();
-    assert_eq!(style(&app).next_style.as_deref(), Some(designcraft_doc::BASIC_PARAGRAPH));
+    assert_eq!(style(&app).next_style.as_deref(), Some(pliego_doc::BASIC_PARAGRAPH));
     assert_eq!(style(&app).chars.size, Some(20.0));
     // Reset To Base: the style keeps nothing of its own, apart from the edits made then.
-    app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": "Recipe Categories", "basedOn": designcraft_doc::BASIC_PARAGRAPH})));
+    app.ui.dialog = Some(Dialog::new("paragraphStyleOptions", json!({"name": "Recipe Categories", "basedOn": pliego_doc::BASIC_PARAGRAPH})));
     if let Some(d) = app.ui.dialog.as_mut() {
         d.fields.insert("resetToBase".into(), json!(true));
         d.fields.insert("c.tracking".into(), json!(10.0));
@@ -4116,7 +4111,7 @@ fn a_new_paragraph_style_starts_from_the_selected_text() {
     confirm(&mut app).unwrap();
     let s = style(&app);
     assert_eq!((s.chars.size, s.chars.tracking, s.para.space_after), (None, Some(10.0), None), "{s:?}");
-    assert_eq!(s.based_on.as_deref(), Some(designcraft_doc::BASIC_PARAGRAPH));
+    assert_eq!(s.based_on.as_deref(), Some(pliego_doc::BASIC_PARAGRAPH));
 }
 
 /// The course's chapter 22: "eggs" made bold and red on the page, then New Character Style
@@ -4126,7 +4121,7 @@ fn a_new_paragraph_style_starts_from_the_selected_text() {
 #[test]
 fn a_new_character_style_starts_from_the_selected_text() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": "Drop eggs into boiling water."})).unwrap();
     app.run("text.select", json!({"story": f["story"], "anchor": 0, "focus": 29})).unwrap();
@@ -4170,14 +4165,14 @@ fn a_new_character_style_starts_from_the_selected_text() {
 /// against: the style's own settings over the new parent.
 #[test]
 fn a_changed_based_on_is_what_the_fields_are_checked_against() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.paragraph.create", json!({"name": "Loose", "para": {"wordSpaceMin": 1.2, "wordSpaceDesired": 1.3}})).unwrap();
     app.run("style.paragraph.create", json!({"name": "Child", "basedOn": "Loose"})).unwrap();
     let mut d = Dialog::new("paragraphStyleOptions", json!({"name": "Child"}));
     d.fields.insert("p.wordSpaceDesired".into(), json!(1.0));
     assert!(check_paragraph_style_justification(&app, &d).is_err(), "below Loose's minimum");
-    d.fields.insert("basedOn".into(), json!(designcraft_doc::BASIC_PARAGRAPH));
+    d.fields.insert("basedOn".into(), json!(pliego_doc::BASIC_PARAGRAPH));
     assert_eq!(check_paragraph_style_justification(&app, &d), Ok(()), "[Basic Paragraph]'s minimum is lower");
 }
 
@@ -4185,11 +4180,11 @@ fn a_changed_based_on_is_what_the_fields_are_checked_against() {
 /// style's own minimum no longer applies), and Preview shows the reset on the page.
 #[test]
 fn reset_to_base_checks_and_previews_against_the_base() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": "Loose words"})).unwrap();
     app.run("text.select", json!({"story": f["story"], "anchor": 0, "focus": 5})).unwrap();
-    app.run("style.paragraph.create", json!({"name": "Loose", "basedOn": designcraft_doc::BASIC_PARAGRAPH, "para": {"wordSpaceMin": 1.2, "wordSpaceDesired": 1.3}, "chars": {"size": 30}}))
+    app.run("style.paragraph.create", json!({"name": "Loose", "basedOn": pliego_doc::BASIC_PARAGRAPH, "para": {"wordSpaceMin": 1.2, "wordSpaceDesired": 1.3}, "chars": {"size": 30}}))
         .unwrap();
     app.run("style.paragraph.apply", json!({"name": "Loose"})).unwrap();
     let mut d = Dialog::new("paragraphStyleOptions", json!({"name": "Loose"}));
@@ -4212,11 +4207,11 @@ fn reset_to_base_checks_and_previews_against_the_base() {
 #[test]
 fn find_change_gives_the_found_text_a_change_format() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let text = "Poached Eggs\nBreak eggs; cook until eggs are set.";
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": text})).unwrap();
-    let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+    let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
     app.run("style.character.create", json!({"name": "eggs", "chars": {"fontStyle": "Bold"}})).unwrap();
     app.run("app.findChange", json!({})).unwrap();
     if let Some(d) = app.ui.dialog.as_mut() {
@@ -4269,10 +4264,7 @@ fn find_change_gives_the_found_text_a_change_format() {
     assert_eq!(field(&h, "status"), Some(json!("2 replacement(s) made")));
     let story = h.state().session.doc().unwrap().doc.story(sid).cloned().unwrap();
     assert_eq!(story.text, text);
-    assert_eq!(
-        [8, 19, 36].map(|at| story.format_after(at).style.clone()),
-        [designcraft_doc::NO_CHAR_STYLE.to_string(), "eggs".into(), "eggs".into()]
-    );
+    assert_eq!([8, 19, 36].map(|at| story.format_after(at).style.clone()), [pliego_doc::NO_CHAR_STYLE.to_string(), "eggs".into(), "eggs".into()]);
     // The trash clears it (the second: the first is the Find Format's).
     h.get_all_by_label("Clear specified attributes").nth(1).unwrap().click();
     h.run_steps(3);
@@ -4302,7 +4294,7 @@ fn a_change_format_goes_with_change_all() {
 #[test]
 fn find_format_finds_only_text_with_it() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": "Break eggs; cook eggs."})).unwrap();
     app.run("style.character.create", json!({"name": "eggs", "chars": {"fontStyle": "Bold"}})).unwrap();
@@ -4364,7 +4356,7 @@ fn preferences_interface_sets_the_color_theme_and_tools_panel() {
     use crate::theme::Brightness;
     use egui::accesskit::Role;
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let opened = app.ui.brightness;
     let open = |app: &mut DesignApp| {
@@ -4426,7 +4418,7 @@ fn preferences_interface_sets_the_color_theme_and_tools_panel() {
 /// for new documents, and New Document opens in them (Lollo's inches, set once).
 #[test]
 fn preferences_with_no_document_set_the_units_of_new_documents() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     crate::menus::activate(&mut app, "app.preferences", &Value::Null);
     let mut d = app.ui.dialog.take().expect("Preferences");
     assert!(d.b("defaults"), "for new documents");
@@ -4467,7 +4459,7 @@ fn preferences_with_no_document_set_the_units_of_new_documents() {
     crate::menus::activate(&mut app, "app.newDocumentDialog", &Value::Null);
     let nd = app.ui.dialog.clone().expect("New Document");
     assert_eq!(nd.fields["units"], json!("inches"));
-    assert_eq!(nd.s("width"), designcraft_geom::format_measure(612.0, Unit::Inches));
+    assert_eq!(nd.s("width"), pliego_geom::format_measure(612.0, Unit::Inches));
     confirm(&mut app).unwrap();
     let st = &app.session.doc().unwrap().doc.settings;
     assert_eq!((st.horizontal_units, st.vertical_units, st.keyboard_increment), (Unit::Inches, Unit::Inches, 0.5));
@@ -4480,7 +4472,7 @@ fn preferences_with_no_document_set_the_units_of_new_documents() {
 /// InDesign's does ("20"; it read "20.0").
 #[test]
 fn file_handling_shows_the_recent_items_count_as_a_whole_number() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("app.preferences", json!({})).unwrap();
     app.ui.dialog.as_mut().unwrap().fields.insert("section".into(), json!("files"));
@@ -4498,7 +4490,7 @@ fn file_handling_shows_the_recent_items_count_as_a_whole_number() {
 /// Collapsing advanced TOC controls changes visibility without discarding their values.
 #[test]
 fn toc_more_options_preserves_hidden_settings() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.newSample", json!({})).unwrap();
     open_toc(&mut app);
     app.ui.dialog.as_mut().unwrap().fields.insert(
@@ -4537,7 +4529,7 @@ fn toc_more_options_preserves_hidden_settings() {
 #[test]
 fn enter_on_the_toc_options_toggle_only_toggles() {
     use egui_kittest::{Harness, kittest::Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.newSample", json!({})).unwrap();
     open_toc(&mut app);
     let revision = app.session.doc().unwrap().revision;
@@ -4567,7 +4559,7 @@ fn enter_on_the_toc_options_toggle_only_toggles() {
 /// The title stays readable beside the style selector after the grid settles.
 #[test]
 fn toc_title_field_shows_the_whole_default_title() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.newSample", json!({})).unwrap();
     open_toc(&mut app);
     let ctx = dialog_context("en");
@@ -4601,7 +4593,7 @@ fn toc_title_field_shows_the_whole_default_title() {
 /// The bookmarks checkbox persists through generation and reopening the dialog.
 #[test]
 fn toc_bookmarks_checkbox_sets_and_reopens_the_persisted_option() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.newSample", json!({})).unwrap();
     open_toc(&mut app);
     assert!(app.ui.dialog.as_ref().unwrap().b("createBookmarks"));
@@ -4630,12 +4622,12 @@ fn toc_bookmarks_checkbox_sets_and_reopens_the_persisted_option() {
 
 #[test]
 fn corner_options_dialog_sets_each_corner_with_preview_and_one_undo_step() {
-    use designcraft_geom::corners::CornerShape;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    use pliego_geom::corners::CornerShape;
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 360, 360]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
-    let corners = |app: &DesignApp| app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().corners.corners;
+    let corners = |app: &DesignApp| app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().corners.corners;
     let undo = |app: &DesignApp| app.session.doc().unwrap().history.undo.len();
     let set = |app: &mut DesignApp, k: &str, v: Value| {
         app.ui.dialog.as_mut().unwrap().fields.insert(k.into(), v);
@@ -4701,14 +4693,14 @@ fn corner_options_dialog_sets_each_corner_with_preview_and_one_undo_step() {
 /// edited; the others keep each object's own. A linked edit sets all four.
 #[test]
 fn corner_options_keep_each_objects_untouched_corners() {
-    use designcraft_geom::corners::CornerShape;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    use pliego_geom::corners::CornerShape;
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [72, 72, 200, 200]})).unwrap()["id"].as_u64().unwrap();
     let b = app.run("frame.create", json!({"rect": [272, 72, 400, 200]})).unwrap()["id"].as_u64().unwrap();
     app.run("object.cornerOptions", json!({"ids": [b], "shape": "bevel", "size": 12})).unwrap();
     app.run("selection.set", json!({"ids": [a, b]})).unwrap();
-    let corners = |app: &DesignApp, id: u64| app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().corners.corners;
+    let corners = |app: &DesignApp, id: u64| app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().corners.corners;
     let set = |app: &mut DesignApp, k: &str, v: Value| {
         app.ui.dialog.as_mut().unwrap().fields.insert(k.into(), v);
     };
@@ -4745,7 +4737,7 @@ fn corner_options_keep_each_objects_untouched_corners() {
 fn on_a_page_without_a_section_the_window_is_new_section() {
     // Chris Nielsen's "Numbering Page Sections" (4:43): page 3 selected, the Pages panel menu's
     // Numbering & Section Options opens New Section with Start Section on and 1 offered.
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 6, "facingPages": true})).unwrap();
     app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1000.0, 800.0)));
     crate::canvas::go_to_page(&mut app, 2);
@@ -4797,10 +4789,10 @@ fn on_a_page_without_a_section_the_window_is_new_section() {
 fn change_and_change_find_change_the_found_text() {
     use egui_kittest::Harness;
     use egui_kittest::kittest::{NodeT, Queryable};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [36, 36, 400, 300], "content": "text", "text": "red red | red"})).unwrap();
-    let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+    let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
     app.run("text.select", json!({"story": sid.0, "anchor": 0, "focus": 0})).unwrap();
     app.run("app.findChange", json!({})).unwrap();
     if let Some(d) = app.ui.dialog.as_mut() {
@@ -4840,10 +4832,10 @@ fn change_and_change_find_change_the_found_text() {
 /// table; [Basic Table] (the default) leaves it unstyled.
 #[test]
 fn insert_table_applies_its_dimensions_and_table_style() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("style.table.create", json!({"name": "Grid"})).unwrap();
-    for (style, expected) in [("Grid", "Grid"), (designcraft_doc::BASIC_TABLE, "")] {
+    for (style, expected) in [("Grid", "Grid"), (pliego_doc::BASIC_TABLE, "")] {
         app.run("frame.create", json!({"rect": [72, 72, 372, 372], "content": "text"})).unwrap();
         assert_eq!(app.run("app.insertTableDialog", json!({})).unwrap(), Value::Null);
         for (field, value) in [("bodyRows", json!(5)), ("columns", json!(3)), ("headerRows", json!(1)), ("tableStyle", json!(style))] {
@@ -4887,7 +4879,7 @@ fn insert_table_applies_its_dimensions_and_table_style() {
 /// the separators chosen there.
 #[test]
 fn convert_dialogs_use_their_separators() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let text = "Name:\nAddress:\nCity:\nState:";
     let sid = app.run("frame.create", json!({"rect": [72, 72, 372, 372], "content": "text", "text": text})).unwrap()["story"].clone();
@@ -4921,7 +4913,7 @@ fn convert_dialogs_use_their_separators() {
     app.run("app.convertTableToTextDialog", json!({})).unwrap();
     ctl(&mut app, "ui.dialog.set", json!({"field": "columnSeparator", "value": ", "}));
     assert_eq!(ctl(&mut app, "ui.dialog.confirm", json!({}))["ok"], true);
-    let story = app.session.active().unwrap().doc.story(designcraft_doc::StoryId(sid.as_u64().unwrap())).unwrap().text.clone();
+    let story = app.session.active().unwrap().doc.story(pliego_doc::StoryId(sid.as_u64().unwrap())).unwrap().text.clone();
     // (The empty paragraph after a table that ends its story stays after the text.)
     assert_eq!(story.trim_end(), "Name:, Address:\nCity:, State:");
 }
@@ -4930,11 +4922,11 @@ fn convert_dialogs_use_their_separators() {
 /// the height in the vertical one, not always picas, and reads bare numbers the same way (#1964).
 #[test]
 fn frame_size_dialog_follows_the_ruler_units() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("document.preferences", json!({"horizontalUnits": "inches", "verticalUnits": "millimeters"})).unwrap();
     // As the frame tool asks: a click at (36, 36), 72 pt by 72 pt.
-    app.session.ui_requests.push(designcraft_engine::UiRequest::Dialog {
+    app.session.ui_requests.push(pliego_engine::UiRequest::Dialog {
         id: "frameSize".into(),
         params: json!({"spread": 0, "shape": "rectangle", "content": "graphic", "x": 36.0, "y": 36.0, "width": 72.0, "height": 72.0}),
     });
@@ -4975,10 +4967,10 @@ fn frame_size_dialog_follows_the_ruler_units() {
 /// opened. Rulers switched while it is open (the control channel) leave a typed 50 at 50 mm.
 #[test]
 fn frame_size_dialog_keeps_its_units_while_open() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("document.preferences", json!({"horizontalUnits": "millimeters", "verticalUnits": "millimeters"})).unwrap();
-    app.session.ui_requests.push(designcraft_engine::UiRequest::Dialog {
+    app.session.ui_requests.push(pliego_engine::UiRequest::Dialog {
         id: "frameSize".into(),
         params: json!({"spread": 0, "shape": "rectangle", "content": "graphic", "x": 36.0, "y": 36.0, "width": 72.0, "height": 72.0}),
     });
@@ -5011,18 +5003,18 @@ fn frame_size_dialog_keeps_its_units_while_open() {
 
 #[test]
 fn parent_resize_exact_dialog_keeps_its_target_and_rejects_invalid_input() {
-    use designcraft_tools::{PointerEvent, PointerKind};
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    use pliego_tools::{PointerEvent, PointerKind};
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width":400,"height":600,"pages":3,"facingPages":true})).unwrap();
     app.run("layout.parents.new", json!({"prefix":"B"})).unwrap();
     app.run("layout.parents.edit", json!({"on":true})).unwrap();
     app.session.set_tool("page");
     let before = app.session.doc().unwrap().doc.clone();
-    let sr = designcraft_doc::SpreadRef::Parent(1);
+    let sr = pliego_doc::SpreadRef::Parent(1);
     let p = app.session.layout().spread_page_rect(&before, sr, 1).unwrap().center();
-    app.session.pointer(&PointerEvent::new(PointerKind::DoubleClick, p.x, p.y), designcraft_engine::ViewInfo::at_zoom(1.0)).unwrap();
+    app.session.pointer(&PointerEvent::new(PointerKind::DoubleClick, p.x, p.y), pliego_engine::ViewInfo::at_zoom(1.0)).unwrap();
     let request = app.session.ui_requests.pop().unwrap();
-    let designcraft_engine::UiRequest::Dialog { id, params } = request else { panic!("expected exact-size dialog") };
+    let pliego_engine::UiRequest::Dialog { id, params } = request else { panic!("expected exact-size dialog") };
     app.ui.dialog = Some(Dialog::new(&id, params));
     let d = app.ui.dialog.as_mut().unwrap();
     d.fields.insert("width".into(), json!("530"));

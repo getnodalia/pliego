@@ -77,7 +77,7 @@ impl<'r> Importer<'r> {
                     .cloned()
                     .unwrap_or_else(|| names::style_name_in(OBJECT_BUILTINS, &unescape_id(r.trim_start_matches("ObjectStyle/"))))
             })
-            .unwrap_or_else(|| designcraft_doc::NO_OBJECT_STYLE.into());
+            .unwrap_or_else(|| pliego_doc::NO_OBJECT_STYLE.into());
         // Fill and stroke.
         if tag != "Group" {
             if let Some(f) = self.attr_or_style(e, "FillColor") {
@@ -164,13 +164,13 @@ impl<'r> Importer<'r> {
             let story_self = tp.get("ParentStory").unwrap_or("n").to_string();
             if let Some(story) = self.story_ids.get(&story_self).copied() {
                 let options = TextFrameOptions {
-                    path: Some(designcraft_doc::PathType {
+                    path: Some(pliego_doc::PathType {
                         start: tp.num("StartBracket").unwrap_or(0.0).max(0.0),
                         // At (or past) the path's length it is the path's end: no end bracket.
                         end: tp
                             .num("EndBracket")
                             .filter(|e| e.is_finite() && *e >= 0.0)
-                            .filter(|e| *e < designcraft_geom::warp::PathWarp::new(&it.path.to_bezpath(), false).length() - 0.01),
+                            .filter(|e| *e < pliego_geom::warp::PathWarp::new(&it.path.to_bezpath(), false).length() - 0.01),
                         flip: tp.get("FlipPathEffect") == Some("Flipped"),
                         align: names::path_align_in(tp.get("TextAlignment").unwrap_or("")),
                     }),
@@ -207,7 +207,7 @@ impl<'r> Importer<'r> {
                 if let Some(g) = self.with_style(e, "BaselineFrameGridOption")
                     && g.get("UseCustomBaselineFrameGrid") == Some("true")
                 {
-                    options.baseline_grid = Some(designcraft_doc::FrameBaselineGrid {
+                    options.baseline_grid = Some(pliego_doc::FrameBaselineGrid {
                         start: g.num("StartingOffsetForBaselineFrameGrid").unwrap_or(0.0),
                         increment: g.num("BaselineFrameGridIncrement").unwrap_or(12.0),
                         relative_to: g.get("BaselineFrameGridRelativeOption").map(frame_grid_relative).unwrap_or_default(),
@@ -243,9 +243,9 @@ impl<'r> Importer<'r> {
                         gr.crop = [ff.num("TopCrop"), ff.num("LeftCrop"), ff.num("BottomCrop"), ff.num("RightCrop")].map(|v| v.unwrap_or(0.0));
                         gr.fit_align = ff.get("FittingAlignment").map_or(4, names::anchor_in);
                         if ff.get("AutoFit") == Some("true") {
-                            gr.auto_fit = ff.get("FittingOnEmptyFrame").map_or(designcraft_doc::Fitting::FillProportionally, names::fitting_in);
-                            if gr.auto_fit == designcraft_doc::Fitting::None {
-                                gr.auto_fit = designcraft_doc::Fitting::FillProportionally;
+                            gr.auto_fit = ff.get("FittingOnEmptyFrame").map_or(pliego_doc::Fitting::FillProportionally, names::fitting_in);
+                            if gr.auto_fit == pliego_doc::Fitting::None {
+                                gr.auto_fit = pliego_doc::Fitting::FillProportionally;
                             }
                         }
                     }
@@ -280,7 +280,7 @@ impl<'r> Importer<'r> {
     fn graphic(&mut self, g: &El) -> Content {
         let layer_options = g.find("GraphicLayerOption").map(|options| {
             let attrs = |e: &El| e.attrs.iter().filter(|(key, _)| key != "Self").cloned().collect();
-            let mut out = designcraft_doc::GraphicLayerOptions { attributes: attrs(options), ..Default::default() };
+            let mut out = pliego_doc::GraphicLayerOptions { attributes: attrs(options), ..Default::default() };
             let mut pending: Vec<_> = options.find_all("GraphicLayer").map(|e| (e, None)).collect();
             pending.reverse();
             while let Some((layer, parent)) = pending.pop() {
@@ -295,8 +295,8 @@ impl<'r> Importer<'r> {
             }
             out
         });
-        if layer_options.as_ref().is_some_and(designcraft_doc::GraphicLayerOptions::has_visibility_overrides) {
-            self.warnings.push(format!("graphic {}: {}", g.get("Self").unwrap_or("(unnamed)"), designcraft_doc::GRAPHIC_LAYER_RENDERING_WARNING));
+        if layer_options.as_ref().is_some_and(pliego_doc::GraphicLayerOptions::has_visibility_overrides) {
+            self.warnings.push(format!("graphic {}: {}", g.get("Self").unwrap_or("(unnamed)"), pliego_doc::GRAPHIC_LAYER_RENDERING_WARNING));
         }
         let gxf = parse_affine(g.get("ItemTransform"));
         let (l, t, r, b) = match g.prop_el("GraphicBounds") {
@@ -313,7 +313,7 @@ impl<'r> Importer<'r> {
         let link = g.find("Link");
         let uri = link.and_then(|k| k.get("LinkResourceURI")).map(uri_to_path);
         let graphic = |asset, size| {
-            Content::Graphic(designcraft_doc::Graphic {
+            Content::Graphic(pliego_doc::Graphic {
                 layer_options: layer_options.clone(),
                 asset,
                 size,
@@ -331,7 +331,7 @@ impl<'r> Importer<'r> {
         let mut data = g.prop_el("Contents").map(|c| base64_decode(&c.text_content())).unwrap_or_default();
         let page = pdf_page_in(g);
         // Where the box sits on the page needs the PDF parsed: the engine finds it after import.
-        let pdf_crop = pdf_attribute(g).and_then(|a| a.get("PDFCrop")).map_or(designcraft_doc::PdfCrop::Crop, names::pdf_crop_in);
+        let pdf_crop = pdf_attribute(g).and_then(|a| a.get("PDFCrop")).map_or(pliego_doc::PdfCrop::Crop, names::pdf_crop_in);
         let mut read_from = None;
         if data.is_empty()
             && let Some(p) = &uri
@@ -395,18 +395,18 @@ impl<'r> Importer<'r> {
 /// A graphic's `ClippingPathSettings` with its saved geometry, moved into graphic space by
 /// `to_graphic`. `None` for type None, an unknown type, or no geometry (the outline is never
 /// traced here).
-fn clipping_path(g: &El, to_graphic: Affine) -> Option<Arc<designcraft_doc::ClippingPath>> {
+fn clipping_path(g: &El, to_graphic: Affine) -> Option<Arc<pliego_doc::ClippingPath>> {
     let cs = g.find("ClippingPathSettings")?;
     let kind = names::clipping_kind_in(cs.get("ClippingType").unwrap_or("None"))?;
     let geometry = cs.prop_el("ClippingPathGeometry").or_else(|| cs.find("ClippingPathGeometry")).or_else(|| g.prop_el("ClippingPathGeometry"))?;
-    let mut path = path_capped(geometry, designcraft_doc::MAX_CLIP_ANCHORS);
+    let mut path = path_capped(geometry, pliego_doc::MAX_CLIP_ANCHORS);
     path.subpaths.retain(|sp| sp.anchors.len() > 1 && sp.anchors.iter().all(|a| a.p.is_finite() && a.h_in.is_finite() && a.h_out.is_finite()));
     if path.is_empty() {
         return None;
     }
     path.transform(to_graphic);
     let finite = |v: Option<f64>, def: f64| v.filter(|v| v.is_finite()).unwrap_or(def);
-    let mut c = designcraft_doc::ClippingPath::new(kind, path);
+    let mut c = pliego_doc::ClippingPath::new(kind, path);
     c.invert = cs.boolean("InvertPath").unwrap_or(false);
     c.include_inside_edges = cs.boolean("IncludeInsideEdges").unwrap_or(false);
     c.restrict_to_frame = cs.boolean("RestrictToFrame").unwrap_or(false);

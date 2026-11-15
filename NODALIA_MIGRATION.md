@@ -27,10 +27,14 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 | `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
 | `storytold/winprint.rs` | `Cargo.toml` | to decide | — |
 
-## Technical debt
+## Names
 
-- Internal names inherited from upstream (crate, binary and package names) remain where saved
-  settings, files and the upstream sync depend on them.
+Every name is Pliego's, internal ones included: crates (`pliego-*`), binaries (`pliego`,
+`pliego-cli`), the app id `dev.danielmiguelt.Pliego`, settings folders and packages.
+`scripts/rebrand.py` with `.github/rebrand.toml` renames upstream's tree for the weekly sync
+(`docs/upstream.md`), and the "No upstream names" CI check fails when an old name comes back. New
+documents save as `.pliego`; `.designcraft` files keep opening, and the document signature and
+media type inside the archive keep their old value so files stay readable both ways.
 
 ## Reusable Nodalia components
 
@@ -63,6 +67,4 @@ menu exported over D-Bus on Linux.
 
 Pliego releases through `release-auto.yml` like every Nodalia app (Foundation's `release-tag` and
 `release-publish`, with `release-linux.yml`, `release-macos.yml` and `release-windows.yml`). The
-packages are still named `designcraft-X.Y.Z-…`: rename them (packaging scripts, the release workflows,
-`app=` in `scripts/check-release-notes.sh`) before the first release. Until then the notes check
-refuses any notes, since they would have to name `designcraft` files.
+packages are named `pliego-X.Y.Z-…`.

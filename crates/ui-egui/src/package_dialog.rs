@@ -421,10 +421,10 @@ mod tests {
 
     /// A document with a text frame and an image whose file has gone, in a temporary folder.
     fn app_with_missing_link(dir: &std::path::Path) -> DesignApp {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"title": "Packed"})).unwrap();
         app.run("frame.create", json!({"rect": [36, 36, 300, 200], "content": "text", "text": "Hello"})).unwrap();
-        let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+        let png = pliego_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
         let img = dir.join("gone.png");
         std::fs::write(&img, &png).unwrap();
         app.run("file.place", json!({"path": img.to_string_lossy(), "x": 40, "y": 260, "width": 40})).unwrap();

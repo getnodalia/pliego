@@ -8,7 +8,7 @@ use super::{
 };
 
 /// Spread-space → canvas transform for an item at `loc`.
-pub(super) fn item_canvas_xf(doc: &Document, layout: &CanvasLayout, id: designcraft_doc::ItemId) -> Option<(Affine, &'static str)> {
+pub(super) fn item_canvas_xf(doc: &Document, layout: &CanvasLayout, id: pliego_doc::ItemId) -> Option<(Affine, &'static str)> {
     let loc = doc.find(id)?;
     // Items on spreads that aren't laid out (document pages while parents are being edited, or
     // the reverse) have no place on the canvas.
@@ -21,8 +21,8 @@ pub(super) fn path_screen(it: &Item, xf: &Xf, a: Affine) -> Vec<Vec<Pos2>> {
     let full = a * it.xf;
     let mut out = Vec::new();
     let mut cur: Vec<Pos2> = Vec::new();
-    designcraft_geom::kurbo::flatten(&bp, 0.25 / xf.zoom.max(0.01), |el| {
-        use designcraft_geom::PathEl::*;
+    pliego_geom::kurbo::flatten(&bp, 0.25 / xf.zoom.max(0.01), |el| {
+        use pliego_geom::PathEl::*;
         match el {
             MoveTo(p) => {
                 if cur.len() > 1 {
@@ -82,7 +82,7 @@ pub(super) fn draw_frames(app: &DesignApp, painter: &egui::Painter, xf: &Xf, doc
         // to miss while laying out).
         for (it, c) in overset_marks(app, doc, layout, &sp.items, xf.zoom, &ported) {
             let c = xf.to_screen(c);
-            let s = designcraft_tools::thread::PORT_SIZE_PX as f32;
+            let s = pliego_tools::thread::PORT_SIZE_PX as f32;
             painter.rect_filled(Rect::from_center_size(c, vec2(s, s)), 0.0, Color32::WHITE);
             painter.rect_stroke(Rect::from_center_size(c, vec2(s, s)), 0.0, Stroke::new(hair(painter), layer_color(doc, it)), StrokeKind::Inside);
             let red = Color32::from_rgb(230, 20, 20);
@@ -133,7 +133,7 @@ fn draw_item_edges(painter: &egui::Painter, xf: &Xf, doc: &Document, it: &Item, 
         }
     }
     // Empty graphic frame: the X.
-    if it.object_style == designcraft_doc::BASIC_GRAPHICS_FRAME && matches!(it.content, Content::Unassigned) {
+    if it.object_style == pliego_doc::BASIC_GRAPHICS_FRAME && matches!(it.content, Content::Unassigned) {
         let m = a * it.xf;
         for (p0, p1) in frame_x(it) {
             painter.line_segment([xf.to_screen(m * p0), xf.to_screen(m * p1)], Stroke::new(hair(painter), col.gamma_multiply(0.75)));
@@ -153,12 +153,12 @@ pub(super) fn frame_x(it: &Item) -> [(Point, Point); 2] {
         let d = b - a;
         d.x.abs() > 0.18 * d.hypot() && d.y.abs() > 0.18 * d.hypot()
     };
-    if matches!(it.shape, designcraft_doc::Shape::Rectangle | designcraft_doc::Shape::Path)
+    if matches!(it.shape, pliego_doc::Shape::Rectangle | pliego_doc::Shape::Path)
         && let [sp] = it.path.subpaths.as_slice()
         && sp.closed
         && let [c0, c1, c2, c3] = sp.anchors.as_slice()
         && sp.anchors.iter().all(|a| a.h_in == a.p && a.h_out == a.p)
-        && (it.shape == designcraft_doc::Shape::Rectangle || (crosses(c0.p, c2.p) && crosses(c1.p, c3.p)))
+        && (it.shape == pliego_doc::Shape::Rectangle || (crosses(c0.p, c2.p) && crosses(c1.p, c3.p)))
     {
         return [(c0.p, c2.p), (c1.p, c3.p)];
     }
@@ -229,7 +229,7 @@ pub(super) fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, 
             painter.rect_stroke(gb, 0.0, Stroke::new(1.0, brown), StrokeKind::Middle);
             // Its own handles resize the graphic (InDesign's brown content bounding box).
             if sel.items.len() == 1 {
-                for h in designcraft_tools::select::handles(DRect::new(gb.min.x as f64, gb.min.y as f64, gb.max.x as f64, gb.max.y as f64)) {
+                for h in pliego_tools::select::handles(DRect::new(gb.min.x as f64, gb.min.y as f64, gb.max.x as f64, gb.max.y as f64)) {
                     let r = Rect::from_center_size(pos2(h.x as f32, h.y as f32), vec2(6.5, 6.5));
                     painter.rect_filled(r, 0.0, Color32::WHITE);
                     painter.rect_stroke(r, 0.0, Stroke::new(hair(painter), brown), StrokeKind::Inside);
@@ -242,7 +242,7 @@ pub(super) fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, 
     let some_handles = app.session.tool_id() == "directSelection";
     if direct {
         // Looked up once per anchor drawn: a large marquee selection stays linear.
-        let chosen_set: std::collections::HashSet<(designcraft_doc::ItemId, usize, usize)> = sel.anchors.iter().copied().collect();
+        let chosen_set: std::collections::HashSet<(pliego_doc::ItemId, usize, usize)> = sel.anchors.iter().copied().collect();
         for id in &sel.items {
             let (Some(it), Some((a, _))) = (doc.item(*id), item_canvas_xf(doc, layout, *id)) else { continue };
             let m = a * it.xf;
@@ -254,7 +254,7 @@ pub(super) fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, 
                     let chosen = chosen_set.contains(&(*id, si, ai));
                     let shown = |out: bool| {
                         !some_handles
-                            || designcraft_tools::select::handle_shown(sp.anchors.len(), sp.closed, ai, out, |a| chosen_set.contains(&(*id, si, a)))
+                            || pliego_tools::select::handle_shown(sp.anchors.len(), sp.closed, ai, out, |a| chosen_set.contains(&(*id, si, a)))
                     };
                     for (h, has) in [(an.h_in, an.has_in() && shown(false)), (an.h_out, an.has_out() && shown(true))] {
                         if has {
@@ -283,7 +283,7 @@ pub(super) fn draw_selection(app: &DesignApp, painter: &egui::Painter, xf: &Xf, 
         // A selected placed graphic has its own handles instead of the frame's.
         let graphic_selected =
             sel.content && sel.items.len() == 1 && doc.item(sel.items[0]).is_some_and(|i| matches!(i.content, Content::Graphic(_)));
-        for h in designcraft_tools::select::handles(DRect::new(u.min.x as f64, u.min.y as f64, u.max.x as f64, u.max.y as f64))
+        for h in pliego_tools::select::handles(DRect::new(u.min.x as f64, u.min.y as f64, u.max.x as f64, u.max.y as f64))
             .into_iter()
             .filter(|_| !graphic_selected)
         {
@@ -312,7 +312,7 @@ const PORT_GROUP_DEPTH: usize = 32;
 
 /// The text frames whose ports `draw_selection` draws: the selected text frames and the text
 /// frames inside selected groups.
-pub(super) fn ported_frames(app: &DesignApp, doc: &Document) -> std::collections::HashSet<designcraft_doc::ItemId> {
+pub(super) fn ported_frames(app: &DesignApp, doc: &Document) -> std::collections::HashSet<pliego_doc::ItemId> {
     let mut frames = Vec::new();
     if let Some(st) = app.session.active() {
         for it in st.selection.items.iter().filter_map(|id| doc.item(*id)) {
@@ -331,14 +331,14 @@ pub(super) fn overset_marks<'a>(
     layout: &CanvasLayout,
     items: &'a [std::sync::Arc<Item>],
     zoom: f64,
-    ported: &std::collections::HashSet<designcraft_doc::ItemId>,
+    ported: &std::collections::HashSet<pliego_doc::ItemId>,
 ) -> Vec<(&'a Item, Point)> {
     let mut frames = Vec::new();
     overset_frames(app, doc, items, 0, &mut frames);
     frames
         .into_iter()
         .filter(|it| !ported.contains(&it.id))
-        .filter_map(|it| Some((it, designcraft_tools::thread::port_center(doc, layout, it.id, true, zoom)?)))
+        .filter_map(|it| Some((it, pliego_tools::thread::port_center(doc, layout, it.id, true, zoom)?)))
         .collect()
 }
 
@@ -366,7 +366,7 @@ pub(super) fn overset_frames<'a>(app: &DesignApp, doc: &Document, items: &'a [st
 
 /// `it` when it is a text frame, or every text frame nested in it when it is a group, each with
 /// its story.
-pub(super) fn text_frames_in<'a>(it: &'a Item, depth: usize, out: &mut Vec<(&'a Item, designcraft_doc::StoryId)>) {
+pub(super) fn text_frames_in<'a>(it: &'a Item, depth: usize, out: &mut Vec<(&'a Item, pliego_doc::StoryId)>) {
     match &it.content {
         Content::Text(tf) => out.push((it, tf.story)),
         Content::Group { items } if depth < PORT_GROUP_DEPTH => {
@@ -379,7 +379,7 @@ pub(super) fn text_frames_in<'a>(it: &'a Item, depth: usize, out: &mut Vec<(&'a 
 }
 
 /// Port location (canvas): out port at bottom-right, in port at top-left.
-fn port_pos(doc: &Document, layout: &CanvasLayout, id: designcraft_doc::ItemId, out: bool) -> Option<Point> {
+fn port_pos(doc: &Document, layout: &CanvasLayout, id: pliego_doc::ItemId, out: bool) -> Option<Point> {
     let it = doc.item(id)?;
     let (a, _) = item_canvas_xf(doc, layout, id)?;
     let r = it.inner_bounds();
@@ -395,7 +395,7 @@ fn draw_ports(
     doc: &Document,
     layout: &CanvasLayout,
     it: &Item,
-    sid: designcraft_doc::StoryId,
+    sid: pliego_doc::StoryId,
     color: Color32,
 ) {
     let Some(story) = doc.story(sid) else { return };
@@ -403,10 +403,10 @@ fn draw_ports(
     let is_last = pos + 1 == story.frames.len();
     let cs = app.session.cache.get(doc, sid, None);
     let overset = is_last && cs.is_overset();
-    let s = designcraft_tools::thread::PORT_SIZE_PX as f32;
+    let s = pliego_tools::thread::PORT_SIZE_PX as f32;
     // In port on the left edge below the top-left corner; out port on the right edge above the
     // bottom-right corner. The Selection tool hit-tests the same places.
-    let port = |out: bool| designcraft_tools::thread::port_center(doc, layout, it.id, out, xf.zoom).map(|c| xf.to_screen(c));
+    let port = |out: bool| pliego_tools::thread::port_center(doc, layout, it.id, out, xf.zoom).map(|c| xf.to_screen(c));
     let (Some(inp), Some(outp)) = (port(false), port(true)) else { return };
     for (c, has_link, is_out) in [(inp, pos > 0, false), (outp, !is_last, true)] {
         let pr = Rect::from_center_size(c, vec2(s, s));

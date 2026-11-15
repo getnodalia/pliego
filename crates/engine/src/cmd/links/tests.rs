@@ -1,7 +1,7 @@
 use super::*;
 
 fn png(w: u32, h: u32) -> Vec<u8> {
-    designcraft_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
+    pliego_render::Rendered { width: w, height: h, pixels: vec![200u8; (w * h * 4) as usize] }.to_png()
 }
 
 /// The Links panel polls `links.list` twice a second: a linked image whose file keeps its size
@@ -18,7 +18,7 @@ fn unchanged_linked_images_are_not_read_again() {
     // Two valid images of the same byte length (a uniform fill compresses to the same size
     // whatever its value), so a change shows only in the bytes.
     let a = png(40, 40);
-    let b = designcraft_render::Rendered { width: 40, height: 40, pixels: vec![100u8; 40 * 40 * 4] }.to_png();
+    let b = pliego_render::Rendered { width: 40, height: 40, pixels: vec![100u8; 40 * 40 * 4] }.to_png();
     assert_eq!(a.len(), b.len(), "the test needs two files of one size");
     assert_ne!(a, b);
     std::fs::write(&path, &a).unwrap();
@@ -149,8 +149,8 @@ fn eps_web_exports_convert_tiff_and_skip_bad_used_assets() {
     let encoded = html["text"].as_str().unwrap().split("data:image/png;base64,").nth(1).unwrap().split('"').next().unwrap();
     let png = super::super::file::base64_decode(encoded);
     assert!(png.starts_with(b"\x89PNG"));
-    assert_eq!(designcraft_render::image_size(&png), Some((2, 2)));
-    assert_eq!(designcraft_render::decode_pixmap(&png).unwrap().data()[0], designcraft_render::decode_pixmap(&bytes).unwrap().data()[0]);
+    assert_eq!(pliego_render::image_size(&png), Some((2, 2)));
+    assert_eq!(pliego_render::decode_pixmap(&png).unwrap().data()[0], pliego_render::decode_pixmap(&bytes).unwrap().data()[0]);
     let result = s.execute("file.exportEpub", &json!({})).unwrap();
     let mut z = zip::ZipArchive::new(std::io::Cursor::new(super::super::file::base64_decode(result["base64"].as_str().unwrap()))).unwrap();
     let mut image = Vec::new();
@@ -191,7 +191,7 @@ fn eps_status_tracks_source_bytes_across_save_update_relink_and_embed() {
     let first = b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 20 10\n0 0 0 setrgbcolor\n%%EOF\n";
     let changed = b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 20 10\n1 0 0 setrgbcolor\n%%EOF\n";
     assert_eq!(first.len(), changed.len());
-    assert_eq!(designcraft_images::eps_proxy(first), designcraft_images::eps_proxy(changed), "same preview, different source");
+    assert_eq!(pliego_images::eps_proxy(first), pliego_images::eps_proxy(changed), "same preview, different source");
     std::fs::write(&path, first).unwrap();
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
@@ -200,8 +200,8 @@ fn eps_status_tracks_source_bytes_across_save_update_relink_and_embed() {
     let before = s.doc().unwrap().doc.clone();
     assert_eq!(s.execute("links.update", &json!({})).unwrap()["updated"], 0);
     assert!(Arc::ptr_eq(&s.doc().unwrap().doc, &before), "unchanged EPS must not create an edit");
-    let saved = designcraft_format::save(&before).unwrap();
-    let reopened = designcraft_format::load(&saved).unwrap();
+    let saved = pliego_format::save(&before).unwrap();
+    let reopened = pliego_format::load(&saved).unwrap();
     assert_eq!(reopened.assets[&aid].data.as_slice(), first);
     let mut s = Session::new();
     s.add_document(crate::DocState::new(reopened, None));
@@ -224,11 +224,11 @@ fn eps_status_tracks_source_bytes_across_save_update_relink_and_embed() {
     s.execute("links.embed", &json!({"asset": aid.0})).unwrap();
     assert_eq!(s.execute("links.list", &json!({})).unwrap()[0]["status"], "embedded");
     std::fs::remove_file(&replacement).unwrap();
-    let embedded = designcraft_format::load(&designcraft_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
+    let embedded = pliego_format::load(&pliego_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
     // The asset is embedded, so no link is followed and the document is irrelevant.
     assert_eq!(status_cached(&embedded.assets[&aid], None, &mut Default::default()), "embedded");
     assert_eq!(embedded.assets[&aid].data.as_slice(), changed);
-    assert!(designcraft_render::decode_pixmap(&embedded.assets[&aid].data).is_some());
+    assert!(pliego_render::decode_pixmap(&embedded.assets[&aid].data).is_some());
     let _ = std::fs::remove_dir_all(dir);
 }
 
@@ -242,7 +242,7 @@ fn eps_legacy_preview_document_is_upgraded_by_update() {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let aid = AssetId(s.execute("file.place", &json!({"path": path.to_string_lossy()})).unwrap()["asset"].as_u64().unwrap());
-    let proxy = designcraft_images::eps_proxy(source).unwrap().0;
+    let proxy = pliego_images::eps_proxy(source).unwrap().0;
     s.edit(|d, _| {
         let a = Arc::make_mut(d.assets.get_mut(&aid).unwrap());
         a.data = Arc::new(proxy);
@@ -250,14 +250,14 @@ fn eps_legacy_preview_document_is_upgraded_by_update() {
         Ok(())
     })
     .unwrap();
-    let old = designcraft_format::load(&designcraft_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
+    let old = pliego_format::load(&pliego_format::save(&s.doc().unwrap().doc).unwrap()).unwrap();
     let mut s = Session::new();
     s.add_document(crate::DocState::new(old, None));
     assert_eq!(s.execute("links.update", &json!({})).unwrap()["updated"], 1);
     assert_eq!(s.execute("links.list", &json!({})).unwrap()[0]["status"], "ok");
     assert_eq!(s.doc().unwrap().doc.assets[&aid].data.as_slice(), source);
     s.execute("edit.undo", &json!({})).unwrap();
-    assert!(designcraft_render::decode_pixmap(&s.doc().unwrap().doc.assets[&aid].data).is_some(), "old preview remains renderable");
+    assert!(pliego_render::decode_pixmap(&s.doc().unwrap().doc.assets[&aid].data).is_some(), "old preview remains renderable");
     s.execute("edit.redo", &json!({})).unwrap();
     assert_eq!(s.execute("links.list", &json!({})).unwrap()[0]["status"], "ok");
     let _ = std::fs::remove_dir_all(dir);
@@ -269,7 +269,7 @@ fn eps_source_exports_preview_to_pdf_html_and_epub_without_editing_document() {
     use std::io::Read;
 
     let source = b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 20 10\n%%EOF\n";
-    let proxy = designcraft_images::eps_proxy(source).unwrap().0;
+    let proxy = pliego_images::eps_proxy(source).unwrap().0;
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let aid = AssetId(
@@ -359,7 +359,7 @@ fn pdf_relink_and_update_preserve_selected_page_size() {
     let a = &s.doc().unwrap().doc.assets[&aid];
     assert_eq!(a.page, 1);
     assert_eq!(a.pixels, Some((50, 60)));
-    assert!(designcraft_render::render_pdf_page(&a.data, a.page as usize, 64).is_some());
+    assert!(pliego_render::render_pdf_page(&a.data, a.page as usize, 64).is_some());
     std::fs::write(&replacement, pdf(&[(70, 70), (80, 90)])).unwrap();
     assert_eq!(s.execute("links.update", &json!({})).unwrap()["updated"], 1);
     assert_eq!(s.doc().unwrap().doc.assets[&aid].pixels, Some((80, 90)));
@@ -405,7 +405,7 @@ fn pdf_reload_rejects_missing_page_without_edit() {
         assert_eq!(st.revision, revision);
         assert_eq!(st.history.undo.len(), undo);
         assert_eq!(s.journal.len(), journal);
-        assert!(designcraft_render::render_pdf_page(&st.doc.assets[&aid].data, 1, 64).is_some());
+        assert!(pliego_render::render_pdf_page(&st.doc.assets[&aid].data, 1, 64).is_some());
     }
     let _ = std::fs::remove_dir_all(dir);
 }

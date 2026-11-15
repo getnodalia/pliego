@@ -95,7 +95,7 @@ fn snap_gutter(app: &DesignApp, g: &ColumnDrag, want: f64, shift: bool, zoom: f6
         (Some(a), Some(b)) => (b.x0 - a.x1).max(0.0),
         _ => 0.0,
     };
-    let cx = designcraft_tools::ToolContext {
+    let cx = pliego_tools::ToolContext {
         doc: &doc,
         selection: &st.selection,
         cache: &app.session.cache,
@@ -103,17 +103,17 @@ fn snap_gutter(app: &DesignApp, g: &ColumnDrag, want: f64, shift: bool, zoom: f6
         zoom: zoom.max(1e-6),
         layer: st.active_layer,
         // A line has no size or spacing to match.
-        snap: designcraft_tools::SnapView { smart_dimensions: false, smart_spacing: false, ..app.ui.snap_view() },
+        snap: pliego_tools::SnapView { smart_dimensions: false, smart_spacing: false, ..app.ui.snap_view() },
         unit: app.ui.units,
         stroke_in_front: false,
         loaded: None,
     };
     let rect = DRect::new(want, m.y0, want + width, m.y1);
-    let s = designcraft_tools::snap::snap(
+    let s = pliego_tools::snap::snap(
         &cx,
-        designcraft_tools::SnapRequest {
+        pliego_tools::SnapRequest {
             spread: g.spread,
-            gesture: designcraft_tools::Gesture::Move,
+            gesture: pliego_tools::Gesture::Move,
             rect,
             x_edges: [true, false, true],
             y_edges: [false; 3],

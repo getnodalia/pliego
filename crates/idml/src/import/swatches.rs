@@ -35,7 +35,7 @@ impl<'r> Importer<'r> {
         for e in top.iter().filter(|e| matches!(e.local(), "StripedStrokeStyle" | "DashedStrokeStyle" | "DottedStrokeStyle")) {
             let (Some(id), Some(name)) = (e.get("Self"), e.get("Name")) else { continue };
             let kind = match e.local() {
-                "StripedStrokeStyle" => designcraft_doc::StrokeType::Stripes {
+                "StripedStrokeStyle" => pliego_doc::StrokeType::Stripes {
                     bands: nums(e.get("StripeArray").unwrap_or(""))
                         .as_chunks::<2>()
                         .0
@@ -43,11 +43,11 @@ impl<'r> Importer<'r> {
                         .map(|c| (c[0] / 100.0, (c[1] - c[0]) / 100.0))
                         .collect(),
                 },
-                "DashedStrokeStyle" => designcraft_doc::StrokeType::Dashed { pattern: nums(e.get("DashArray").unwrap_or("")) },
-                _ => designcraft_doc::StrokeType::Dotted,
+                "DashedStrokeStyle" => pliego_doc::StrokeType::Dashed { pattern: nums(e.get("DashArray").unwrap_or("")) },
+                _ => pliego_doc::StrokeType::Dotted,
             };
             let _ = id;
-            self.stroke_styles.push(designcraft_doc::StrokeStyleDef { name: name.to_string(), kind });
+            self.stroke_styles.push(pliego_doc::StrokeStyleDef { name: name.to_string(), kind });
         }
     }
 
@@ -177,7 +177,7 @@ impl<'r> Importer<'r> {
         for g in top.iter().filter(|e| e.local() == "ColorGroup" && e.get("IsRootColorGroup") != Some("true")) {
             let swatches: Vec<String> =
                 g.find_all("ColorGroupSwatch").filter_map(|s| s.get("SwatchItemRef")).filter_map(|r| self.swatch_names.get(r).cloned()).collect();
-            self.color_groups.push(designcraft_doc::ColorGroup { name: g.get("Name").unwrap_or("Color Group").to_string(), swatches });
+            self.color_groups.push(pliego_doc::ColorGroup { name: g.get("Name").unwrap_or("Color Group").to_string(), swatches });
         }
     }
 
@@ -197,7 +197,7 @@ impl<'r> Importer<'r> {
                 SwatchValue::Tint { base, tint } => {
                     let mut all: Vec<Swatch> = self.swatches.clone();
                     all.extend(pending.iter().map(|(_, s)| s.clone()));
-                    return designcraft_color::swatch::resolve(&all, base, *tint).unwrap_or(Color::BLACK);
+                    return pliego_color::swatch::resolve(&all, base, *tint).unwrap_or(Color::BLACK);
                 }
                 _ => {}
             }
@@ -231,7 +231,7 @@ impl<'r> Importer<'r> {
         }
         if let Some(c) = self.hidden_colors.get(r).copied() {
             let name = match c {
-                Color::Cmyk { c, m, y, k } => designcraft_color::swatch::cmyk_name(c, m, y, k),
+                Color::Cmyk { c, m, y, k } => pliego_color::swatch::cmyk_name(c, m, y, k),
                 Color::Rgb { r, g, b } => format!("R={} G={} B={}", (r * 255.0).round(), (g * 255.0).round(), (b * 255.0).round()),
                 Color::Gray { k } => format!("K={}", (k * 100.0).round()),
             };

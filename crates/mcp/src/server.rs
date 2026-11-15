@@ -18,7 +18,7 @@ const INVALID_PARAMS: i64 = -32602;
 const INTERNAL_ERROR: i64 = -32603;
 const RESOURCE_NOT_FOUND: i64 = -32002;
 
-const INSTRUCTIONS: &str = "DesignCraft is a page-layout app (an InDesign clone). Coordinates are points in spread \
+const INSTRUCTIONS: &str = "Pliego is a page-layout app (an InDesign clone). Coordinates are points in spread \
 space (y down; on a single-page spread the page's top-left is (0,0); a default Letter page is 612×792). Every action \
 is a command: find ids and parameters with list_commands and run them with execute (or several with batch). Typical \
 flow: new_document → execute frame.create {rect:[x0,y0,x1,y1], content:\"text\", text:\"…\"} → set_story_text / \
@@ -26,8 +26,8 @@ execute type.char / style.paragraph.apply → render_page to look at the result.
 (ids, bounds), stories (overset) and styles. place_image puts a picture on the page.";
 
 /// Resource URIs.
-pub const DOC_URI: &str = "designcraft://document";
-pub const COMMANDS_URI: &str = "designcraft://commands";
+pub const DOC_URI: &str = "pliego://document";
+pub const COMMANDS_URI: &str = "pliego://commands";
 
 /// An MCP server bound to one backend.
 pub struct Server {
@@ -141,13 +141,13 @@ impl Server {
                 Ok(json!({
                     "protocolVersion": version,
                     "capabilities": {"tools": {}, "resources": {}},
-                    "serverInfo": {"name": "designcraft", "title": "DesignCraft", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": designcraft_engine::links::APP_PAGE},
+                    "serverInfo": {"name": "pliego", "title": "Pliego", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": pliego_engine::links::APP_PAGE},
                     "instructions": format!(
                         "{INSTRUCTIONS} Backend: {}. Community: {} (Discord), {} (app page), {} (source). The `app.links` command returns these links.",
                         self.backend.describe(),
-                        designcraft_engine::links::DISCORD,
-                        designcraft_engine::links::APP_PAGE,
-                        designcraft_engine::links::GITHUB
+                        pliego_engine::links::DISCORD,
+                        pliego_engine::links::APP_PAGE,
+                        pliego_engine::links::GITHUB
                     ),
                 }))
             }
@@ -194,7 +194,7 @@ fn check_arguments(name: &str, args: &Value) -> Result<(), String> {
     }
     let command = |step: &Value| -> Result<(), String> {
         match (step.get("command").and_then(Value::as_str), step.get("params")) {
-            (Some(id), Some(params)) => designcraft_engine::check_params(id, params).map_err(|e| e.to_string()),
+            (Some(id), Some(params)) => pliego_engine::check_params(id, params).map_err(|e| e.to_string()),
             _ => Ok(()),
         }
     };
@@ -204,7 +204,7 @@ fn check_arguments(name: &str, args: &Value) -> Result<(), String> {
             let steps = match (arguments.get("commands").and_then(Value::as_array), arguments.get("script").and_then(Value::as_str)) {
                 (Some(steps), _) => steps.clone(),
                 // A script that doesn't parse is the tool's to report.
-                (None, Some(text)) => match designcraft_engine::script::parse(text) {
+                (None, Some(text)) => match pliego_engine::script::parse(text) {
                     Ok(steps) => steps.into_iter().map(|s| json!({"command": s.command, "params": s.params})).collect(),
                     Err(_) => return Ok(()),
                 },

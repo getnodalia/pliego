@@ -14,7 +14,7 @@ pub fn stylesheet_fonts(doc: &Document) -> Vec<(String, String)> {
     let st: &Styles = &doc.styles;
     let mut out: Vec<(String, String)> = Vec::new();
     for ps in &st.paragraph {
-        if ps.name == designcraft_doc::NO_PARA_STYLE {
+        if ps.name == pliego_doc::NO_PARA_STYLE {
             continue;
         }
         let (_, cp) = st.resolve_para_style(&ps.name);

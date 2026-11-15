@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use designcraft_color::SwatchValue;
+use pliego_color::SwatchValue;
 
 use crate::Document;
 use crate::attrs::{CharAttrs, ParaAttrs};
@@ -199,12 +199,12 @@ impl Document {
     /// Give gradient stops that name a color swatch that swatch's current color, after a
     /// swatch edit. Stops whose swatch is gone or isn't a color keep the color they have.
     pub fn refresh_gradient_stops(&mut self) {
-        let mut fresh: Vec<(usize, usize, designcraft_color::Color)> = Vec::new();
+        let mut fresh: Vec<(usize, usize, pliego_color::Color)> = Vec::new();
         for (wi, w) in self.swatches.iter().enumerate() {
             let SwatchValue::Gradient { gradient } = &w.value else { continue };
             for (si, stop) in gradient.stops.iter().enumerate() {
                 let Some(name) = &stop.swatch else { continue };
-                if designcraft_color::swatch::resolve_gradient(&self.swatches, name).is_some() {
+                if pliego_color::swatch::resolve_gradient(&self.swatches, name).is_some() {
                     continue;
                 }
                 if let Some(c) = self.resolve_color(name, 1.0)

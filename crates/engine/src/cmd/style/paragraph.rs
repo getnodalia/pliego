@@ -169,7 +169,7 @@ mod application_inheritance_tests {
         s.execute("style.character.edit", &json!({"name": "Emphasis", "chars": {"underline": false}})).unwrap();
         assert_eq!(attrs(&mut s)["chars"]["underline"], false);
         assert!(s.doc().unwrap().doc.styles.char_style("Emphasis").unwrap().chars.size.is_none());
-        s.execute("style.paragraph.edit", &json!({"name": designcraft_doc::BASIC_PARAGRAPH, "chars": {"size": 20}})).unwrap();
+        s.execute("style.paragraph.edit", &json!({"name": pliego_doc::BASIC_PARAGRAPH, "chars": {"size": 20}})).unwrap();
         assert_eq!(attrs(&mut s)["chars"]["size"], 20.0);
     }
 
@@ -180,7 +180,7 @@ mod application_inheritance_tests {
         s.execute("style.paragraph.create", &json!({"name": "Header"})).unwrap();
         s.execute("style.paragraph.apply", &json!({"name": "Header", "clearOverrides": true})).unwrap();
         select(&mut s, &story, 3, 4);
-        assert_eq!(attrs(&mut s)["paragraphStyle"], designcraft_doc::BASIC_PARAGRAPH);
+        assert_eq!(attrs(&mut s)["paragraphStyle"], pliego_doc::BASIC_PARAGRAPH);
         select(&mut s, &story, 0, 2);
         assert_eq!(attrs(&mut s)["paragraphStyle"], "Header");
     }
@@ -191,7 +191,7 @@ mod application_inheritance_tests {
         select(&mut s, &story, 0, 12);
         s.execute("type.char", &json!({"size": 18})).unwrap();
         select(&mut s, &story, 0, 5);
-        s.execute("style.paragraph.apply", &json!({"name": designcraft_doc::BASIC_PARAGRAPH, "clearOverrides": true})).unwrap();
+        s.execute("style.paragraph.apply", &json!({"name": pliego_doc::BASIC_PARAGRAPH, "clearOverrides": true})).unwrap();
         assert_ne!(attrs(&mut s)["chars"]["size"], 18.0);
         select(&mut s, &story, 6, 12);
         assert_eq!(attrs(&mut s)["chars"]["size"], 18.0);
@@ -219,12 +219,12 @@ pub(super) fn redefine(s: &mut Session, p: &Value, paragraph: bool) -> Result<Va
     let targets = crate::cmd::text::format_targets_pub(s);
     let target = targets.first().ok_or_else(|| bad(command, "select text using the style to redefine"))?;
     let state = s.doc()?;
-    let story = state.doc.text_story(target.story, target.cell).ok_or(designcraft_doc::DocError::NoStory(target.story))?;
+    let story = state.doc.text_story(target.story, target.cell).ok_or(pliego_doc::DocError::NoStory(target.story))?;
     let pf = story.paras.get(story.para_at(target.range.start)).ok_or_else(|| bad(command, "no paragraph at the selection"))?;
     let cf = crate::cmd::text::effective_char_format(s, target)?;
     let selected = if paragraph { &pf.style } else { &cf.style };
     let name = str_param(p, "name").unwrap_or(selected).to_string();
-    if name != *selected || name == if paragraph { designcraft_doc::NO_PARA_STYLE } else { designcraft_doc::NO_CHAR_STYLE } {
+    if name != *selected || name == if paragraph { pliego_doc::NO_PARA_STYLE } else { pliego_doc::NO_CHAR_STYLE } {
         return Err(bad(command, "select text using the named style; the no-style entry cannot be redefined"));
     }
     let (base_para, base_chars) = state.doc.styles.resolve_para_style(&pf.style);
@@ -233,7 +233,7 @@ pub(super) fn redefine(s: &mut Session, p: &Value, paragraph: bool) -> Result<Va
     let mut current = if paragraph {
         paragraph_chars.clone()
     } else {
-        state.doc.styles.resolve_char(&paragraph_chars, &designcraft_doc::CharFormat { style: name.clone(), over: CharAttrs::default() })
+        state.doc.styles.resolve_char(&paragraph_chars, &pliego_doc::CharFormat { style: name.clone(), over: CharAttrs::default() })
     };
     let inherited = if paragraph { base_chars } else { current.clone() };
     // A named character style is an intentional layer, not a paragraph override to absorb.
@@ -306,12 +306,12 @@ pub(super) fn redefine(s: &mut Session, p: &Value, paragraph: bool) -> Result<Va
 /// Apply paragraph style `name` over `r` in one story; `clear` drops overrides instead of keeping
 /// only those that differ from the style (`resolved` is the style's paragraph and character attributes).
 fn apply_para_in_story(
-    st: &mut designcraft_doc::Story,
+    st: &mut pliego_doc::Story,
     r: &std::ops::Range<usize>,
     name: &str,
     clear: bool,
-    resolved: (&designcraft_doc::ParaProps, &designcraft_doc::CharProps),
-    styles: &designcraft_doc::Styles,
+    resolved: (&pliego_doc::ParaProps, &pliego_doc::CharProps),
+    styles: &pliego_doc::Styles,
 ) {
     let (style_para, style_chars) = resolved;
     // Text selections are half-open: a selection ending at the next paragraph's
@@ -347,7 +347,7 @@ fn apply_para_in_story(
 
 /// Paragraph style `name` applied to the paragraphs of `r` in `st`: the paragraphs' and their
 /// text's overrides that the style now gives go (all of them with `clear`).
-pub(crate) fn apply_para_style(st: &mut designcraft_doc::Story, styles: &Styles, name: &str, r: &std::ops::Range<usize>, clear: bool) {
+pub(crate) fn apply_para_style(st: &mut pliego_doc::Story, styles: &Styles, name: &str, r: &std::ops::Range<usize>, clear: bool) {
     let (style_para, style_chars) = styles.resolve_para_style(name);
     apply_para_in_story(st, r, name, clear, (&style_para, &style_chars), styles);
 }
@@ -390,7 +390,7 @@ pub(super) fn apply_char(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Character style `name` applied to `r` in `st`: the text's overrides that the style (over its
 /// paragraph) now gives go.
-pub(crate) fn apply_char_style(st: &mut designcraft_doc::Story, styles: &Styles, name: &str, r: &std::ops::Range<usize>) {
+pub(crate) fn apply_char_style(st: &mut pliego_doc::Story, styles: &Styles, name: &str, r: &std::ops::Range<usize>) {
     for (pi, range) in st.paras_touching(r.clone()) {
         let range = range.start.max(r.start)..range.end.saturating_add(1).min(st.len()).min(r.end);
         if range.is_empty() {
@@ -430,7 +430,7 @@ pub(super) fn create_para(s: &mut Session, p: &Value) -> Result<Value> {
     let based_on = style_name_param("style.paragraph.create", p, "basedOn")?;
     let next = style_name_param("style.paragraph.create", p, "nextStyle")?;
     let mut para: ParaAttrs =
-        attrs("style.paragraph.create", "para", p, |a: &mut ParaAttrs, k, v| a.set_json_over(k, v, &designcraft_doc::ParaProps::default()))?;
+        attrs("style.paragraph.create", "para", p, |a: &mut ParaAttrs, k, v| a.set_json_over(k, v, &pliego_doc::ParaProps::default()))?;
     continue_numbering(p.get("para"), &mut para);
     explicit_default_kinsoku(&mut para, p.get("para"));
     check_grep_styles("style.paragraph.create", &para)?;
@@ -441,12 +441,12 @@ pub(super) fn create_para(s: &mut Session, p: &Value) -> Result<Value> {
         && let Ok(cur) = s.execute("type.selectionAttrs", &json!({}))
         && !cur.is_null()
     {
-        if let Ok(pp) = serde_json::from_value::<designcraft_doc::ParaProps>(cur["para"].clone()) {
+        if let Ok(pp) = serde_json::from_value::<pliego_doc::ParaProps>(cur["para"].clone()) {
             let mut full = ParaProps_to_attrs(&pp);
             full.merge(&para);
             para = full;
         }
-        if let Ok(cp) = serde_json::from_value::<designcraft_doc::CharProps>(cur["chars"].clone()) {
+        if let Ok(cp) = serde_json::from_value::<pliego_doc::CharProps>(cur["chars"].clone()) {
             let mut full = CharProps_to_attrs(&cp);
             full.merge(&chars);
             chars = full;
@@ -485,7 +485,7 @@ pub(crate) fn grep_style_error(a: &ParaAttrs) -> Option<String> {
         .iter()
         .flatten()
         .filter(|g| !g.pattern.is_empty())
-        .find_map(|g| designcraft_compose::grep::Grep::new(&g.pattern, Default::default()).err().map(|e| format!("{e} (pattern {:?})", g.pattern)))
+        .find_map(|g| pliego_compose::grep::Grep::new(&g.pattern, Default::default()).err().map(|e| format!("{e} (pattern {:?})", g.pattern)))
 }
 
 /// Rejects GREP styles a command would set with a pattern that can't compile.
@@ -495,7 +495,7 @@ pub(crate) fn check_grep_styles(cmd: &str, a: &ParaAttrs) -> Result<()> {
 
 /// One warning for each paragraph style or paragraph whose GREP style pattern can't compile.
 /// Such a GREP style stays in the document and composition skips it.
-pub(crate) fn grep_style_warnings(d: &designcraft_doc::Document) -> Vec<String> {
+pub(crate) fn grep_style_warnings(d: &pliego_doc::Document) -> Vec<String> {
     let mut out: Vec<String> = d
         .styles
         .paragraph
@@ -513,13 +513,13 @@ pub(crate) fn grep_style_warnings(d: &designcraft_doc::Document) -> Vec<String> 
 }
 
 #[allow(non_snake_case)]
-fn ParaProps_to_attrs(p: &designcraft_doc::ParaProps) -> ParaAttrs {
-    designcraft_doc::ParaProps::common([p])
+fn ParaProps_to_attrs(p: &pliego_doc::ParaProps) -> ParaAttrs {
+    pliego_doc::ParaProps::common([p])
 }
 
 #[allow(non_snake_case)]
-fn CharProps_to_attrs(p: &designcraft_doc::CharProps) -> CharAttrs {
-    designcraft_doc::CharProps::common([p])
+fn CharProps_to_attrs(p: &pliego_doc::CharProps) -> CharAttrs {
+    pliego_doc::CharProps::common([p])
 }
 
 pub(super) fn edit_para(s: &mut Session, p: &Value) -> Result<Value> {
@@ -595,7 +595,7 @@ pub(super) fn edit_para(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// Rename a paragraph or character style everywhere it's used; its Export Tagging follows.
-fn rename_style(d: &mut designcraft_doc::Document, para: bool, from: &str, to: &str) {
+fn rename_style(d: &mut pliego_doc::Document, para: bool, from: &str, to: &str) {
     let st = d.styles_mut();
     if para {
         for s in &mut st.paragraph {
@@ -626,7 +626,7 @@ pub(super) fn export_tag_key(para: bool, name: &str) -> String {
 /// Point every reference to style `from` at `to`, except the style's own registry entry (its
 /// `name` field) — shared by renaming (which also updates the entry's name) and deletion (which
 /// instead removes the entry, after its former uses point at the replacement).
-fn redirect_style_refs(d: &mut designcraft_doc::Document, para: bool, from: &str, to: &str) {
+fn redirect_style_refs(d: &mut pliego_doc::Document, para: bool, from: &str, to: &str) {
     let rename = |r: &mut String| {
         if r == from {
             *r = to.to_string();
@@ -661,7 +661,7 @@ fn redirect_style_refs(d: &mut designcraft_doc::Document, para: bool, from: &str
                 *r = Some(to.to_string());
             }
         }
-        if let designcraft_doc::EpubSplit::Style(n) = &mut d.settings.epub_split {
+        if let pliego_doc::EpubSplit::Style(n) = &mut d.settings.epub_split {
             rename(n);
         }
     } else {
@@ -682,7 +682,7 @@ fn redirect_style_refs(d: &mut designcraft_doc::Document, para: bool, from: &str
         for e in &mut toc.entries {
             for n in [&mut e.page_number_style, &mut e.separator_style] {
                 if n.as_deref() == Some(from) {
-                    *n = Some(to.to_string()).filter(|t| t != designcraft_doc::NO_CHAR_STYLE);
+                    *n = Some(to.to_string()).filter(|t| t != pliego_doc::NO_CHAR_STYLE);
                 }
             }
         }
@@ -741,7 +741,7 @@ pub(super) fn group_styles(s: &mut Session, p: &Value) -> Result<Value> {
             }
             let base = n.rsplit('/').next().unwrap_or(n);
             let mut to = if group.is_empty() { base.to_string() } else { format!("{group}/{base}") };
-            let taken = |d: &designcraft_doc::Document, x: &str| {
+            let taken = |d: &pliego_doc::Document, x: &str| {
                 if para { d.styles.para(x).is_some() } else { d.styles.character.iter().any(|c| c.name == x) }
             };
             if to != *n {
@@ -766,7 +766,7 @@ pub(super) fn delete_char(s: &mut Session, p: &Value) -> Result<Value> {
 /// (default [Basic Paragraph] or [None]) instead, in one undo step.
 fn delete_style(s: &mut Session, p: &Value, para: bool) -> Result<Value> {
     let (id, default) =
-        if para { ("style.paragraph.delete", designcraft_doc::BASIC_PARAGRAPH) } else { ("style.character.delete", designcraft_doc::NO_CHAR_STYLE) };
+        if para { ("style.paragraph.delete", pliego_doc::BASIC_PARAGRAPH) } else { ("style.character.delete", pliego_doc::NO_CHAR_STYLE) };
     let name = str_param(p, "name").filter(|n| !n.is_empty()).ok_or_else(|| bad(id, "missing name"))?.to_string();
     let repl = str_param(p, "replaceWith").unwrap_or(default).to_string();
     if name.starts_with('[') {
@@ -777,7 +777,7 @@ fn delete_style(s: &mut Session, p: &Value, para: bool) -> Result<Value> {
     }
     s.edit(|d, _| {
         let st = &d.styles;
-        let exists = |n: &str| if para { st.para(n).is_some() } else { n == designcraft_doc::NO_CHAR_STYLE || st.char_style(n).is_some() };
+        let exists = |n: &str| if para { st.para(n).is_some() } else { n == pliego_doc::NO_CHAR_STYLE || st.char_style(n).is_some() };
         if !exists(&name) {
             return Err(bad(id, format!("no style `{name}`")));
         }
@@ -793,7 +793,7 @@ fn delete_style(s: &mut Session, p: &Value, para: bool) -> Result<Value> {
         };
         let parent = if descends {
             own_parent.filter(|b| *b != name)
-        } else if repl == designcraft_doc::NO_CHAR_STYLE || repl == designcraft_doc::NO_PARA_STYLE {
+        } else if repl == pliego_doc::NO_CHAR_STYLE || repl == pliego_doc::NO_PARA_STYLE {
             None
         } else {
             Some(repl.clone())
@@ -840,7 +840,7 @@ pub(super) fn create_char(s: &mut Session, p: &Value) -> Result<Value> {
         chars = captured;
     }
     // Based on [None] is based on nothing.
-    let based_on = style_name_param("style.character.create", p, "basedOn")?.filter(|b| b != designcraft_doc::NO_CHAR_STYLE);
+    let based_on = style_name_param("style.character.create", p, "basedOn")?.filter(|b| b != pliego_doc::NO_CHAR_STYLE);
     s.edit(|d, _| {
         if let Some(b) = &based_on
             && d.styles.char_style(b).is_none()
@@ -855,7 +855,7 @@ pub(super) fn create_char(s: &mut Session, p: &Value) -> Result<Value> {
 
 pub(super) fn edit_char(s: &mut Session, p: &Value) -> Result<Value> {
     let name = str_param(p, "name").ok_or_else(|| bad("style.character.edit", "missing name"))?.to_string();
-    if name == designcraft_doc::NO_CHAR_STYLE {
+    if name == pliego_doc::NO_CHAR_STYLE {
         return Err(bad("style.character.edit", "[None] can't be edited"));
     }
     let chars: CharAttrs = attrs("style.character.edit", "chars", p, |a: &mut CharAttrs, k, v| a.set_json(k, v))?;
@@ -870,7 +870,7 @@ pub(super) fn edit_char(s: &mut Session, p: &Value) -> Result<Value> {
     let based: Option<Option<String>> = match p.get("basedOn") {
         None => None,
         Some(Value::Null) => Some(None),
-        Some(Value::String(b)) if b == designcraft_doc::NO_CHAR_STYLE => Some(None),
+        Some(Value::String(b)) if b == pliego_doc::NO_CHAR_STYLE => Some(None),
         Some(Value::String(b)) => Some(Some(b.clone())),
         Some(_) => return Err(bad("style.character.edit", "`basedOn` is a style name or null")),
     };
@@ -985,7 +985,7 @@ mod export_tag_tests {
         let pdf = crate::cmd::file::base64_decode(r["base64"].as_str().unwrap());
         let text = String::from_utf8_lossy(&pdf);
         assert!(text.contains("/S/H1") && text.contains("/S/P"), "structure elements");
-        assert!(designcraft_render::pdf_page_count(&pdf) == Some(1));
+        assert!(pliego_render::pdf_page_count(&pdf) == Some(1));
     }
 
     #[test]
@@ -1050,7 +1050,7 @@ mod export_tag_tests {
         s.edit(|d, _| {
             d.styles_mut()
                 .export_tags
-                .insert("p:Title".into(), designcraft_doc::ExportTag { tag: "h6".into(), class: "stale".into(), ..Default::default() });
+                .insert("p:Title".into(), pliego_doc::ExportTag { tag: "h6".into(), class: "stale".into(), ..Default::default() });
             Ok(())
         })
         .unwrap();
@@ -1069,7 +1069,7 @@ mod cjk_tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [0, 0, 300, 150], "content": "text", "text": "AB"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let definition = |scale| json!({"name": "Mixed", "entries": [{"family": "Source Serif 4", "relativeSize": scale}]});
         s.execute("style.compositeFont.set", &definition(1.0)).unwrap();
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 2})).unwrap();
@@ -1088,7 +1088,7 @@ mod cjk_tests {
 
 #[cfg(test)]
 mod delete_tests {
-    use designcraft_doc::{CellStyle, ObjectStyle, StoryId, Toc, TocEntry};
+    use pliego_doc::{CellStyle, ObjectStyle, StoryId, Toc, TocEntry};
     use serde_json::json;
 
     use crate::Session;
@@ -1158,7 +1158,7 @@ mod delete_tests {
         assert!(!named(&s, "Emphasis"), "no dangling reference");
         let d = s.doc().unwrap().doc.clone();
         assert_eq!(d.styles.char_style("Child").unwrap().based_on, None);
-        assert_eq!(d.footnote_options.ref_char_style, designcraft_doc::NO_CHAR_STYLE);
+        assert_eq!(d.footnote_options.ref_char_style, pliego_doc::NO_CHAR_STYLE);
     }
 
     /// Replacing a style with its own descendant rebases the deleted style's children on its
@@ -1215,7 +1215,7 @@ mod delete_tests {
             d.footnote_options.para_style = "Table Body".into();
             d.endnote_options.para_style = "Table Body".into();
             d.endnote_options.heading_style = "Table Body".into();
-            d.settings.epub_split = designcraft_doc::EpubSplit::Style("Table Body".into());
+            d.settings.epub_split = pliego_doc::EpubSplit::Style("Table Body".into());
             d.toc = Some(Toc {
                 story,
                 title: "Contents".into(),
@@ -1235,7 +1235,7 @@ mod delete_tests {
         assert_eq!((sub.based_on.as_deref(), sub.next_style.as_deref()), (Some("Body"), Some("Body")));
         assert_eq!(d.styles.default_paragraph, "Body");
         assert_eq!(d.endnote_options.heading_style, "Body");
-        assert_eq!(d.settings.epub_split, designcraft_doc::EpubSplit::Style("Body".into()), "EPUB Split Document follows the replacement");
+        assert_eq!(d.settings.epub_split, pliego_doc::EpubSplit::Style("Body".into()), "EPUB Split Document follows the replacement");
         let after = s.execute("preflight.run", &json!({})).unwrap();
         assert!(!after.to_string().contains("Table Body"), "{after}");
     }
@@ -1282,7 +1282,7 @@ mod grep_style_tests {
         // Written past the command, as another application could.
         s.edit(|d, _| {
             if let Some(st) = d.styles_mut().para_mut("Broken") {
-                st.para.grep_styles = Some(vec![designcraft_doc::GrepStyle { style: "Keep".into(), pattern: "[a-".into() }]);
+                st.para.grep_styles = Some(vec![pliego_doc::GrepStyle { style: "Keep".into(), pattern: "[a-".into() }]);
             }
             Ok(())
         })

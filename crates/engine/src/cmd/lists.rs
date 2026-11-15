@@ -1,7 +1,7 @@
 //! Type › Bulleted & Numbered Lists › Define Lists: named lists whose numbers can continue from
 //! story to story. Paragraphs join one with `listName` (and restart with `startAt`).
 
-use designcraft_doc::{ListType, NumberedList};
+use pliego_doc::{ListType, NumberedList};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_text_or_frames, str_param};
@@ -100,7 +100,7 @@ fn apply_list(s: &mut Session, p: &Value, kind: ListType) -> Result<Value> {
 
 /// One paragraph's share of [`apply_list`]: turns the list on or off, setting only the values the
 /// style does not already give.
-fn set_para_list(pf: &mut designcraft_doc::ParaFormat, styles: &designcraft_doc::Styles, on: bool, kind: ListType) {
+fn set_para_list(pf: &mut pliego_doc::ParaFormat, styles: &pliego_doc::Styles, on: bool, kind: ListType) {
     let (now, _) = styles.resolve_para(pf);
     // Off takes away this list only: a paragraph with the other list keeps it.
     if !on && now.list_type != kind {
@@ -138,7 +138,7 @@ fn para_span(text: &str, range: &std::ops::Range<usize>) -> std::ops::Range<usiz
 }
 
 /// Whether every paragraph of `targets` has list `kind`.
-fn all_have(d: &designcraft_doc::Document, targets: &[super::text::Target], kind: ListType) -> bool {
+fn all_have(d: &pliego_doc::Document, targets: &[super::text::Target], kind: ListType) -> bool {
     targets.iter().all(|t| {
         d.text_story(t.story, t.cell).is_some_and(|st| {
             let span = para_span(&st.text, &t.range);
@@ -176,32 +176,32 @@ mod tests {
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 9})).unwrap();
         let para = |s: &Session, i: usize| {
             let d = &s.doc().unwrap().doc;
-            let st = d.story(designcraft_doc::StoryId(sid)).unwrap();
+            let st = d.story(pliego_doc::StoryId(sid)).unwrap();
             (d.styles.resolve_para(&st.paras[i]).0, st.paras[i].para.clone())
         };
         let undo = s.doc().unwrap().history.undo.len();
         assert_eq!(s.execute("list.bullets", &json!({})).unwrap()["on"], true);
         for i in 0..2 {
             let (p, _) = para(&s, i);
-            assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (designcraft_doc::ListType::Bullets, 18.0, -18.0));
+            assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (pliego_doc::ListType::Bullets, 18.0, -18.0));
         }
-        assert_eq!(para(&s, 2).0.list_type, designcraft_doc::ListType::None, "the paragraph outside the selection");
+        assert_eq!(para(&s, 2).0.list_type, pliego_doc::ListType::None, "the paragraph outside the selection");
         assert_eq!(s.doc().unwrap().history.undo.len(), undo + 1, "one undo step");
         // The number of a bullet's tab: the text starts at the left indent.
         let d = &s.doc().unwrap().doc;
-        let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+        let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
         let line = &cs.frames[0].lines[0];
         let text_x = line.glyphs.iter().filter(|g| g.len > 0).map(|g| g.x).next().unwrap();
         assert!((text_x - line.x0 - 18.0).abs() < 0.5, "the text at the hanging indent: {} from {}", text_x, line.x0);
         // Numbers instead: the indent stays.
         s.execute("list.numbers", &json!({})).unwrap();
         let (p, _) = para(&s, 0);
-        assert_eq!((p.list_type, p.left_indent), (designcraft_doc::ListType::Numbers, 18.0));
+        assert_eq!((p.list_type, p.left_indent), (pliego_doc::ListType::Numbers, 18.0));
         // Numbers off: list and hanging indent go, and nothing is left set on the paragraph.
         assert_eq!(s.execute("list.numbers", &json!({})).unwrap()["on"], false);
         let (p, own) = para(&s, 0);
-        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (designcraft_doc::ListType::None, 0.0, 0.0));
-        assert_eq!(own, designcraft_doc::ParaAttrs::default(), "back to the style");
+        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (pliego_doc::ListType::None, 0.0, 0.0));
+        assert_eq!(own, pliego_doc::ParaAttrs::default(), "back to the style");
         // A paragraph with its own indents keeps them.
         s.execute("type.para", &json!({"attrs": {"leftIndent": 36}})).unwrap();
         s.execute("list.bullets", &json!({"on": true})).unwrap();
@@ -217,7 +217,7 @@ mod tests {
     /// list only: a bulleted paragraph keeps bullets and indent when Numbers go off.
     #[test]
     fn a_list_is_pressed_and_turned_off_for_its_own_paragraphs() {
-        use designcraft_doc::ListType;
+        use pliego_doc::ListType;
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let f = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Eggs\nMilk\nFlour"})).unwrap();
@@ -241,7 +241,7 @@ mod tests {
         select(&mut s, 0, 7);
         s.execute("list.numbers", &json!({"on": false})).unwrap();
         let d = &s.doc().unwrap().doc;
-        let st = d.story(designcraft_doc::StoryId(sid)).unwrap();
+        let st = d.story(pliego_doc::StoryId(sid)).unwrap();
         let p = |i: usize| d.styles.resolve_para(&st.paras[i]).0;
         assert_eq!((p(0).list_type, p(0).left_indent, p(0).first_line_indent), (ListType::Bullets, 18.0, -18.0));
         assert_eq!((p(1).list_type, p(1).left_indent), (ListType::None, 0.0));
@@ -251,14 +251,14 @@ mod tests {
     }
 
     /// The digit the story's first line starts with (its list number).
-    fn digit(g: &designcraft_compose::PlacedGlyph) -> char {
+    fn digit(g: &pliego_compose::PlacedGlyph) -> char {
         let face = g.face.get();
         ('0'..='9').find(|c| face.glyph_for(*c) == g.gid).unwrap_or('?')
     }
 
     fn first_char(s: &Session, sid: u64) -> char {
         let d = &s.doc().unwrap().doc;
-        let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+        let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
         digit(&cs.frames[0].lines[0].glyphs[0])
     }
 
@@ -285,7 +285,7 @@ mod tests {
         s.execute("text.select", &json!({"story": stories[0], "anchor": 0, "focus": 0})).unwrap();
         s.execute("text.insert", &json!({"text": "Prep\n"})).unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let cs = s.cache.get(&d, designcraft_doc::StoryId(stories[1]), None);
+        let cs = s.cache.get(&d, pliego_doc::StoryId(stories[1]), None);
         assert_eq!(digit(&cs.frames[0].lines[0].glyphs[0]), '4');
         // Start At restarts.
         s.execute("text.select", &json!({"story": stories[1], "anchor": 0, "focus": 0})).unwrap();
@@ -300,7 +300,7 @@ mod tests {
     /// it) applies the list to that paragraph only, and the button shows it pressed.
     #[test]
     fn a_selection_ending_at_a_paragraph_start_leaves_that_paragraph_out() {
-        use designcraft_doc::ListType;
+        use pliego_doc::ListType;
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let f = s
@@ -315,7 +315,7 @@ Flour
         let sid = f["story"].as_u64().unwrap();
         let kinds = |s: &Session| {
             let d = &s.doc().unwrap().doc;
-            d.story(designcraft_doc::StoryId(sid)).unwrap().paras.iter().map(|p| d.styles.resolve_para(p).0.list_type).collect::<Vec<_>>()
+            d.story(pliego_doc::StoryId(sid)).unwrap().paras.iter().map(|p| d.styles.resolve_para(p).0.list_type).collect::<Vec<_>>()
         };
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 5})).unwrap();
         assert!(!s.selection_has_list(ListType::Bullets));
@@ -341,9 +341,9 @@ Flour
         s.execute("list.bullets", &json!({"on": true})).unwrap();
         s.execute("list.bullets", &json!({"on": false})).unwrap();
         let d = &s.doc().unwrap().doc;
-        let pf = &d.story(designcraft_doc::StoryId(sid)).unwrap().paras[0];
+        let pf = &d.story(pliego_doc::StoryId(sid)).unwrap().paras[0];
         let p = d.styles.resolve_para(pf).0;
-        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (designcraft_doc::ListType::None, 18.0, -18.0));
+        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (pliego_doc::ListType::None, 18.0, -18.0));
         assert_eq!(pf.para.list_hang, None, "nothing of the list left");
     }
 
@@ -360,9 +360,9 @@ Flour
         s.execute("list.bullets", &json!({"on": true})).unwrap();
         s.execute("list.bullets", &json!({"on": false})).unwrap();
         let d = &s.doc().unwrap().doc;
-        let pf = &d.story(designcraft_doc::StoryId(sid)).unwrap().paras[0];
+        let pf = &d.story(pliego_doc::StoryId(sid)).unwrap().paras[0];
         let p = d.styles.resolve_para(pf).0;
-        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (designcraft_doc::ListType::None, 18.0, -18.0));
-        assert_eq!(pf.para, designcraft_doc::ParaAttrs::default(), "nothing left set on the paragraph");
+        assert_eq!((p.list_type, p.left_indent, p.first_line_indent), (pliego_doc::ListType::None, 18.0, -18.0));
+        assert_eq!(pf.para, pliego_doc::ParaAttrs::default(), "nothing left set on the paragraph");
     }
 }

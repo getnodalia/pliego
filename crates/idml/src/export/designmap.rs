@@ -110,7 +110,7 @@ impl<'a> Ex<'a> {
         if secs.is_empty() || secs[0].start != 0 {
             secs.insert(
                 0,
-                designcraft_doc::Section {
+                pliego_doc::Section {
                     start: 0,
                     start_number: Some(1),
                     style: Default::default(),
@@ -161,7 +161,7 @@ impl<'a> Ex<'a> {
         // Stories are written before this, so `link_text_sources` is complete.
         let text_sources: Vec<(String, usize)> = std::mem::take(&mut self.link_text_sources);
         for (i, h) in d.hyperlinks.iter().enumerate() {
-            use designcraft_doc::{HyperlinkDest as De, HyperlinkSource as So};
+            use pliego_doc::{HyperlinkDest as De, HyperlinkSource as So};
             // A text destination is already written where its anchor sits.
             let dest = match &h.dest {
                 // Resolved first, as the page branch resolves its page: an anchor whose text was
@@ -267,7 +267,7 @@ impl<'a> Ex<'a> {
 pub(super) const CONTAINER: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n\t<rootfiles>\n\t\t<rootfile full-path=\"designmap.xml\" media-type=\"text/xml\"/>\n\t</rootfiles>\n</container>\n";
 
 /// A cross-reference format as InDesign building blocks.
-fn xref_format_el(i: usize, f: &designcraft_doc::XrefFormat) -> El {
+fn xref_format_el(i: usize, f: &pliego_doc::XrefFormat) -> El {
     let me = xref_format_self(i);
     let mut el = El::new("CrossReferenceFormat").attr("Self", &me).attr("Name", &f.name).attr("AppliedCharacterStyle", "n");
     let mut k = 0;
@@ -312,7 +312,7 @@ fn xref_format_el(i: usize, f: &designcraft_doc::XrefFormat) -> El {
 
 /// Package metadata: the creation and modification times that date variables show.
 pub(super) fn metadata_xmp(d: &Document) -> String {
-    use designcraft_doc::vars::format_date;
+    use pliego_doc::vars::format_date;
     let iso = |t: i64| format!("{}:{:02}Z", format_date(t, "yyyy-MM-ddTHH:mm"), t.rem_euclid(60));
     let modified = if d.modified > 0 { d.modified } else { d.created };
     format!(
@@ -323,7 +323,7 @@ pub(super) fn metadata_xmp(d: &Document) -> String {
 }
 
 /// A `MojikumiTable` element with its spacing overrides.
-fn mojikumi_table_el(t: &designcraft_doc::cjk::MojikumiTable) -> El {
+fn mojikumi_table_el(t: &pliego_doc::cjk::MojikumiTable) -> El {
     let mut e = El::new("MojikumiTable").attr("Self", format!("MojikumiTable/{}", escape_id(&t.name))).attr("Name", &t.name);
     if !t.based_on.is_empty() {
         e.set("BasedOnMojikumiSet", &t.based_on);
@@ -349,7 +349,7 @@ fn mojikumi_table_el(t: &designcraft_doc::cjk::MojikumiTable) -> El {
 }
 
 /// A `Layer` element with its colour property.
-fn layer_el(l: &designcraft_doc::Layer) -> El {
+fn layer_el(l: &pliego_doc::Layer) -> El {
     let color = match names::layer_color_out(l.color) {
         Some(n) => p("LayerColor", "enumeration", n),
         None => {
@@ -375,8 +375,8 @@ fn layer_el(l: &designcraft_doc::Layer) -> El {
 }
 
 /// A text variable definition with its type's settings element.
-fn text_variable_el(v: &designcraft_doc::vars::TextVariable) -> El {
-    use designcraft_doc::vars::{Use, VarKind};
+fn text_variable_el(v: &pliego_doc::vars::TextVariable) -> El {
+    use pliego_doc::vars::{Use, VarKind};
     let pref = |name: &str| El::new(name).attr("TextBefore", &v.before);
     let (ty, settings) = match &v.kind {
         VarKind::Custom { text } => ("CustomTextType", Some(pref("CustomTextVariablePreference").attr("Contents", text))),
@@ -464,7 +464,7 @@ mod tests {
     use crate::xml::Node;
 
     fn custom_text(definition: &str) -> String {
-        let f = designcraft_doc::XrefFormat { name: "x".into(), definition: definition.into() };
+        let f = pliego_doc::XrefFormat { name: "x".into(), definition: definition.into() };
         xref_format_el(0, &f)
             .children
             .iter()

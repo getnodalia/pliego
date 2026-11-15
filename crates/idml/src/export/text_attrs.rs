@@ -85,14 +85,14 @@ impl<'a> Ex<'a> {
         }
         self.char_decoration_attrs(el, a);
         if let Some(list) = &a.otf_features {
-            for (tag, _, attr) in designcraft_doc::otf::TOGGLES {
-                el.set(attr, bool_s(designcraft_doc::otf::is_on(list, tag)));
+            for (tag, _, attr) in pliego_doc::otf::TOGGLES {
+                el.set(attr, bool_s(pliego_doc::otf::is_on(list, tag)));
             }
-            let fig = designcraft_doc::otf::figures(list);
-            if let Some(f) = designcraft_doc::otf::FIGURES.iter().find(|f| f.0 == fig) {
+            let fig = pliego_doc::otf::figures(list);
+            if let Some(f) = pliego_doc::otf::FIGURES.iter().find(|f| f.0 == fig) {
                 el.set("OTFFigureStyle", f.3);
             }
-            el.set("OTFStylisticSets", designcraft_doc::otf::stylistic_sets(list).to_string());
+            el.set("OTFStylisticSets", pliego_doc::otf::stylistic_sets(list).to_string());
         }
         if let Some(v) = &a.glyph_form {
             el.set("GlyphForm", v);
@@ -157,10 +157,10 @@ impl<'a> Ex<'a> {
         }
         if let Some(k) = a.kerning {
             match k {
-                designcraft_doc::Kerning::Metrics => el.set("KerningMethod", "$ID/Metrics"),
-                designcraft_doc::Kerning::Optical => el.set("KerningMethod", "$ID/Optical"),
-                designcraft_doc::Kerning::None => el.set("KerningMethod", "None"),
-                designcraft_doc::Kerning::Manual(v) => el.set("KerningValue", num(v)),
+                pliego_doc::Kerning::Metrics => el.set("KerningMethod", "$ID/Metrics"),
+                pliego_doc::Kerning::Optical => el.set("KerningMethod", "$ID/Optical"),
+                pliego_doc::Kerning::None => el.set("KerningMethod", "None"),
+                pliego_doc::Kerning::Manual(v) => el.set("KerningValue", num(v)),
             }
         }
         if let Some(v) = a.tracking {
@@ -270,7 +270,7 @@ impl<'a> Ex<'a> {
         if let (Some(cap), Some(list)) = (cap, list.as_mut()) {
             match list.first_mut() {
                 Some(ns) if ns.is_drop_cap() => ns.style = cap.to_string(),
-                _ if real(cap) => list.insert(0, designcraft_doc::NestedStyle::drop_cap(cap)),
+                _ if real(cap) => list.insert(0, pliego_doc::NestedStyle::drop_cap(cap)),
                 _ => {}
             }
         }
@@ -320,10 +320,7 @@ impl<'a> Ex<'a> {
             el.set("Justification", names::align_out(v));
         }
         if let Some(v) = a.direction {
-            el.set(
-                "ParagraphDirection",
-                if v == designcraft_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" },
-            );
+            el.set("ParagraphDirection", if v == pliego_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" });
         }
         if let Some(v) = a.kashidas {
             el.set("Kashidas", if v { "DefaultKashidas" } else { "KashidasOff" });
@@ -359,12 +356,12 @@ impl<'a> Ex<'a> {
             // `grid_align` isn't written.
             let reference = crate::cjk::grid_reference_out(a.grid_reference.unwrap_or_default());
             match g {
-                designcraft_doc::GridAlign::None => el.set("GridAlignment", "None"),
-                designcraft_doc::GridAlign::AllLines => {
+                pliego_doc::GridAlign::None => el.set("GridAlignment", "None"),
+                pliego_doc::GridAlign::AllLines => {
                     el.set("GridAlignment", reference);
                     el.set("GridAlignFirstLineOnly", "false");
                 }
-                designcraft_doc::GridAlign::FirstLineOnly => {
+                pliego_doc::GridAlign::FirstLineOnly => {
                     el.set("GridAlignment", reference);
                     el.set("GridAlignFirstLineOnly", "true");
                 }
@@ -374,10 +371,10 @@ impl<'a> Ex<'a> {
             el.set(
                 "Composer",
                 match c {
-                    designcraft_doc::Composer::Paragraph => "HL Composer",
-                    designcraft_doc::Composer::SingleLine => "HL Single",
-                    designcraft_doc::Composer::Japanese => "HL Composer J",
-                    designcraft_doc::Composer::JapaneseSingleLine => "HL Single J",
+                    pliego_doc::Composer::Paragraph => "HL Composer",
+                    pliego_doc::Composer::SingleLine => "HL Single",
+                    pliego_doc::Composer::Japanese => "HL Composer J",
+                    pliego_doc::Composer::JapaneseSingleLine => "HL Single J",
                 },
             );
         }
@@ -607,9 +604,9 @@ impl<'a> Ex<'a> {
             el.set(
                 "KinsokuHangType",
                 match v {
-                    designcraft_doc::cjk::KinsokuHang::None => "None",
-                    designcraft_doc::cjk::KinsokuHang::Regular => "KinsokuHangRegular",
-                    designcraft_doc::cjk::KinsokuHang::Force => "KinsokuHangForce",
+                    pliego_doc::cjk::KinsokuHang::None => "None",
+                    pliego_doc::cjk::KinsokuHang::Regular => "KinsokuHangRegular",
+                    pliego_doc::cjk::KinsokuHang::Force => "KinsokuHangForce",
                 },
             );
         }
@@ -679,7 +676,7 @@ fn cjk_settings_para(el: &mut El, a: &ParaAttrs) {
 impl Ex<'_> {
     /// Kenten Settings, Kenten Color and Shatai of a character range or style.
     fn cjk_settings_chars(&self, el: &mut El, props: &mut Vec<El>, a: &CharAttrs) {
-        use designcraft_doc::cjk_settings::KentenKind;
+        use pliego_doc::cjk_settings::KentenKind;
         if let Some(k) = a.kenten_kind
             && a.kenten != Some(false)
         {

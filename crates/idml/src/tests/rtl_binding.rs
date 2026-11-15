@@ -1,4 +1,4 @@
-use designcraft_doc::PageSide::{self, Left, Right};
+use pliego_doc::PageSide::{self, Left, Right};
 
 use super::*;
 

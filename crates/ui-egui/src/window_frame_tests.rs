@@ -21,7 +21,7 @@ fn the_window_frame_service_runs_every_raw_input_hook() {
         })),
         ..Default::default()
     };
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), services);
+    let mut app = DesignApp::new(pliego_engine::Session::new(), services);
     let ctx = egui::Context::default();
     for _ in 0..3 {
         app.raw_input_hook(&ctx, &mut egui::RawInput::default());
@@ -33,7 +33,7 @@ fn the_window_frame_service_runs_every_raw_input_hook() {
 fn no_window_frame_service_is_fine() {
     // Decorated windows and non-Windows platforms leave the service unset; the hook must simply
     // do nothing.
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     let ctx = egui::Context::default();
     app.raw_input_hook(&ctx, &mut egui::RawInput::default());
 }

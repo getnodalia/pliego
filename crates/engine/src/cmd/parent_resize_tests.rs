@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use designcraft_doc::{Columns, LiquidRule, PageSide, SpreadId};
-use designcraft_geom::Rect;
+use pliego_doc::{Columns, LiquidRule, PageSide, SpreadId};
+use pliego_geom::Rect;
 use serde_json::json;
 
 use crate::Session;
@@ -10,7 +10,7 @@ fn parent_id(s: &Session, index: usize) -> u64 {
     s.doc().unwrap().doc.parents[index].id.0
 }
 
-fn parent_page(s: &Session, index: usize, page: usize) -> designcraft_doc::Page {
+fn parent_page(s: &Session, index: usize, page: usize) -> pliego_doc::Page {
     s.doc().unwrap().doc.parents[index].pages[page].clone()
 }
 
@@ -28,7 +28,7 @@ fn parent_frame(s: &mut Session, x: f64) -> u64 {
 }
 
 fn bounds(s: &Session, id: u64) -> Rect {
-    s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds()
+    s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds()
 }
 
 fn guide_positions(s: &Session, page: usize) -> Vec<f64> {
@@ -68,7 +68,7 @@ fn prepare_parent_pages(s: &mut Session, binding: &str, rule: LiquidRule) -> (u6
     .unwrap();
     s.edit(|d, _| {
         let sp = Arc::make_mut(&mut d.parents[0]);
-        let positions = |page: &designcraft_doc::Page| {
+        let positions = |page: &pliego_doc::Page| {
             let w = page.margin_rect().width();
             vec![0.0, 100.0, 120.0, w]
         };
@@ -167,8 +167,8 @@ fn parent_resize_survives_native_and_idml_round_trips() {
     assert_eq!((native.parents[0].pages[0].width, native.parents[0].pages[0].height), (0.5, 0.75));
     native.check().unwrap();
 
-    let idml = designcraft_idml::export_idml(&d);
-    let reopened = designcraft_idml::import_idml(&idml).unwrap();
+    let idml = pliego_idml::export_idml(&d);
+    let reopened = pliego_idml::import_idml(&idml).unwrap();
     assert_eq!((reopened.parents[0].pages[0].width, reopened.parents[0].pages[0].height), (0.5, 0.75));
     reopened.check().unwrap();
 }
@@ -284,7 +284,7 @@ fn parent_resize_facing_sizes_survive_idml_in_both_bindings() {
             s.execute("layout.parentPageSize", &json!({"parent":id,"page":pi,"width":w,"height":h})).unwrap();
         }
         let d = &s.doc().unwrap().doc;
-        let reopened = designcraft_idml::import_idml(&designcraft_idml::export_idml(d)).unwrap();
+        let reopened = pliego_idml::import_idml(&pliego_idml::export_idml(d)).unwrap();
         assert_eq!(reopened.settings.right_to_left_binding, d.settings.right_to_left_binding);
         for page in &d.parents[0].pages {
             let restored = reopened.parents[0].pages.iter().find(|p| p.side == page.side).unwrap();

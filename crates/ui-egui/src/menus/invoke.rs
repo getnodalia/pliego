@@ -99,7 +99,7 @@ fn activate_inner(app: &mut DesignApp, id: &str, params: &Value) {
     }
     if params.is_null()
         && ui_label(id).is_none()
-        && let Some(c) = designcraft_engine::find_command(id)
+        && let Some(c) = pliego_engine::find_command(id)
         && !crate::dialogs::command_fields(c.params).is_empty()
         && (c.label.ends_with('…') || crate::dialogs::command_fields(c.params).iter().any(|f| !f.optional))
     {
@@ -131,9 +131,9 @@ pub(super) fn guide_spread(app: &DesignApp) -> Option<Value> {
     let st = app.session.active()?;
     let page = crate::canvas::current_page(app).unwrap_or(0);
     Some(if st.editing_parents {
-        let layout = designcraft_tools::CanvasLayout::new(&st.doc, true);
+        let layout = pliego_tools::CanvasLayout::new(&st.doc, true);
         let shown = crate::canvas::current_slot(app, &layout).and_then(|i| layout.slots.get(i)).map(|s| s.spread);
-        json!(shown.unwrap_or(designcraft_doc::SpreadRef::Parent(0)))
+        json!(shown.unwrap_or(pliego_doc::SpreadRef::Parent(0)))
     } else {
         json!(st.doc.page_loc(page).map_or(0, |l| l.0))
     })

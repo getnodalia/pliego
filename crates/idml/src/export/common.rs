@@ -61,10 +61,10 @@ pub(super) fn topic_self(path: &[String]) -> String {
 }
 
 /// The IDML `ChangeType` of a tracked change.
-pub(super) fn change_type(mark: Option<designcraft_doc::ChangeMark>) -> Option<&'static str> {
+pub(super) fn change_type(mark: Option<pliego_doc::ChangeMark>) -> Option<&'static str> {
     match mark {
-        Some(designcraft_doc::ChangeMark::Deleted) => Some("DeletedText"),
-        Some(designcraft_doc::ChangeMark::Inserted) => Some("InsertedText"),
+        Some(pliego_doc::ChangeMark::Deleted) => Some("DeletedText"),
+        Some(pliego_doc::ChangeMark::Inserted) => Some("InsertedText"),
         _ => None,
     }
 }

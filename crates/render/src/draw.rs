@@ -31,7 +31,7 @@ impl Renderer {
         let Some(sp) = doc.spread(sr) else { return };
         // Paper.
         if f.opts.paper {
-            let paper = doc.resolve_color(designcraft_color::swatch::PAPER, 1.0).unwrap_or(designcraft_color::Color::WHITE);
+            let paper = doc.resolve_color(pliego_color::swatch::PAPER, 1.0).unwrap_or(pliego_color::Color::WHITE);
             if f.opts.page_shadow {
                 ctx.set_transform(f.view);
                 ctx.set_paint(peniko::Color::from_rgba8(0, 0, 0, 90));
@@ -272,7 +272,7 @@ impl Renderer {
             ctx.set_paint(screen_color([60, 110, 220], 200));
             ctx.set_stroke(kurbo::Stroke::new(0.75));
             ctx.stroke_path(&r.to_path(0.1));
-            if ff.kind == designcraft_doc::FieldKind::CheckBox && !ff.value.is_empty() && ff.value != "Off" {
+            if ff.kind == pliego_doc::FieldKind::CheckBox && !ff.value.is_empty() && ff.value != "Off" {
                 let (w, h) = (r.width(), r.height());
                 let mut c = BezPath::new();
                 c.move_to((r.x0 + w * 0.22, r.y0 + h * 0.48));

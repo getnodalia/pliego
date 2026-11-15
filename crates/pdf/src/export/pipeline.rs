@@ -21,7 +21,7 @@ pub(crate) struct Sheet {
 pub(crate) const MARK_LEN: f64 = 18.0;
 
 /// Whether a layer's items go into the PDF.
-pub fn layer_exported(layer: &designcraft_doc::Layer) -> bool {
+pub fn layer_exported(layer: &pliego_doc::Layer) -> bool {
     layer.visible && layer.printable
 }
 
@@ -148,7 +148,7 @@ pub(crate) fn mark_start(opts: &PdfOptions, bleed: [f64; 4]) -> f64 {
 /// working space (which PDF/X also carries as its output intent). True when the document blends
 /// in CMYK, and always in PDF/X; PDF/A exports are RGB.
 pub fn print_color(doc: &Document, opts: &PdfOptions) -> bool {
-    opts.standard != Standard::PdfA2b && (doc.settings.blend_space == designcraft_doc::BlendSpace::Cmyk || opts.standard.is_pdfx())
+    opts.standard != Standard::PdfA2b && (doc.settings.blend_space == pliego_doc::BlendSpace::Cmyk || opts.standard.is_pdfx())
 }
 
 /// Like [`export_pdf`], also returning warnings about approximated or dropped features.

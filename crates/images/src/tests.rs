@@ -186,8 +186,8 @@ fn glyph_families(svg: &str) -> Vec<(String, u16)> {
 
 #[test]
 fn svg_text_uses_the_shared_fonts() {
-    let font = designcraft_fonts::testing::font_with("DC Test SVG Hangul", &['한', '글']).unwrap();
-    designcraft_fonts::FontDb::global().add_font(font);
+    let font = pliego_fonts::testing::font_with("DC Test SVG Hangul", &['한', '글']).unwrap();
+    pliego_fonts::FontDb::global().add_font(font);
     let text = |attrs: &str, body: &str| {
         format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="30" font-size="20"{attrs}>{body}</text></svg>"#)
     };
@@ -202,8 +202,8 @@ fn svg_text_uses_the_shared_fonts() {
 
 #[test]
 fn svg_family_names_match_in_any_case() {
-    let font = designcraft_fonts::testing::font_with("DC Test SVG Casing", &['A', 'b']).unwrap();
-    designcraft_fonts::FontDb::global().add_font(font);
+    let font = pliego_fonts::testing::font_with("DC Test SVG Casing", &['A', 'b']).unwrap();
+    pliego_fonts::FontDb::global().add_font(font);
     let text = |family: &str, attrs: &str| {
         format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><text y="30" font-size="20" font-family="{family}"{attrs}>Ab</text></svg>"#
@@ -244,8 +244,8 @@ fn svg_text_finds_fonts_by_postscript_name() {
     assert_eq!(text_face(r#" font-family="'SourceSerif4-Semibold'""#), "SourceSerif4-Semibold");
     assert_eq!(text_face(r#" font-family="sourceserif4-semibold""#), "SourceSerif4-Semibold");
     // A shared font (as an installed one would be).
-    let font = designcraft_fonts::testing::font_with("DC Test SVG PostScript", &['a', 'b']).unwrap();
-    designcraft_fonts::FontDb::global().add_font(font);
+    let font = pliego_fonts::testing::font_with("DC Test SVG PostScript", &['a', 'b']).unwrap();
+    pliego_fonts::FontDb::global().add_font(font);
     assert_eq!(text_face(r#" font-family="DCTestSVGPostScript-Regular""#), "DCTestSVGPostScript-Regular");
     // The name picks that face: font-weight and font-style don't change it.
     assert_eq!(text_face(r#" font-family="SourceSerif4-Semibold" font-weight="bold" font-style="italic""#), "SourceSerif4-Semibold");
@@ -261,12 +261,12 @@ fn svg_text_finds_fonts_by_postscript_name() {
 
 #[test]
 fn svg_text_matches_legacy_family_names() {
-    use designcraft_fonts::testing::{font_with_names, with_table_u16};
+    use pliego_fonts::testing::{font_with_names, with_table_u16};
     // Laid out as Windows names faces outside the regular/bold/italic quartet (seguisb.ttf): the
     // weight is in the legacy family (ID 1) and full name (ID 4), the typographic family (ID 16)
     // is the base name.
     let face = |names: &[(u16, &str)], weight: u16| with_table_u16(font_with_names(names, &['a', 'b']).unwrap(), b"OS/2", 4, weight).unwrap();
-    let fonts = designcraft_fonts::FontDb::global();
+    let fonts = pliego_fonts::FontDb::global();
     fonts.add_font(face(&[(1, "DC Test Legacy"), (2, "Regular"), (4, "DC Test Legacy Regular"), (6, "DCTestLegacy-Regular")], 400));
     fonts.add_font(face(&[(1, "DC Test Legacy"), (2, "Bold"), (4, "DC Test Legacy Bold"), (6, "DCTestLegacy-Bold")], 700));
     for (name, weight) in [("Semibold", 600), ("Light", 300)] {

@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use crate::{PdfError, Result};
 
-const MARKER: &[u8] = b"DesignCraftHiddenOCG";
+const MARKER: &[u8] = b"PliegoHiddenOCG";
 
 fn invalid() -> PdfError {
     PdfError::Write("the placed PDF's optional-content state could not be preserved safely".into())
