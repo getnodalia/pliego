@@ -1,7 +1,7 @@
-//! The native `.designcraft` format: a zip archive holding
+//! The native `.pliego` format: a zip archive holding
 //!
 //! - `mimetype` (stored first, uncompressed): `application/vnd.designcraft+zip`
-//! - `document.json`: the [`Document`] (pretty JSON, documented by the serde model in `designcraft-doc`)
+//! - `document.json`: the [`Document`] (pretty JSON, documented by the serde model in `pliego-doc`)
 //! - `assets/<id>.<ext>`: embedded placed files, byte-for-byte: one per distinct file, and only
 //!   the ones the document references (see [`Document::compact_assets`])
 //! - `meta.json`: format version and generator
@@ -17,7 +17,7 @@ use std::hash::BuildHasher;
 use std::io::{Cursor, Read, Write};
 use std::sync::Arc;
 
-use designcraft_doc::{AssetId, Document, ParaAttrs, Story};
+use pliego_doc::{AssetId, Document, ParaAttrs, Story};
 use serde_json::{Value, json};
 
 pub const MIME: &str = "application/vnd.designcraft+zip";
@@ -30,9 +30,9 @@ pub const VERSION: u32 = 4;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
-    #[error("not a DesignCraft document: {0}")]
+    #[error("not a Pliego document: {0}")]
     NotOurs(String),
-    #[error("document is from a newer DesignCraft (format {0}); please update")]
+    #[error("document is from a newer Pliego (format {0}); please update")]
     TooNew(u64),
     #[error("{0}")]
     Io(String),
@@ -55,7 +55,7 @@ fn ext_for(mime: &str) -> &'static str {
     }
 }
 
-/// Serialize a document to `.designcraft` bytes. The file holds each distinct placed file once
+/// Serialize a document to `.pliego` bytes. The file holds each distinct placed file once
 /// and leaves out assets nothing references; `doc` itself keeps them (undo can bring them back).
 pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
     save_with_preview(doc, None)
@@ -82,7 +82,7 @@ fn required_version(doc: &Document) -> u32 {
     // Older readers would silently omit EPS artwork. Preview-only legacy assets and documents
     // without EPS stay at 2 so their existing readers keep working; writing 1 would make a
     // reader re-run the version 2 paragraph upgrade over current defaults.
-    if doc.assets.values().any(|a| designcraft_images::is_eps(&a.data)) { 3 } else { 2 }
+    if doc.assets.values().any(|a| pliego_images::is_eps(&a.data)) { 3 } else { 2 }
 }
 
 fn save_with_large_entries_from(doc: &Document, preview: Option<&[u8]>, large_entry: usize) -> Result<Vec<u8>, FormatError> {
@@ -103,7 +103,7 @@ fn save_with_large_entries_from(doc: &Document, preview: Option<&[u8]>, large_en
         z.write_all(MIME.as_bytes()).map_err(|e| FormatError::Io(e.to_string()))?;
         z.start_file("meta.json", deflate).map_err(io)?;
         let version = required_version(doc);
-        let meta = json!({"format": "designcraft", "version": version, "generator": concat!("DesignCraft ", env!("CARGO_PKG_VERSION"))});
+        let meta = json!({"format": "designcraft", "version": version, "generator": concat!("Pliego ", env!("CARGO_PKG_VERSION"))});
         z.write_all(meta.to_string().as_bytes()).map_err(|e| FormatError::Io(e.to_string()))?;
         if let Some(png) = preview {
             z.start_file(PREVIEW, stored).map_err(io)?;
@@ -127,19 +127,29 @@ fn save_with_large_entries_from(doc: &Document, preview: Option<&[u8]>, large_en
     Ok(buf.into_inner())
 }
 
-/// The file name extension of a DesignCraft document.
-pub const EXTENSION: &str = "designcraft";
+/// The file name extension of a Pliego document.
+pub const EXTENSION: &str = "pliego";
 
-/// Whether `bytes` are a DesignCraft document package: a zip holding `document.json`. Files
+/// Extensions Pliego documents had before they had their own: files saved under them open and
+/// save like `.pliego` ones.
+pub const OLDER_EXTENSIONS: &[&str] = &["designcraft"]; // rebrand: keep
+
+/// Whether `ext` (without the dot, any case) names a Pliego document: [`EXTENSION`] or an
+/// [`OLDER_EXTENSIONS`] one.
+pub fn is_extension(ext: &str) -> bool {
+    ext.eq_ignore_ascii_case(EXTENSION) || OLDER_EXTENSIONS.iter().any(|old| ext.eq_ignore_ascii_case(old))
+}
+
+/// Whether `bytes` are a Pliego document package: a zip holding `document.json`. Files
 /// without an extension are recognised by this (the legacy JSON form is too generic to sniff).
-pub fn is_designcraft(bytes: &[u8]) -> bool {
+pub fn is_pliego(bytes: &[u8]) -> bool {
     bytes.starts_with(b"PK") && zip::ZipArchive::new(Cursor::new(bytes)).is_ok_and(|z| z.index_for_name("document.json").is_some())
 }
 
-/// Whether `prefix`, the start of a file, opens a DesignCraft package: a zip whose first, stored
+/// Whether `prefix`, the start of a file, opens a Pliego package: a zip whose first, stored
 /// entry is the `mimetype` naming this format. Packages saved before they had one are recognised
-/// only whole ([`is_designcraft`]).
-pub fn starts_designcraft(prefix: &[u8]) -> bool {
+/// only whole ([`is_pliego`]).
+pub fn starts_pliego(prefix: &[u8]) -> bool {
     prefix.starts_with(b"PK\x03\x04") && prefix.get(26..28) == Some(&8u16.to_le_bytes()[..]) && prefix.get(30..38) == Some(b"mimetype") && {
         let extra = prefix.get(28..30).map_or(0, |e| usize::from(u16::from_le_bytes([e[0], e[1]])));
         prefix.get(38 + extra..).is_some_and(|rest| rest.starts_with(MIME.as_bytes()))
@@ -149,7 +159,7 @@ pub fn starts_designcraft(prefix: &[u8]) -> bool {
 /// The zip entry holding the first page's picture.
 pub const PREVIEW: &str = "preview.png";
 
-/// The PNG bytes of a `.designcraft` file's preview, reading only the zip's directory and that
+/// The PNG bytes of a `.pliego` file's preview, reading only the zip's directory and that
 /// entry. None for files without one (saved before previews, or legacy JSON) or that aren't ours.
 pub fn read_preview<R: Read + std::io::Seek>(file: R) -> Option<Vec<u8>> {
     let mut z = zip::ZipArchive::new(file).ok()?;
@@ -167,7 +177,7 @@ pub fn read_preview<R: Read + std::io::Seek>(file: R) -> Option<Vec<u8>> {
 /// The largest preview read back (a first-page PNG is far smaller).
 const MAX_PREVIEW_BYTES: u64 = 4 << 20;
 
-/// Read `.designcraft` bytes (zip, or the legacy single JSON file).
+/// Read `.pliego` bytes (zip, or the legacy single JSON file).
 pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     if bytes.starts_with(b"PK") {
         return load_zip(bytes);
@@ -175,10 +185,10 @@ pub fn load(bytes: &[u8]) -> Result<Document, FormatError> {
     load_legacy_json(bytes)
 }
 
-/// Most entries a `.designcraft` archive may hold.
+/// Most entries a `.pliego` archive may hold.
 const MAX_ENTRIES: usize = 100_000;
 
-/// How much a `.designcraft` archive may expand to when read. The sizes an archive claims are
+/// How much a `.pliego` archive may expand to when read. The sizes an archive claims are
 /// not trusted, so deflated entries are capped; a *stored* entry can't expand (its size is its
 /// bytes in the archive, which is already in memory, and all stored entries read together are
 /// held to the archive's own size), so a placed image — stored as is by [`save`] — opens whatever

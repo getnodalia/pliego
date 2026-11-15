@@ -1,6 +1,6 @@
 //! Hand (H) and Zoom (Z) tools.
 
-use designcraft_geom::Point;
+use pliego_geom::Point;
 use serde_json::json;
 
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};
@@ -145,7 +145,7 @@ impl Tool for PlaceGun {
                     return vec![Action::Exec("place.drop".into(), json!({"spread": crate::spread_json(sr), "x": sa.x, "y": sa.y}))];
                 }
                 // The frame the drag drew: at the graphic's proportions from where it started.
-                let r = cx.loaded.map_or_else(|| designcraft_geom::Rect::from_points(sa, b), |size| proportional(sa, b, size).0);
+                let r = cx.loaded.map_or_else(|| pliego_geom::Rect::from_points(sa, b), |size| proportional(sa, b, size).0);
                 vec![Action::Exec(
                     "place.drop".into(),
                     json!({"spread": crate::spread_json(sr), "x": sa.x, "y": sa.y, "rect": [r.x0, r.y0, r.x1, r.y1]}),
@@ -157,7 +157,7 @@ impl Tool for PlaceGun {
     fn overlays(&self, cx: &ToolContext) -> Vec<crate::Overlay> {
         let Some(a) = self.start else { return vec![] };
         let Some(size) = cx.loaded else {
-            return vec![crate::Overlay::Marquee(designcraft_geom::Rect::from_points(a, self.cur))];
+            return vec![crate::Overlay::Marquee(pliego_geom::Rect::from_points(a, self.cur))];
         };
         // Under the drag threshold the release is a click (actual size where it was pressed):
         // no frame is drawn yet, the loaded cursor shows what lands.
@@ -202,24 +202,24 @@ pub const PLACE_DRAG_MIN: f64 = 2.0;
 /// The frame `place.drop` makes for a place-cursor drag from `a` to `b`: the proportional frame
 /// (see [`proportional`]), or the graphic at natural size from `a` when that frame is at most
 /// [`PLACE_DRAG_MIN`] in either direction. With its scale.
-fn drawn_frame(a: Point, b: Point, size: (f64, f64)) -> (designcraft_geom::Rect, f64) {
+fn drawn_frame(a: Point, b: Point, size: (f64, f64)) -> (pliego_geom::Rect, f64) {
     let (r, k) = proportional(a, b, size);
     if r.width() > PLACE_DRAG_MIN && r.height() > PLACE_DRAG_MIN {
         (r, k)
     } else {
-        (designcraft_geom::Rect::new(a.x, a.y, a.x + size.0, a.y + size.1), 1.0)
+        (pliego_geom::Rect::new(a.x, a.y, a.x + size.0, a.y + size.1), 1.0)
     }
 }
 
 /// The frame a place-cursor drag from `a` to `b` draws for a graphic of natural `size`: the
 /// graphic's proportions, from `a` towards `b`, as large as fits the drag. With its scale.
-fn proportional(a: Point, b: Point, size: (f64, f64)) -> (designcraft_geom::Rect, f64) {
+fn proportional(a: Point, b: Point, size: (f64, f64)) -> (pliego_geom::Rect, f64) {
     let (w, h) = (size.0.max(1e-6), size.1.max(1e-6));
     let (dx, dy) = (b.x - a.x, b.y - a.y);
     let k = (dx.abs() / w).min(dy.abs() / h);
     let k = if k.is_finite() { k } else { 0.0 };
     let c = Point::new(a.x + (w * k).copysign(dx), a.y + (h * k).copysign(dy));
-    (designcraft_geom::Rect::from_points(a, c), k)
+    (pliego_geom::Rect::from_points(a, c), k)
 }
 
 /// Page tool (Shift+P): click a page to select it; drag one of its handles to preview its liquid
@@ -255,7 +255,7 @@ impl LiquidControl {
     }
 
     /// InDesign's tooltip for the control in its current state.
-    fn tip(self, l: &designcraft_doc::ObjectLiquid) -> &'static str {
+    fn tip(self, l: &pliego_doc::ObjectLiquid) -> &'static str {
         match self {
             LiquidControl::Pin(i) if [l.pin_top, l.pin_right, l.pin_bottom, l.pin_left][i.min(3)] => {
                 "Object is pinned relative to the page edge. Click to release."
@@ -268,7 +268,7 @@ impl LiquidControl {
         }
     }
 
-    fn value(self, l: &designcraft_doc::ObjectLiquid) -> bool {
+    fn value(self, l: &pliego_doc::ObjectLiquid) -> bool {
         match self {
             LiquidControl::Pin(0) => l.pin_top,
             LiquidControl::Pin(1) => l.pin_right,
@@ -287,7 +287,7 @@ pub const LOCK_OFFSET_PX: f64 = 10.0;
 
 /// Where an object's liquid controls sit (canvas): pins outside each edge's middle, the width lock
 /// right of the centre, the height lock above it.
-fn liquid_control_points(cx: &ToolContext, r: designcraft_geom::Rect) -> [(LiquidControl, Point); 6] {
+fn liquid_control_points(cx: &ToolContext, r: pliego_geom::Rect) -> [(LiquidControl, Point); 6] {
     let (c, o, k) = (r.center(), cx.tol(PIN_OFFSET_PX), cx.tol(LOCK_OFFSET_PX));
     [
         (LiquidControl::Pin(0), Point::new(c.x, r.y0 - o)),
@@ -302,8 +302,8 @@ fn liquid_control_points(cx: &ToolContext, r: designcraft_geom::Rect) -> [(Liqui
 /// A page handle being dragged.
 #[derive(Clone, Copy, Debug)]
 struct PageDrag {
-    spread: designcraft_doc::SpreadRef,
-    parent: Option<designcraft_doc::SpreadId>,
+    spread: pliego_doc::SpreadRef,
+    parent: Option<pliego_doc::SpreadId>,
     /// Page index within the spread.
     page: usize,
     /// Reference-point index of the handle (0–8, row-major; 4 is the centre and has none).
@@ -316,13 +316,13 @@ struct PageDrag {
 }
 
 /// The eight handles of a page rect: (reference-point index, canvas point).
-fn page_handles(r: designcraft_geom::Rect) -> impl Iterator<Item = (usize, Point)> {
+fn page_handles(r: pliego_geom::Rect) -> impl Iterator<Item = (usize, Point)> {
     (0..9).filter(|i| *i != 4).map(move |i| (i, Point::new(r.x0 + r.width() * (i % 3) as f64 / 2.0, r.y0 + r.height() * (i / 3) as f64 / 2.0)))
 }
 
 /// The liquid page rule as the Page tool tags a page.
-pub fn rule_label(rule: designcraft_doc::LiquidRule) -> &'static str {
-    use designcraft_doc::LiquidRule as R;
+pub fn rule_label(rule: pliego_doc::LiquidRule) -> &'static str {
+    use pliego_doc::LiquidRule as R;
     match rule {
         R::Off => "Off",
         R::Scale => "Scale",
@@ -334,8 +334,8 @@ pub fn rule_label(rule: designcraft_doc::LiquidRule) -> &'static str {
 }
 
 /// Whether page `abs` follows the object-based rule (its own, or its parent page's).
-fn object_based(doc: &designcraft_doc::Document, abs: usize) -> bool {
-    use designcraft_doc::LiquidRule as R;
+fn object_based(doc: &pliego_doc::Document, abs: usize) -> bool {
+    use pliego_doc::LiquidRule as R;
     let Some((si, pi)) = doc.page_loc(abs) else { return false };
     match doc.spreads[si].pages[pi].liquid {
         R::ObjectBased => true,
@@ -349,10 +349,8 @@ fn object_based(doc: &designcraft_doc::Document, abs: usize) -> bool {
 impl PageTool {
     /// The selected object's liquid settings, canvas bounds and page bounds when the Page tool
     /// shows its pins: one object selected on the selected page, whose rule is object-based.
-    fn liquid_target(
-        cx: &ToolContext,
-    ) -> Option<(designcraft_doc::ItemId, designcraft_doc::ObjectLiquid, designcraft_geom::Rect, designcraft_geom::Rect)> {
-        if cx.layout.slots.first().is_some_and(|s| matches!(s.spread, designcraft_doc::SpreadRef::Parent(_))) {
+    fn liquid_target(cx: &ToolContext) -> Option<(pliego_doc::ItemId, pliego_doc::ObjectLiquid, pliego_geom::Rect, pliego_geom::Rect)> {
+        if cx.layout.slots.first().is_some_and(|s| matches!(s.spread, pliego_doc::SpreadRef::Parent(_))) {
             return None;
         }
         let page = cx.selection.page?;
@@ -362,19 +360,19 @@ impl PageTool {
             return None;
         }
         let it = cx.doc.item(*id)?;
-        let l = it.liquid.unwrap_or(designcraft_doc::ObjectLiquid { resize_width: true, resize_height: true, ..Default::default() });
-        let r = cx.layout.xf(designcraft_doc::SpreadRef::Doc(si)).transform_rect_bbox(it.bounds());
+        let l = it.liquid.unwrap_or(pliego_doc::ObjectLiquid { resize_width: true, resize_height: true, ..Default::default() });
+        let r = cx.layout.xf(pliego_doc::SpreadRef::Doc(si)).transform_rect_bbox(it.bounds());
         Some((*id, l, r, cx.layout.page_rect(cx.doc, page)?))
     }
 
     /// The selected object's pin or lock under `p`.
-    fn control_at(cx: &ToolContext, p: Point) -> Option<(designcraft_doc::ItemId, designcraft_doc::ObjectLiquid, LiquidControl)> {
+    fn control_at(cx: &ToolContext, p: Point) -> Option<(pliego_doc::ItemId, pliego_doc::ObjectLiquid, LiquidControl)> {
         let (id, l, r, _) = Self::liquid_target(cx)?;
         liquid_control_points(cx, r).into_iter().find(|(_, q)| (q.x - p.x).hypot(q.y - p.y) <= cx.tol(6.0)).map(|(c, _)| (id, l, c))
     }
 
     /// The selected page's handle under `p`.
-    fn handle_at(&self, cx: &ToolContext, p: Point) -> Option<(designcraft_doc::SpreadRef, usize, usize)> {
+    fn handle_at(&self, cx: &ToolContext, p: Point) -> Option<(pliego_doc::SpreadRef, usize, usize)> {
         let (sr, page) = cx.layout.selected_page(cx.doc, cx.selection)?;
         let r = cx.layout.spread_page_rect(cx.doc, sr, page)?;
         page_handles(r).find(|(_, h)| (h.x - p.x).abs() <= cx.tol(5.0) && (h.y - p.y).abs() <= cx.tol(5.0)).map(|(i, _)| (sr, page, i))
@@ -423,7 +421,7 @@ impl Tool for PageTool {
                     self.drag = Some(PageDrag {
                         spread,
                         parent: match spread {
-                            designcraft_doc::SpreadRef::Parent(si) => cx.doc.parents.get(si).map(|sp| sp.id),
+                            pliego_doc::SpreadRef::Parent(si) => cx.doc.parents.get(si).map(|sp| sp.id),
                             _ => None,
                         },
                         page,
@@ -442,15 +440,15 @@ impl Tool for PageTool {
                 // A click selects the page under the pointer (none on the pasteboard), and on an
                 // object-based page the object clicked too.
                 let target = cx.layout.page_at(cx.doc, ev.pos);
-                if let Some((designcraft_doc::SpreadRef::Parent(si), page)) = target {
+                if let Some((pliego_doc::SpreadRef::Parent(si), page)) = target {
                     let Some(sp) = cx.doc.parents.get(si) else { return vec![] };
                     return vec![Action::Exec("layout.selectParentPage".into(), json!({"parent": sp.id.0, "page": page}))];
                 }
-                if cx.layout.slots.first().is_some_and(|s| matches!(s.spread, designcraft_doc::SpreadRef::Parent(_))) {
+                if cx.layout.slots.first().is_some_and(|s| matches!(s.spread, pliego_doc::SpreadRef::Parent(_))) {
                     return vec![Action::Exec("layout.selectParentPage".into(), json!({"parent": null}))];
                 }
                 let page = target.and_then(|(sr, pi)| match sr {
-                    designcraft_doc::SpreadRef::Doc(si) => Some(cx.doc.first_page_of_spread(si) + pi),
+                    pliego_doc::SpreadRef::Doc(si) => Some(cx.doc.first_page_of_spread(si) + pi),
                     _ => None,
                 });
                 let object = page
@@ -472,7 +470,7 @@ impl Tool for PageTool {
                         self.drag = None;
                         return vec![Action::Cancel];
                     };
-                    d.spread = designcraft_doc::SpreadRef::Parent(si);
+                    d.spread = pliego_doc::SpreadRef::Parent(si);
                 }
                 let (w, h) = Self::size_at(cx, &d, ev.pos, ev.mods.shift);
                 let Some((cmd, params)) =
@@ -524,8 +522,8 @@ impl Tool for PageTool {
                 p: d.cur,
                 text: format!(
                     "W: {}\nH: {}",
-                    designcraft_geom::format_measure(pg.width, cx.doc.settings.horizontal_units),
-                    designcraft_geom::format_measure(pg.height, cx.doc.settings.vertical_units)
+                    pliego_geom::format_measure(pg.width, cx.doc.settings.horizontal_units),
+                    pliego_geom::format_measure(pg.height, cx.doc.settings.vertical_units)
                 ),
             });
         }
@@ -564,7 +562,7 @@ impl Tool for PathTypeTool {
         let Some((_, id)) = cx.hit(ev.pos) else { return vec![] };
         let Some(it) = cx.doc.item(id) else { return vec![] };
         match &it.content {
-            designcraft_doc::Content::Unassigned => vec![Action::Exec("type.onPath".into(), json!({"id": id.0})), Action::SwitchTool("type".into())],
+            pliego_doc::Content::Unassigned => vec![Action::Exec("type.onPath".into(), json!({"id": id.0})), Action::SwitchTool("type".into())],
             _ => vec![],
         }
     }
@@ -578,7 +576,7 @@ impl Tool for PathTypeTool {
 #[derive(Default)]
 pub struct GapTool {
     /// Spread, its spread → canvas transform and the press point in spread coordinates.
-    start: Option<(designcraft_doc::SpreadRef, designcraft_geom::Affine, Point)>,
+    start: Option<(pliego_doc::SpreadRef, pliego_geom::Affine, Point)>,
     active: bool,
 }
 

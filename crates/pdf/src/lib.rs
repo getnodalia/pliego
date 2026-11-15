@@ -1,7 +1,7 @@
-//! DesignCraft PDF export (print), written with `krilla`.
+//! Pliego PDF export (print), written with `krilla`.
 //!
 //! [`export_pdf`] writes one PDF page per document page (or per spread) and mirrors the renderer's
-//! walk (`designcraft-render`): layers back to front, parent items first (with page-number markers
+//! walk (`pliego-render`): layers back to front, parent items first (with page-number markers
 //! resolved for each page), then the spread's own items. What goes into the file:
 //!
 //! - **Boxes:** MediaBox = trim + bleed (+ room for printer's marks), TrimBox = the page, BleedBox =
@@ -30,7 +30,7 @@
 //! - **Standards:** PDF/A-2b through krilla's validator and PDF/X-4 output intent/identification
 //!   with built-in conformance checks. PDF/X-1a:2003 is the PDF/X-4 print file flattened by
 //!   craft-prepress (no transparency, only DeviceCMYK, DeviceGray, Separation and DeviceN) and
-//!   written by krilla as PDF 1.4 with the PDF/X-1a identification. `designcraft-cli validate-pdf` exposes those checks for CI.
+//!   written by krilla as PDF 1.4 with the PDF/X-1a identification. `pliego-cli validate-pdf` exposes those checks for CI.
 //!
 //! Not yet: tagged PDF, bookmarks, hyperlinks, layers as optional content.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
@@ -150,14 +150,14 @@ pub struct PdfOptions {
     pub flatten_dpi: f32,
     /// Soft drop shadows drawn as their shadow color through a coverage mask, by item id (spread
     /// items only). Items without one draw the simple offset silhouette.
-    pub shadows: std::sync::Arc<std::collections::HashMap<designcraft_doc::ItemId, ShadowMask>>,
+    pub shadows: std::sync::Arc<std::collections::HashMap<pliego_doc::ItemId, ShadowMask>>,
 }
 
 /// A soft drop shadow's coverage over `rect` (spread coordinates): `width` × `height` greys,
 /// 255 = the shadow color at full strength. Its opacity is in the coverage.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ShadowMask {
-    pub rect: designcraft_geom::Rect,
+    pub rect: pliego_geom::Rect,
     pub width: u32,
     pub height: u32,
     pub coverage: std::sync::Arc<Vec<u8>>,
@@ -264,7 +264,7 @@ mod x1a_tests;
 // Run the same public API/output contracts with the unit-only colliding cache hasher as well
 // as the production RandomState used by the integration-test executable.
 #[cfg(test)]
-extern crate self as designcraft_pdf;
+extern crate self as pliego_pdf;
 #[cfg(test)]
 #[path = "../tests/support/image_content_cache_contract.rs"]
 mod image_content_cache_collision_exports;

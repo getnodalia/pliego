@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{ANCHOR_MARK, ENDNOTE_REF, EditorialNote, FOOTNOTE_REF, INDEX_MARK, NOTE_MARK, OBJECT_MARK, StoryId, TABLE_ANCHOR, XREF_MARK};
+use pliego_doc::{ANCHOR_MARK, ENDNOTE_REF, EditorialNote, FOOTNOTE_REF, INDEX_MARK, NOTE_MARK, OBJECT_MARK, StoryId, TABLE_ANCHOR, XREF_MARK};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_text, ok, str_param};
@@ -236,14 +236,14 @@ fn target(p: &Value) -> Result<(StoryId, u64)> {
 }
 
 /// Byte offset of note `id`'s anchor.
-fn anchor(st: &designcraft_doc::Story, id: u64) -> Option<usize> {
+fn anchor(st: &pliego_doc::Story, id: u64) -> Option<usize> {
     let k = st.editorial.iter().position(|n: &Arc<EditorialNote>| n.id == id)?;
     st.text.match_indices(NOTE_MARK).nth(k).map(|(i, _)| i)
 }
 
 /// Keeps a caret or selection in story `sid`'s own text (not a cell) on the same characters when `range` is replaced
 /// by `len` bytes: an end after the range moves by the change in length, and an end inside it moves to its start.
-fn follow_replace(sel: &mut designcraft_doc::Selection, sid: StoryId, range: std::ops::Range<usize>, len: usize) {
+fn follow_replace(sel: &mut pliego_doc::Selection, sid: StoryId, range: std::ops::Range<usize>, len: usize) {
     if let Some(t) = sel.text.as_mut().filter(|t| t.story == sid && t.cell.is_none()) {
         let follow = |i: usize| if i >= range.end { i - range.len() + len } else { i.min(range.start) };
         t.anchor = follow(t.anchor);
@@ -253,7 +253,7 @@ fn follow_replace(sel: &mut designcraft_doc::Selection, sid: StoryId, range: std
 
 /// The anchor offset and id of the note before or after the selection `t` in its story. Going
 /// back skips the note whose anchor the caret directly follows, so repeated steps reach every note.
-fn neighbor(st: &designcraft_doc::Story, t: &designcraft_doc::TextSel, forward: bool) -> Option<(usize, u64)> {
+fn neighbor(st: &pliego_doc::Story, t: &pliego_doc::TextSel, forward: bool) -> Option<(usize, u64)> {
     let r = t.range();
     let mut anchors = st.text.match_indices(NOTE_MARK).enumerate().map(|(k, (i, _))| (k, i));
     let (k, at) = if forward { anchors.find(|&(_, i)| i >= r.end) } else { anchors.filter(|&(_, i)| i + NOTE_MARK.len_utf8() < r.start).last() }?;
@@ -292,7 +292,7 @@ fn go_to(s: &mut crate::Session, forward: bool) -> Result<Value> {
     }
     let (at, note) = st.doc.story(t.story).and_then(|x| neighbor(x, &t, forward)).ok_or_else(|| bad(id, no_note(forward)))?;
     let pos = at + NOTE_MARK.len_utf8();
-    st.selection.text = Some(designcraft_doc::TextSel::caret(t.story, pos));
+    st.selection.text = Some(pliego_doc::TextSel::caret(t.story, pos));
     st.bump_revision();
     s.typing_format = None;
     Ok(json!({"story": t.story.0, "id": note, "pos": pos}))
@@ -309,7 +309,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let end_x = |s: &Session| s.cache.get(&s.doc().unwrap().doc, sid, None).frames[0].lines[0].end_x;
         let before = end_x(&s);
         s.execute("text.select", &json!({"story": r["story"], "anchor": 5, "focus": 5})).unwrap();
@@ -331,7 +331,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "One two three."})).unwrap();
-        let len = designcraft_doc::NOTE_MARK.len_utf8();
+        let len = pliego_doc::NOTE_MARK.len_utf8();
         let caret = |s: &mut Session, at: usize| s.execute("text.select", &json!({"story": r["story"], "anchor": at, "focus": at})).unwrap();
         caret(&mut s, 3);
         let first = s.execute("note.new", &json!({"text": "a"})).unwrap();
@@ -371,10 +371,10 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         // A damaged file: a note anchor, an endnote and a footnote reference without payloads.
         let st = std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc).story_mut(sid).unwrap();
-        st.insert(0, &format!("{}{}{}", designcraft_doc::NOTE_MARK, designcraft_doc::ENDNOTE_REF, designcraft_doc::FOOTNOTE_REF));
+        st.insert(0, &format!("{}{}{}", pliego_doc::NOTE_MARK, pliego_doc::ENDNOTE_REF, pliego_doc::FOOTNOTE_REF));
         st.editorial.clear();
         st.endnotes.clear();
         st.notes.clear();
@@ -395,8 +395,8 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "One two\nthree four."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
-        let mark = designcraft_doc::NOTE_MARK.len_utf8();
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
+        let mark = pliego_doc::NOTE_MARK.len_utf8();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 3, "focus": 3})).unwrap();
         s.execute("note.new", &json!({"text": "earlier"})).unwrap();
         // "two\nthree " across the paragraph return, selected backwards.
@@ -405,7 +405,7 @@ mod tests {
         let n = s.execute("note.convertFromText", &json!({"author": "Ed"})).unwrap();
         let st = &s.doc().unwrap().doc.stories[&sid];
         st.check().unwrap();
-        assert_eq!(st.text, format!("One{m} {m}four.", m = designcraft_doc::NOTE_MARK));
+        assert_eq!(st.text, format!("One{m} {m}four.", m = pliego_doc::NOTE_MARK));
         assert_eq!(st.paras.len(), 1, "the paragraph return went into the note");
         let list = s.execute("note.list", &json!({})).unwrap();
         assert_eq!(list[0]["text"], "earlier");
@@ -414,11 +414,11 @@ mod tests {
         let caret = s.doc().unwrap().selection.text.map(|t| (t.anchor, t.focus));
         assert_eq!(caret, Some((a + mark, a + mark)), "the insertion point follows the anchor");
         s.execute("note.convertToText", &json!({"story": n["story"], "id": n["id"]})).unwrap();
-        assert_eq!(s.doc().unwrap().doc.stories[&sid].text, format!("One{} two\nthree four.", designcraft_doc::NOTE_MARK));
+        assert_eq!(s.doc().unwrap().doc.stories[&sid].text, format!("One{} two\nthree four.", pliego_doc::NOTE_MARK));
         s.execute("edit.undo", &json!({})).unwrap();
         s.execute("edit.undo", &json!({})).unwrap();
         let st = &s.doc().unwrap().doc.stories[&sid];
-        assert_eq!((st.text.as_str(), st.editorial.len()), (format!("One{} two\nthree four.", designcraft_doc::NOTE_MARK).as_str(), 1));
+        assert_eq!((st.text.as_str(), st.editorial.len()), (format!("One{} two\nthree four.", pliego_doc::NOTE_MARK).as_str(), 1));
     }
 
     #[test]
@@ -426,8 +426,8 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
-        let mark = designcraft_doc::NOTE_MARK.len_utf8();
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
+        let mark = pliego_doc::NOTE_MARK.len_utf8();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 5, "focus": 5})).unwrap();
         let n = s.execute("note.new", &json!({"text": "check this", "author": "Ed"})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 9 + mark, "focus": 9 + mark})).unwrap();
@@ -443,7 +443,7 @@ mod tests {
         let m = split(&mut s, 6).unwrap();
         let st = &s.doc().unwrap().doc.stories[&sid];
         st.check().unwrap();
-        assert_eq!(st.text, format!("Draft{m}{m} cop{m}y.", m = designcraft_doc::NOTE_MARK));
+        assert_eq!(st.text, format!("Draft{m}{m} cop{m}y.", m = pliego_doc::NOTE_MARK));
         let list = s.execute("note.list", &json!({})).unwrap();
         let row = |k: usize| (list[k]["id"].clone(), list[k]["at"].clone(), list[k]["text"].clone(), list[k]["author"].clone());
         assert_eq!(row(0), (n["id"].clone(), json!(5), json!("check "), json!("Ed")));
@@ -468,7 +468,7 @@ mod tests {
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": r["story"], "anchor": 5, "focus": 5})).unwrap();
         let disabled = |r| matches!(r, Err(crate::EngineError::Disabled(..)));
         assert!(disabled(s.execute("note.convertFromText", &json!({}))), "an insertion point selects no text");
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn deleting_or_converting_a_note_keeps_the_caret_on_its_character() {
-        let m = designcraft_doc::NOTE_MARK.len_utf8();
+        let m = pliego_doc::NOTE_MARK.len_utf8();
         // (anchor, focus) in "Draft{note} copy." before the command, then (anchor, focus) and the selected text after
         // Delete Note and after Convert Note to Text with the note's text "ab".
         let cases = [
@@ -503,7 +503,7 @@ mod tests {
                 let mut s = Session::new();
                 s.execute("file.new", &json!({})).unwrap();
                 let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Draft copy."})).unwrap();
-                let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+                let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
                 s.execute("text.select", &json!({"story": r["story"], "anchor": 5, "focus": 5})).unwrap();
                 let n = s.execute("note.new", &json!({"text": "ab"})).unwrap();
                 s.execute("text.select", &json!({"story": r["story"], "anchor": before.0, "focus": before.1})).unwrap();

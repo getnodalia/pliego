@@ -299,7 +299,7 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                                 app.status(crate::i18n::tr(&app.ui.language, "Export a PDF, IDML or package to share — no cloud account needed."));
                             }
                             ui.add_space(8.0);
-                            // Always one click away: the ArtCraft community Discord.
+                            // Always one click away: the Nodalia community Discord.
                             if crate::about::discord_button(ui, "Discord", vec2(78.0, 22.0)) {
                                 let _ = app.run("help.discord", json!({}));
                             }
@@ -316,8 +316,8 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
             });
             // Centred title.
             let title = match app.session.active() {
-                Some(d) => format!("DesignCraft — {}", crate::rtl::isolate(&d.title())),
-                None => "DesignCraft".to_string(),
+                Some(d) => format!("Pliego — {}", crate::rtl::isolate(&d.title())),
+                None => "Pliego".to_string(),
             };
             // Centred between the menus and the right-hand controls; left out when it won't fit.
             let galley = crate::rtl::plain(ui.ctx(), &title, egui::FontId::proportional(11.5), t.text);

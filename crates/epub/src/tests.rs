@@ -1,7 +1,7 @@
 use super::*;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::geom::{Affine, Rect, shapes};
-use designcraft_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, ParaFormat, Shape, SpreadRef, Story, StoryId, Table};
+use pliego_doc::build::NewDocument;
+use pliego_doc::geom::{Affine, Rect, shapes};
+use pliego_doc::{Asset, AssetId, Content, Graphic, Item, ItemId, ParaFormat, Shape, SpreadRef, Story, StoryId, Table};
 use std::io::Read;
 use std::sync::Arc;
 
@@ -94,17 +94,17 @@ fn anchored_objects_are_exported_in_place() {
         });
         item
     };
-    let inline = designcraft_doc::AnchoredObject::new(graphic(&mut d, "inline"), designcraft_doc::AnchorPosition::Inline { y_offset: 0.0 });
-    let above = designcraft_doc::AnchoredObject::new(
+    let inline = pliego_doc::AnchoredObject::new(graphic(&mut d, "inline"), pliego_doc::AnchorPosition::Inline { y_offset: 0.0 });
+    let above = pliego_doc::AnchoredObject::new(
         graphic(&mut d, "above"),
-        designcraft_doc::AnchorPosition::AboveLine { align: designcraft_doc::anchored::AnchorAlign::Center, space_before: 0.0, space_after: 0.0 },
+        pliego_doc::AnchorPosition::AboveLine { align: pliego_doc::anchored::AnchorAlign::Center, space_before: 0.0, space_after: 0.0 },
     );
     let st = d.story_mut(sid).unwrap();
     st.insert_object(1, inline);
     // Byte offsets: "A" (1), the mark (3), "B\nC" (3): the second object goes between C and D.
     st.insert_object(7, above);
     // An anchored image without alt text is decorative and reported, like a placed one.
-    let bare = designcraft_doc::AnchoredObject::new(graphic(&mut d, ""), designcraft_doc::AnchorPosition::Inline { y_offset: 0.0 });
+    let bare = pliego_doc::AnchoredObject::new(graphic(&mut d, ""), pliego_doc::AnchorPosition::Inline { y_offset: 0.0 });
     let end = d.story(sid).unwrap().text.len();
     d.story_mut(sid).unwrap().insert_object(end, bare);
     assert_eq!(images_without_alt(&d), vec!["dot.png".to_string()]);
@@ -189,13 +189,13 @@ fn lists_and_preformatted_blocks_are_grouped() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     for (name, tag, list) in [
-        ("Bullet", "li", Some(designcraft_doc::ListType::Bullets)),
-        ("Number", "li", Some(designcraft_doc::ListType::Numbers)),
+        ("Bullet", "li", Some(pliego_doc::ListType::Bullets)),
+        ("Number", "li", Some(pliego_doc::ListType::Numbers)),
         ("Typed", "li", None),
         ("Code", "pre", None),
     ] {
-        let para = designcraft_doc::ParaAttrs { list_type: list, ..Default::default() };
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        let para = pliego_doc::ParaAttrs { list_type: list, ..Default::default() };
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: name.into(),
             based_on: None,
             next_style: None,
@@ -203,9 +203,7 @@ fn lists_and_preformatted_blocks_are_grouped() {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut()
-            .export_tags
-            .insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
+        d.styles_mut().export_tags.insert(format!("p:{name}"), pliego_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
     }
     let text = "Intro\nfirst\nsecond\none\ntwo\nx = 1\ny = 2\nEnd\n• typed";
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 300.0), lid, text, ParaFormat::default()).unwrap();
@@ -240,7 +238,7 @@ fn navigation_follows_the_headings() {
     let mut d = Document::new(&NewDocument { pages: 2, ..Default::default() });
     let lid = d.default_layer();
     for (name, tag) in [("Chapter", "h1"), ("Section", "h2")] {
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: name.into(),
             based_on: None,
             next_style: None,
@@ -248,9 +246,7 @@ fn navigation_follows_the_headings() {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut()
-            .export_tags
-            .insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
+        d.styles_mut().export_tags.insert(format!("p:{name}"), pliego_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
     }
     let text = "One\nBody\nOne point one\nMore\nTwo\nText";
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 300.0), lid, text, ParaFormat::default()).unwrap();
@@ -321,7 +317,7 @@ fn navigation_follows_the_headings() {
 fn chapters_split_before_a_single_paragraph_style() {
     let mut d = Document::new(&NewDocument { pages: 3, ..Default::default() });
     let lid = d.default_layer();
-    d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+    d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
         name: "Chapter".into(),
         based_on: None,
         next_style: None,
@@ -329,9 +325,7 @@ fn chapters_split_before_a_single_paragraph_style() {
         chars: CharAttrs::default(),
         shortcut: String::new(),
     });
-    d.styles_mut()
-        .export_tags
-        .insert("p:Chapter".into(), designcraft_doc::ExportTag { tag: "h1".into(), class: String::new(), ..Default::default() });
+    d.styles_mut().export_tags.insert("p:Chapter".into(), pliego_doc::ExportTag { tag: "h1".into(), class: String::new(), ..Default::default() });
     // A title page without a heading, then a story that opens with a chapter and has a
     // second one in the middle.
     d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 100.0), lid, "Title page", ParaFormat::default()).unwrap();
@@ -384,7 +378,7 @@ fn chapters_split_before_split_document_styles() {
     d.settings.epub_split = EpubSplit::ExportTags;
     let lid = d.default_layer();
     for (name, tag, split) in [("Part", "p", true), ("Chapter", "h1", false)] {
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: name.into(),
             based_on: None,
             next_style: None,
@@ -392,7 +386,7 @@ fn chapters_split_before_split_document_styles() {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut().export_tags.insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), split, ..Default::default() });
+        d.styles_mut().export_tags.insert(format!("p:{name}"), pliego_doc::ExportTag { tag: tag.into(), split, ..Default::default() });
     }
     d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 100.0), lid, "Title page", ParaFormat::default()).unwrap();
     let (_, sid) = d
@@ -435,7 +429,7 @@ fn chapters_split_before_split_document_styles() {
 fn note_links_point_at_the_chapter_file_of_their_target() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+    d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
         name: "Chapter".into(),
         based_on: None,
         next_style: None,
@@ -443,9 +437,7 @@ fn note_links_point_at_the_chapter_file_of_their_target() {
         chars: CharAttrs::default(),
         shortcut: String::new(),
     });
-    d.styles_mut()
-        .export_tags
-        .insert("p:Chapter".into(), designcraft_doc::ExportTag { tag: "h1".into(), class: String::new(), ..Default::default() });
+    d.styles_mut().export_tags.insert("p:Chapter".into(), pliego_doc::ExportTag { tag: "h1".into(), class: String::new(), ..Default::default() });
     let (_, sid) = d
         .add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 400.0), lid, "One\nFirst text\nTwo\nSecond text", ParaFormat::default())
         .unwrap();
@@ -476,7 +468,7 @@ fn chapter_files_split_inside_lists_and_pre_stay_balanced() {
     d.settings.epub_split = EpubSplit::ExportTags;
     let lid = d.default_layer();
     for (name, tag) in [("Item", "li"), ("Code", "pre")] {
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: name.into(),
             based_on: None,
             next_style: None,
@@ -484,7 +476,7 @@ fn chapter_files_split_inside_lists_and_pre_stay_balanced() {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut().export_tags.insert(format!("p:{name}"), designcraft_doc::ExportTag { tag: tag.into(), split: true, ..Default::default() });
+        d.styles_mut().export_tags.insert(format!("p:{name}"), pliego_doc::ExportTag { tag: tag.into(), split: true, ..Default::default() });
     }
     let (_, sid) = d
         .add_text_frame(
@@ -539,7 +531,7 @@ fn styles_whose_names_slug_alike_keep_their_own_classes() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
     for (name, size) in [("見出し", 30.0), ("本文", 10.0), ("Body Text", 12.0), ("Body-Text", 20.0)] {
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: name.into(),
             based_on: None,
             next_style: None,
@@ -711,7 +703,7 @@ fn metadata_is_serialized_for_its_output_context() {
     let (_, sid) = d.add_text_frame(SpreadRef::Doc(0), Rect::new(36.0, 36.0, 300.0, 100.0), lid, "A&B <C> \"D\"", ParaFormat::default()).unwrap();
     d.styles_mut().export_tags.insert(
         format!("p:{}", story::BASIC_PARAGRAPH),
-        designcraft_doc::ExportTag { tag: "h2".into(), class: "Primary \"Copy\"".into(), ..Default::default() },
+        pliego_doc::ExportTag { tag: "h2".into(), class: "Primary \"Copy\"".into(), ..Default::default() },
     );
     if let Some(basic) = d.styles_mut().paragraph.iter_mut().find(|s| s.name == story::BASIC_PARAGRAPH) {
         basic.chars.font_family = Some("Quoted \"Serif\" <Alt>".into());
@@ -860,10 +852,10 @@ fn tables_footnotes_and_endnotes_are_exported() {
 /// block first: `aside` and `table` can't sit inside `ul` or `pre`.
 #[test]
 fn notes_and_tables_close_an_open_list_or_pre_block() {
-    for (tag, list, open, close) in [("li", Some(designcraft_doc::ListType::Bullets), "<ul>", "</ul>"), ("pre", None, "<pre", "</pre>")] {
+    for (tag, list, open, close) in [("li", Some(pliego_doc::ListType::Bullets), "<ul>", "</ul>"), ("pre", None, "<pre", "</pre>")] {
         let mut d = tables_and_notes();
-        let para = designcraft_doc::ParaAttrs { list_type: list, ..Default::default() };
-        d.styles_mut().paragraph.push(designcraft_doc::ParagraphStyle {
+        let para = pliego_doc::ParaAttrs { list_type: list, ..Default::default() };
+        d.styles_mut().paragraph.push(pliego_doc::ParagraphStyle {
             name: "Grouped".into(),
             based_on: None,
             next_style: None,
@@ -871,9 +863,7 @@ fn notes_and_tables_close_an_open_list_or_pre_block() {
             chars: CharAttrs::default(),
             shortcut: String::new(),
         });
-        d.styles_mut()
-            .export_tags
-            .insert("p:Grouped".into(), designcraft_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
+        d.styles_mut().export_tags.insert("p:Grouped".into(), pliego_doc::ExportTag { tag: tag.into(), class: String::new(), ..Default::default() });
         let sid = d.stories.keys().copied().find(|sid| d.story(*sid).is_some_and(|st| !st.notes.is_empty())).unwrap();
         for p in &mut d.story_mut(sid).unwrap().paras {
             p.style = "Grouped".into();
@@ -956,13 +946,13 @@ fn char_css_joins_underline_and_strikethrough_in_one_declaration() {
 #[test]
 fn character_styles_keep_decorations_caps_and_tracking() {
     let mut d = Document::new(&NewDocument::default());
-    d.styles_mut().character.push(designcraft_doc::CharacterStyle {
+    d.styles_mut().character.push(pliego_doc::CharacterStyle {
         name: "Under".into(),
         based_on: None,
         chars: CharAttrs {
             underline: Some(true),
             strikethrough: Some(true),
-            capitalization: Some(designcraft_doc::Capitalization::AllCaps),
+            capitalization: Some(pliego_doc::Capitalization::AllCaps),
             tracking: Some(100.0),
             ..Default::default()
         },
@@ -976,13 +966,13 @@ fn character_styles_keep_decorations_caps_and_tracking() {
     assert_eq!(css::override_css(&d, story::NO_CHAR_STYLE, &o), "text-decoration: line-through;");
 }
 
-fn char_style(name: &str, based_on: Option<&str>, chars: CharAttrs) -> designcraft_doc::CharacterStyle {
-    designcraft_doc::CharacterStyle { name: name.into(), based_on: based_on.map(Into::into), chars, shortcut: String::new() }
+fn char_style(name: &str, based_on: Option<&str>, chars: CharAttrs) -> pliego_doc::CharacterStyle {
+    pliego_doc::CharacterStyle { name: name.into(), based_on: based_on.map(Into::into), chars, shortcut: String::new() }
 }
 
 #[test]
 fn override_keeps_style_decorations_and_resets_tracking_and_caps() {
-    use designcraft_doc::Capitalization;
+    use pliego_doc::Capitalization;
     let mut d = Document::new(&NewDocument::default());
     let styles = d.styles_mut();
     styles.character.push(char_style(

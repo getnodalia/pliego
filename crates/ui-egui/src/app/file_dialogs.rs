@@ -373,34 +373,8 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
             OpenFilter {
                 name: "Graphics and text",
                 extensions: &[
-                    "png",
-                    "jpg",
-                    "jpeg",
-                    "gif",
-                    "webp",
-                    "tif",
-                    "tiff",
-                    "bmp",
-                    "psd",
-                    "svg",
-                    "pdf",
-                    "ai",
-                    "eps",
-                    "txt",
-                    "docx",
-                    "rtf",
-                    "md",
-                    "xlsx",
-                    "idml",
-                    "designcraft",
-                    "mp4",
-                    "m4v",
-                    "mov",
-                    "webm",
-                    "mp3",
-                    "m4a",
-                    "wav",
-                    "ogg",
+                    "png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "psd", "svg", "pdf", "ai", "eps", "txt", "docx", "rtf", "md", "xlsx",
+                    "idml", "pliego", "mp4", "m4v", "mov", "webm", "mp3", "m4a", "wav", "ogg",
                 ],
             },
             OpenFilter { name: "Graphics", extensions: GRAPHICS },
@@ -408,8 +382,8 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
             OpenFilter { name: "Video and sound", extensions: &["mp4", "m4v", "mov", "webm", "mp3", "m4a", "wav", "ogg"] },
         ],
         _ => &[
-            OpenFilter { name: "DesignCraft, IDML or InDesign", extensions: &["designcraft", "idml", "indd", "indt"] },
-            OpenFilter { name: "DesignCraft", extensions: &["designcraft"] },
+            OpenFilter { name: "Pliego, IDML or InDesign", extensions: &["pliego", "designcraft", "idml", "indd", "indt"] }, // rebrand: keep
+            OpenFilter { name: "Pliego", extensions: &["pliego", "designcraft"] },                                           // rebrand: keep
             OpenFilter { name: "InDesign Markup (IDML)", extensions: &["idml"] },
             OpenFilter { name: "InDesign document or template (INDD, INDT)", extensions: &["indd", "indt"] },
             // Files saved without an extension; `file.open` tells the formats apart by content.
@@ -423,7 +397,7 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
 #[cfg(not(target_arch = "wasm32"))]
 const ALL_FILES: &str = if cfg!(target_os = "macos") { "public.data" } else { "*" };
 
-/// The extension of the file name a save dialog suggests (`Brochure.designcraft`), if it has one.
+/// The extension of the file name a save dialog suggests (`Brochure.pliego`), if it has one.
 /// The dialog filters on it, so the macOS and Windows dialogs add it to a name typed without it.
 #[cfg(not(target_arch = "wasm32"))]
 fn suggested_extension(name: &str) -> Option<&str> {
@@ -431,14 +405,14 @@ fn suggested_extension(name: &str) -> Option<&str> {
 }
 
 /// The file a save dialog's answer writes: `picked` with the suggested extension added when it has
-/// none (Linux dialogs don't add it). A document always ends in `.designcraft`, as `file.save`
+/// none (Linux dialogs don't add it). A document always ends in `.pliego`, as `file.save`
 /// writes it.
 #[cfg(not(target_arch = "wasm32"))]
 fn picked_save_path(picked: std::path::PathBuf, ext: Option<&str>) -> std::path::PathBuf {
     let Some(ext) = ext else { return picked };
-    if ext.eq_ignore_ascii_case("designcraft") {
+    if pliego_engine::format::is_extension(ext) {
         let p = picked.to_string_lossy();
-        return designcraft_engine::cmd::with_document_extension(&p).into();
+        return pliego_engine::cmd::with_document_extension(&p).into();
     }
     if picked.extension().is_some() || picked.file_name().is_none() {
         return picked;
@@ -523,7 +497,7 @@ mod tests {
         for ext in ["png", "jpg", "tif", "psd", "svg", "pdf", "ai", "eps"] {
             assert!(exts.contains(&ext), "{ext} is missing from the relink dialog: {exts:?}");
         }
-        assert!(!exts.contains(&"designcraft") && !exts.contains(&"idml"));
+        assert!(!exts.contains(&"pliego") && !exts.contains(&"idml"));
     }
 
     #[test]
@@ -532,12 +506,12 @@ mod tests {
         for ext in ["csv", "tsv", "tab", "txt", "xlsx"] {
             assert!(exts.contains(&ext), "{ext} is missing from the dataMerge dialog: {exts:?}");
         }
-        assert!(!exts.iter().any(|ext| *ext == "designcraft" || *ext == "idml"), "dataMerge must not fall through to the document filters: {exts:?}");
+        assert!(!exts.iter().any(|ext| *ext == "pliego" || *ext == "idml"), "dataMerge must not fall through to the document filters: {exts:?}");
         let place = open_filters("place");
         assert!(place.len() > 1, "the place dialog keeps a filter for each kind of file");
         assert!(place.iter().any(|filter| filter.extensions.contains(&"png")));
         let documents = open_filters("");
-        for ext in ["designcraft", "idml", "indd", "indt"] {
+        for ext in ["pliego", "idml", "indd", "indt"] {
             assert!(documents.first().is_some_and(|filter| filter.extensions.contains(&ext)), "{ext} is missing from the first Open filter");
         }
         assert!(documents.last().is_some_and(|filter| filter.extensions == [ALL_FILES]), "files without an extension can be picked");
@@ -546,9 +520,9 @@ mod tests {
     #[test]
     fn save_dialog_answers_get_the_suggested_extension() {
         let save = |picked: &str, name: &str| picked_save_path(PathBuf::from(picked), suggested_extension(name));
-        assert_eq!(save("/d/Brochure", "Untitled.designcraft"), PathBuf::from("/d/Brochure.designcraft"));
-        assert_eq!(save("/d/Brochure.idml", "Untitled.designcraft"), PathBuf::from("/d/Brochure.idml.designcraft"));
-        assert_eq!(save("/d/Brochure.designcraft", "Untitled.designcraft"), PathBuf::from("/d/Brochure.designcraft"));
+        assert_eq!(save("/d/Brochure", "Untitled.pliego"), PathBuf::from("/d/Brochure.pliego"));
+        assert_eq!(save("/d/Brochure.idml", "Untitled.pliego"), PathBuf::from("/d/Brochure.idml.pliego"));
+        assert_eq!(save("/d/Brochure.pliego", "Untitled.pliego"), PathBuf::from("/d/Brochure.pliego"));
         assert_eq!(save("/d/Brochure", "Untitled.pdf"), PathBuf::from("/d/Brochure.pdf"));
         assert_eq!(save("/d/Brochure.txt", "Untitled.rtf"), PathBuf::from("/d/Brochure.txt"), "another export format is kept");
         assert_eq!(save("/d/Package", "Untitled 1.2 Folder"), PathBuf::from("/d/Package"), "a folder has no extension");
@@ -560,7 +534,7 @@ mod tests {
         let folder = std::env::temp_dir();
         let suggested = folder.join("Brochure.pdf");
         assert_eq!(save_dialog_start(&suggested.to_string_lossy()), (Some(folder.clone()), "Brochure.pdf".to_string()));
-        let gone = folder.join(format!("designcraft-gone-{}", std::process::id())).join("Brochure.pdf");
+        let gone = folder.join(format!("pliego-gone-{}", std::process::id())).join("Brochure.pdf");
         assert_eq!(save_dialog_start(&gone.to_string_lossy()), (None, "Brochure.pdf".to_string()), "a folder deleted since: the system's own");
         assert_eq!(save_dialog_start("Untitled 1.2 Folder"), (None, "Untitled 1.2 Folder".to_string()), "a bare name: the system's own");
     }
@@ -570,7 +544,7 @@ mod tests {
     /// doesn't queue a second dialog.
     #[test]
     fn different_askers_and_documents_queue_their_own_dialogs() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.answer_dialogs(answer_with(None));
         app.run("file.new", serde_json::json!({})).unwrap();
         app.run("app.placeDialog", serde_json::json!({})).unwrap();
@@ -588,12 +562,12 @@ mod tests {
     #[test]
     fn an_answer_waits_for_a_dialog_opened_after_the_asking() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("Held.designcraft");
-        let mut source = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let path = dir.path().join("Held.pliego");
+        let mut source = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         source.run("file.new", serde_json::json!({})).unwrap();
         source.run("file.saveAs", serde_json::json!({"path": path.to_string_lossy()})).unwrap();
 
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.answer_dialogs(answer_with(Some(path.to_string_lossy().to_string())));
         app.run("app.openDialog", serde_json::json!({})).unwrap();
         app.ui.dialog = Some(crate::dialogs::Dialog::new("preferences", serde_json::json!({})));
@@ -612,12 +586,12 @@ mod tests {
     #[test]
     fn file_open_without_a_path_opens_the_chosen_document_when_the_dialog_answers() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("Chosen.designcraft");
-        let mut source = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let path = dir.path().join("Chosen.pliego");
+        let mut source = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         source.run("file.new", serde_json::json!({})).unwrap();
         source.run("file.saveAs", serde_json::json!({"path": path.to_string_lossy()})).unwrap();
 
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.answer_dialogs(answer_with(Some(path.to_string_lossy().to_string())));
         app.run("app.openDialog", serde_json::json!({})).unwrap();
         assert!(app.session.documents().is_empty(), "nothing opens before the dialog has answered");

@@ -1,9 +1,9 @@
 //! A working space loaded with Edit › Color Settings › Load Profile… is active again after a
 //! restart (#1474). Colour settings are process-wide, so this lives in the integration tests.
 
-use designcraft_color::cms::{self, ColorSettings};
-use designcraft_engine::Session;
-use designcraft_ui_egui::{DesignApp, Services, UiState};
+use pliego_color::cms::{self, ColorSettings};
+use pliego_engine::Session;
+use pliego_ui_egui::{DesignApp, Services, UiState};
 use serde_json::json;
 
 /// The app's first frame, where saved settings are applied: the host's `logic` tick and the

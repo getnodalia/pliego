@@ -1,8 +1,8 @@
 //! Frame and shape tools (Rectangle/Ellipse/Polygon Frame, Rectangle/Ellipse/Polygon, Line).
 //! Drag to draw (Shift = square/45°, Alt = from centre); click opens the size dialog.
 
-use designcraft_doc::SpreadRef;
-use designcraft_geom::{Point, Rect};
+use pliego_doc::SpreadRef;
+use pliego_geom::{Point, Rect};
 use serde_json::json;
 
 use crate::{Action, Cursor, Gesture, Mods, Overlay, PointerEvent, PointerKind, Snap, SnapRequest, Tool, ToolContext, rect_json, spread_json};
@@ -396,7 +396,7 @@ impl Tool for FrameTool {
                     let mut b = cx.layout.to_spread(sr, ev.pos);
                     if ev.mods.shift {
                         let v = b - sa;
-                        b = sa + designcraft_geom::constrain_angle(v, 45.0);
+                        b = sa + pliego_geom::constrain_angle(v, 45.0);
                     }
                     if cx.snap.any() {
                         b = if ev.mods.shift {
@@ -469,8 +469,8 @@ impl Tool for FrameTool {
             && let Some((_, r)) = self.last.as_ref()
         {
             let units = &cx.doc.settings;
-            let w = designcraft_geom::units::format_measure_prec(r.width().abs(), units.horizontal_units, 2);
-            let h = designcraft_geom::units::format_measure_prec(r.height().abs(), units.vertical_units, 2);
+            let w = pliego_geom::units::format_measure_prec(r.width().abs(), units.horizontal_units, 2);
+            let h = pliego_geom::units::format_measure_prec(r.height().abs(), units.vertical_units, 2);
             let mut v = self.guides.clone();
             v.push(Overlay::Measure { p: self.cur, text: format!("W: {w}\nH: {h}") });
             return v;

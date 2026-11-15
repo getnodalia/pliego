@@ -1,24 +1,24 @@
 [package]
-name = "designcraft-pdf"
+name = "pliego-pdf"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft PDF export (krilla): real text with embedded font subsets, CMYK/spot colour, bleed and printer's marks"
+description = "Pliego PDF export (krilla): real text with embedded font subsets, CMYK/spot colour, bleed and printer's marks"
 
 [lints]
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
+pliego-geom = { workspace = true }
+pliego-color = { workspace = true }
+pliego-doc = { workspace = true }
+pliego-fonts = { workspace = true }
+pliego-compose = { workspace = true }
 craft-pdf = { workspace = true, features = ["write-pdf"] }
 craft-prepress = { workspace = true }
 craft-cms = { workspace = true }
 krilla-svg = { workspace = true }
-designcraft-images = { workspace = true }
+pliego-images = { workspace = true }
 image = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
@@ -32,4 +32,4 @@ hayro-cmap = "0.1"
 kurbo = { workspace = true }
 tiff = { workspace = true }
 flate2 = "1"
-designcraft-fonts = { workspace = true, features = ["testing"] }
+pliego-fonts = { workspace = true, features = ["testing"] }

@@ -88,7 +88,7 @@ fn resize_track(sizes: &[f64], index: usize, delta: f64, keep: bool) -> Option<V
 }
 
 /// The frame a border drag names must hold the table's story and be editable.
-fn check_border_frame(st: &crate::DocState, p: &Value, story: designcraft_doc::StoryId) -> Result<()> {
+fn check_border_frame(st: &crate::DocState, p: &Value, story: pliego_doc::StoryId) -> Result<()> {
     const ID: &str = "table.resizeBorder";
     if let Some(fid) = crate::cmd::id_param(p, "frame") {
         let it = st.doc.item(fid).ok_or_else(|| bad(ID, format!("no frame {}", fid.0)))?;
@@ -243,7 +243,7 @@ mod resize_border_tests {
         (s, r["id"].as_u64().unwrap(), t["story"].as_u64().unwrap(), t["table"].as_u64().unwrap())
     }
 
-    fn table(s: &Session) -> designcraft_doc::Table {
+    fn table(s: &Session) -> pliego_doc::Table {
         (**s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap()).clone()
     }
 
@@ -252,7 +252,7 @@ mod resize_border_tests {
     }
 
     /// Composed cell rects of column 0, top to bottom.
-    fn rows(s: &Session) -> Vec<designcraft_geom::Rect> {
+    fn rows(s: &Session) -> Vec<pliego_geom::Rect> {
         let st = s.doc().unwrap();
         let sid = st.doc.stories.values().find(|x| !x.tables.is_empty()).unwrap().id;
         let cs = s.cache.get(&st.doc, sid, None);
@@ -294,7 +294,7 @@ mod resize_border_tests {
         let before = rows(&s);
         resize(&mut s, (f, st, t), json!({"axis": "row", "index": 0, "delta": 12}));
         let row = &table(&s).rows[0];
-        assert_eq!((row.height, row.mode), (42.0, designcraft_doc::RowHeightMode::AtLeast));
+        assert_eq!((row.height, row.mode), (42.0, pliego_doc::RowHeightMode::AtLeast));
         let after = rows(&s);
         assert!((after[0].height() - 42.0).abs() < 1e-9);
         assert!((after[1].y0 - before[1].y0 - 12.0).abs() < 1e-9 && (after[1].height() - before[1].height()).abs() < 1e-9);

@@ -15,17 +15,17 @@ pub(super) fn pick_up_format(s: &mut Session, p: &Value) -> Result<Value> {
     let (sid, b, cell) = hit_byte_with(s, frame, pt, compose::hit_char).ok_or_else(|| bad(ID, "not a text frame"))?;
     let st = s.doc()?;
     let sel = st.selection.text.ok_or_else(|| bad(ID, "select the text to format"))?;
-    let src = st.doc.text_story(sid, cell).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+    let src = st.doc.text_story(sid, cell).ok_or(pliego_doc::DocError::NoStory(sid))?;
     let b = floor_char_boundary(&src.text, b);
     // The character under the pointer (at the end of a line, the one before it).
     let at = if b >= src.text.len() || src.text[b..].starts_with('\n') { b.saturating_sub(1) } else { b };
     let at = floor_char_boundary(&src.text, at);
     let chars = src.char_format_at(at).clone();
-    let para = src.paras.get(src.para_at(at)).cloned().ok_or(designcraft_doc::DocError::NoStory(sid))?;
+    let para = src.paras.get(src.para_at(at)).cloned().ok_or(pliego_doc::DocError::NoStory(sid))?;
     let (a, e) = (sel.anchor.min(sel.focus), sel.anchor.max(sel.focus));
     s.typing_format = None;
     s.edit(|d, _| {
-        let story = d.text_story_mut(sel.story, sel.cell).ok_or(designcraft_doc::DocError::NoStory(sel.story))?;
+        let story = d.text_story_mut(sel.story, sel.cell).ok_or(pliego_doc::DocError::NoStory(sel.story))?;
         if e > a {
             story.format_chars(a..e, |f| *f = chars.clone());
         }
@@ -103,7 +103,7 @@ pub(super) fn char_flag_on(s: &Session, flag: impl Fn(&CharAttrs) -> Option<bool
 
 /// Switch a paragraph attribute of the selected paragraphs: `on`, else the opposite of the
 /// first one's.
-pub(super) fn para_toggle(s: &mut Session, p: &Value, cmd: &str, attr: &str, get: impl Fn(&designcraft_doc::ParaProps) -> bool) -> Result<Value> {
+pub(super) fn para_toggle(s: &mut Session, p: &Value, cmd: &str, attr: &str, get: impl Fn(&pliego_doc::ParaProps) -> bool) -> Result<Value> {
     let on = match bool_param(p, "on", cmd)? {
         Some(v) => v,
         None => !format_targets(s).first().is_some_and(|t| {
@@ -121,7 +121,7 @@ pub(super) fn para_toggle(s: &mut Session, p: &Value, cmd: &str, attr: &str, get
 }
 
 /// A character fill must name a swatch of the document.
-pub(crate) fn validate_char_fill(document: &designcraft_doc::Document, attrs: &CharAttrs, command_id: &str) -> Result<()> {
+pub(crate) fn validate_char_fill(document: &pliego_doc::Document, attrs: &CharAttrs, command_id: &str) -> Result<()> {
     validate_char_size(attrs, command_id)?;
     match &attrs.fill {
         Some(fill) => crate::cmd::object::known_swatch(document, fill, command_id, "fill"),
@@ -149,7 +149,7 @@ pub(crate) const MAX_TYPE_SIZE: f64 = 1296.0;
 /// Byte `pos` is the hidden paragraph mark of an *empty* paragraph: the only character on that
 /// line, and so the one a line-affecting attribute like leading can land on right away instead of
 /// waiting for the next typed character (otherwise an empty line could never get its own leading).
-fn empty_para_mark(story: &designcraft_doc::Story, pos: usize) -> bool {
+fn empty_para_mark(story: &pliego_doc::Story, pos: usize) -> bool {
     let ranges = story.para_ranges();
     ranges.get(story.para_at(pos)).is_some_and(|r| r.start == pos && r.end == pos) && story.text.as_bytes().get(pos) == Some(&b'\n')
 }
@@ -266,14 +266,14 @@ pub(super) fn kern_pair(s: &mut Session, p: &Value) -> Result<Value> {
 /// Byte offset of the character before `pos` when it starts a kerning pair with the character at
 /// `pos`: both exist and neither is a paragraph or line break.
 fn pair_start(text: &str, pos: usize) -> Option<usize> {
-    let is_text = |c: &char| !matches!(*c, '\n' | designcraft_doc::story::FORCED_LINE_BREAK);
+    let is_text = |c: &char| !matches!(*c, '\n' | pliego_doc::story::FORCED_LINE_BREAK);
     text.get(pos..)?.chars().next().filter(is_text)?;
     let c = text.get(..pos)?.chars().next_back().filter(is_text)?;
     pos.checked_sub(c.len_utf8())
 }
 
 /// Character attributes `a` (and the overrides `cleared` removed) over each target's text.
-pub(crate) fn apply_char_attrs(d: &mut designcraft_doc::Document, targets: &[Target], a: &CharAttrs, cleared: &[String]) {
+pub(crate) fn apply_char_attrs(d: &mut pliego_doc::Document, targets: &[Target], a: &CharAttrs, cleared: &[String]) {
     for t in targets {
         let r = &t.range;
         let Some(st) = d.text_story_mut(t.story, t.cell) else { continue };
@@ -312,7 +312,7 @@ pub(crate) fn format_paras(s: &mut Session, attrs: &Value) -> Result<Value> {
     // over its resolved rule; this pass validates them.
     let mut a = ParaAttrs::default();
     for (k, v) in obj {
-        a.set_json_over(k, v, &designcraft_doc::ParaProps::default()).map_err(|e| bad("type.para", e))?;
+        a.set_json_over(k, v, &pliego_doc::ParaProps::default()).map_err(|e| bad("type.para", e))?;
     }
     crate::cmd::style::check_grep_styles("type.para", &a)?;
     // `null` removes the override (back to the style's value).
@@ -342,7 +342,7 @@ pub(crate) fn format_paras(s: &mut Session, attrs: &Value) -> Result<Value> {
 /// Alt+Left/Right in text: kerning at a caret, tracking of a selection, by the Kerning/Tracking
 /// increment.
 pub(super) fn kern_step(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::Kerning;
+    use pliego_doc::Kerning;
     let inc = s.doc()?.doc.settings.kerning_increment;
     let inc = if inc.is_finite() { inc.clamp(1.0, 1000.0) } else { 20.0 };
     let amount = match p.get("amount").and_then(Value::as_f64) {
@@ -399,7 +399,7 @@ pub(super) fn step_size(s: &mut Session, delta: f64) -> Result<Value> {
 }
 
 pub(super) fn break_link(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::{CharFormat, CharProps, ParaProps};
+    use pliego_doc::{CharFormat, CharProps, ParaProps};
     let para = match p.get("kind").and_then(Value::as_str).unwrap_or("paragraph") {
         "paragraph" => true,
         "character" => false,
@@ -414,7 +414,7 @@ pub(super) fn break_link(s: &mut Session, p: &Value) -> Result<Value> {
             if para {
                 st.format_paras(r, |pf| {
                     let (pp, pc) = styles.resolve_para(pf);
-                    pf.style = designcraft_doc::styles::NO_PARA_STYLE.into();
+                    pf.style = pliego_doc::styles::NO_PARA_STYLE.into();
                     pf.para = ParaProps::default().delta(&pp);
                     pf.chars = CharProps::default().delta(&pc);
                 });
@@ -428,7 +428,7 @@ pub(super) fn break_link(s: &mut Session, p: &Value) -> Result<Value> {
                     let (_, pc) = styles.resolve_para(&st.paras[pi]);
                     st.format_chars(a..b, |f| {
                         let cp = styles.resolve_char(&pc, f);
-                        *f = CharFormat { style: designcraft_doc::story::NO_CHAR_STYLE.into(), over: pc.delta(&cp) };
+                        *f = CharFormat { style: pliego_doc::story::NO_CHAR_STYLE.into(), over: pc.delta(&cp) };
                     });
                 }
             }
@@ -439,8 +439,8 @@ pub(super) fn break_link(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// The first target character, with any pending caret overrides. Keep character-style
 /// inheritance separate from paragraph defaults for style creation from the selection.
-pub(crate) fn effective_char_format(s: &Session, target: &Target) -> Result<designcraft_doc::CharFormat> {
-    let story = s.doc()?.doc.text_story(target.story, target.cell).ok_or(designcraft_doc::DocError::NoStory(target.story))?;
+pub(crate) fn effective_char_format(s: &Session, target: &Target) -> Result<pliego_doc::CharFormat> {
+    let story = s.doc()?.doc.text_story(target.story, target.cell).ok_or(pliego_doc::DocError::NoStory(target.story))?;
     let mut format =
         if target.range.is_empty() { story.insert_format_at(target.range.start) } else { story.format_after(target.range.start) }.clone();
     if let Some(pending) = typing_format(s)
@@ -470,7 +470,7 @@ pub(crate) fn rename_typing_swatch(s: &mut Session, from: &str, to: &str) {
     }
 }
 
-fn swapped_colors(cp: &designcraft_doc::CharProps) -> CharAttrs {
+fn swapped_colors(cp: &pliego_doc::CharProps) -> CharAttrs {
     CharAttrs {
         fill: Some(cp.stroke.clone()),
         fill_tint: Some(cp.stroke_tint),
@@ -489,7 +489,7 @@ pub(super) fn swap_fill_stroke(s: &mut Session, _p: &Value) -> Result<Value> {
         && s.doc()?.selection.text.is_some()
     {
         let st = s.doc()?;
-        let story = st.doc.text_story(target.story, target.cell).ok_or(designcraft_doc::DocError::NoStory(target.story))?;
+        let story = st.doc.text_story(target.story, target.cell).ok_or(pliego_doc::DocError::NoStory(target.story))?;
         let pf = story.paras.get(story.para_at(target.range.start)).ok_or_else(|| bad(ID, "missing paragraph"))?;
         let (_, base) = st.doc.styles.resolve_para(pf);
         let cp = st.doc.styles.resolve_char(&base, &effective_char_format(s, target)?);
@@ -498,7 +498,7 @@ pub(super) fn swap_fill_stroke(s: &mut Session, _p: &Value) -> Result<Value> {
     let mut edits = Vec::new();
     let d = &s.doc()?.doc;
     for target in targets {
-        let story = d.text_story(target.story, target.cell).ok_or(designcraft_doc::DocError::NoStory(target.story))?;
+        let story = d.text_story(target.story, target.cell).ok_or(pliego_doc::DocError::NoStory(target.story))?;
         if story.is_empty() {
             let pf = story.paras.first().ok_or_else(|| bad(ID, "missing paragraph"))?;
             let (_, base) = d.styles.resolve_para(pf);
@@ -542,7 +542,7 @@ pub(super) fn swap_fill_stroke(s: &mut Session, _p: &Value) -> Result<Value> {
     })
 }
 
-pub(super) fn apply_typing_format(cf: &mut designcraft_doc::CharFormat, f: &TypingFormat) {
+pub(super) fn apply_typing_format(cf: &mut pliego_doc::CharFormat, f: &TypingFormat) {
     cf.over.merge(&f.attrs);
     for k in &f.cleared {
         let _ = cf.over.set_json(k, &Value::Null);
@@ -557,7 +557,7 @@ pub(super) fn link_style(s: &mut Session, p: &Value, bold: bool) -> Result<Value
     let family = cur["chars"]["fontFamily"].as_str().unwrap_or_default().to_string();
     let style = cur["chars"]["fontStyle"].as_str().unwrap_or_default().to_string();
     // The document's own fonts count too.
-    let db = designcraft_fonts::FontDb::global().scoped(s.doc()?.doc.font_scope);
+    let db = pliego_fonts::FontDb::global().scoped(s.doc()?.doc.font_scope);
     let (weight, italic) = db.traits_of(&family, &style);
     let on = p.get("on").and_then(Value::as_bool).unwrap_or(if bold { weight < 650.0 } else { !italic });
     let (want_bold, want_italic) = if bold { (Some(on), None) } else { (None, Some(on)) };
@@ -631,8 +631,8 @@ mod nested_style_tests {
         )
         .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let cs = designcraft_compose::compose_story(&d, designcraft_doc::StoryId(sid), &Default::default());
-        let text = &d.story(designcraft_doc::StoryId(sid)).unwrap().text;
+        let cs = pliego_compose::compose_story(&d, pliego_doc::StoryId(sid), &Default::default());
+        let text = &d.story(pliego_doc::StoryId(sid)).unwrap().text;
         let fill_at = |byte: usize| {
             let g = cs.frames[0].lines.iter().flat_map(|l| &l.glyphs).find(|g| g.byte == byte).unwrap();
             cs.styles[g.style as usize].fill.clone()
@@ -709,17 +709,17 @@ mod text_color_tests {
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": "colour me", "caret": false})).unwrap();
         let (fid, sid) = (r["id"].as_u64().unwrap(), r["story"].as_u64().unwrap());
         s.execute("selection.set", &json!({"ids": [fid]})).unwrap();
-        let fill_of_frame = |s: &Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(fid)).unwrap().fill.swatch.clone();
+        let fill_of_frame = |s: &Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(fid)).unwrap().fill.swatch.clone();
         let before = fill_of_frame(&s);
         let r = s.execute("object.color", &json!({"color": "#ff0000", "text": true})).unwrap();
         let red = r["swatch"].as_str().unwrap().to_string();
         assert_eq!(fill_of_frame(&s), before, "the frame keeps its fill");
-        let story = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().clone();
+        let story = s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().clone();
         assert_eq!(story.char_format_at(3).over.fill.as_deref(), Some(red.as_str()));
         // A text selection takes it without asking.
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 3})).unwrap();
         let r = s.execute("object.color", &json!({"color": "#00ff00", "target": "stroke"})).unwrap();
-        let story = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().clone();
+        let story = s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().clone();
         assert_eq!(story.format_after(0).over.stroke.as_deref(), r["swatch"].as_str());
         assert_eq!(s.doc().unwrap().history.undo.len(), 3, "the frame, then one undo step per colour");
     }
@@ -740,7 +740,7 @@ mod nested_line_style_tests {
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 400], "content": "text", "text": text})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
         s.execute("type.para", &json!({"nestedLineStyles": [{"style": "Lead", "lines": 1}]})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let cs = s.cache.get(&s.doc().unwrap().doc, sid, None);
         let lines = &cs.frames[0].lines;
         assert!(lines.len() >= 3);
@@ -751,7 +751,7 @@ mod nested_line_style_tests {
             "the whole first line"
         );
         assert_eq!(size_of(1), 12.0, "the next lines");
-        let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        let back = pliego_idml::import_idml(&pliego_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         let st = back.stories.values().find(|st| st.text.starts_with("The opening")).unwrap();
         let nl = st.paras[0].para.nested_line_styles.clone().unwrap_or_default();
         assert_eq!((nl.len(), nl.first().map(|n| n.lines)), (1, Some(1)), "IDML AllNestedLineStyles");
@@ -797,7 +797,7 @@ mod rule_tests {
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 400], "content": "text", "text": "Short"})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let mut widths = vec![];
         for column in [true, false] {
             s.execute("type.para", &json!({"ruleAbove": {"on": true, "columnWidth": column}})).unwrap();
@@ -824,7 +824,7 @@ mod border_tests {
         s.execute("object.textFrameOptions", &json!({"ids": [r["id"]], "columns": 2})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
         s.execute("type.para", &json!({"borderOn": true, "borderWeights": [2, 1, 2, 1], "borderOffsets": [4, 4, 4, 4], "borderColor": "[Black]", "shadingOn": true, "shadingOffsets": [4, 4, 4, 4]})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let cs = s.cache.get(&s.doc().unwrap().doc, sid, None);
         let decos = &cs.frames[0].decos;
         let shading: Vec<_> = decos.iter().filter(|d| d.tint < 0.5).collect();
@@ -834,7 +834,7 @@ mod border_tests {
         let top = decos.iter().filter(|d| d.tint >= 0.5).map(|d| d.rect).fold(f64::MAX, |a, r| a.min(r.y0));
         let first_line = &cs.frames[0].lines[0];
         assert!((top - (first_line.baseline - first_line.ascent - 4.0 - 2.0)).abs() < 1e-6, "offset 4 + weight 2 above the text");
-        let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        let back = pliego_idml::import_idml(&pliego_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         let p = &back.stories.values().find(|st| st.text.starts_with("word")).unwrap().paras[0].para;
         assert_eq!(
             (p.border_on, p.border_weights, p.shading_offsets),
@@ -850,7 +850,7 @@ mod gradient_text_tests {
 
     /// Mean red and blue of the ink (pixels whose green is low: red → blue has none) in columns
     /// `x0..x1`.
-    fn ink(img: &designcraft_render::Rendered, x0: u32, x1: u32) -> (f64, f64) {
+    fn ink(img: &pliego_render::Rendered, x0: u32, x1: u32) -> (f64, f64) {
         let (mut r, mut b, mut n) = (0.0, 0.0, 0.0);
         for x in x0..x1 {
             for y in 0..img.height {
@@ -865,7 +865,7 @@ mod gradient_text_tests {
     }
 
     /// Red ink at the frame's left, blue at its right.
-    fn check(img: &designcraft_render::Rendered, what: &str) {
+    fn check(img: &pliego_render::Rendered, what: &str) {
         let (lr, lb) = ink(img, 0, 60);
         let (rr, rb) = ink(img, 200, 300);
         assert!(lr > lb + 80.0, "{what}: the left ink is red ({lr:.0}, {lb:.0})");
@@ -880,16 +880,16 @@ mod gradient_text_tests {
         let shape = s.execute("frame.create", &json!({"rect": [-60, 0, -50, 10], "content": "unassigned"})).unwrap()["id"].clone();
         s.execute("object.gradient", &json!({"ids": [shape], "stops": [{"location": 0, "color": "#ff0000"}, {"location": 100, "color": "#0000ff"}]}))
             .unwrap();
-        let id = designcraft_doc::ItemId(shape.as_u64().unwrap());
+        let id = pliego_doc::ItemId(shape.as_u64().unwrap());
         let swatch = s.doc().unwrap().doc.item(id).unwrap().fill.swatch.clone();
         let r = s.execute("frame.create", &json!({"rect": [0, 0, 300, 120], "content": "text", "text": "IIIIIIIIIIIIIIIIIIIIIIIIIIIIII"})).unwrap();
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 30})).unwrap();
         s.execute("type.char", &json!({"size": 60, "tracking": 0, "fill": swatch})).unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         check(&rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap(), "screen");
         // The PDF, placed back and drawn: the same gradient.
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = pliego_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 300, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "text.pdf", "x": 0, "y": 0, "width": 300})).unwrap();
@@ -898,7 +898,7 @@ mod gradient_text_tests {
     }
 
     /// The columns the red → blue ink spans (black table edges left out).
-    fn ink_span(img: &designcraft_render::Rendered) -> (u32, u32) {
+    fn ink_span(img: &pliego_render::Rendered) -> (u32, u32) {
         let cols: Vec<u32> = (0..img.width)
             .filter(|&x| {
                 (0..img.height).any(|y| {
@@ -911,7 +911,7 @@ mod gradient_text_tests {
     }
 
     /// Mean red and blue of the red → blue ink in columns `x0..x1`.
-    fn coloured_ink(img: &designcraft_render::Rendered, x0: u32, x1: u32) -> (f64, f64) {
+    fn coloured_ink(img: &pliego_render::Rendered, x0: u32, x1: u32) -> (f64, f64) {
         let (mut r, mut b, mut n) = (0.0, 0.0, 0.0);
         for x in x0..x1 {
             for y in 0..img.height {
@@ -939,7 +939,7 @@ mod gradient_text_tests {
         s.execute("text.select", &json!({"story": r["story"], "anchor": 0, "focus": 0})).unwrap();
         s.execute("table.insert", &json!({"rows": 1, "cols": 3})).unwrap();
         // A third of the frame's width: the cell's text, red → blue.
-        let mut d: designcraft_doc::Document = (*s.doc().unwrap().doc).clone();
+        let mut d: pliego_doc::Document = (*s.doc().unwrap().doc).clone();
         let sid = d.stories.values().find(|st| !st.tables.is_empty()).unwrap().id;
         let t = std::sync::Arc::make_mut(d.story_mut(sid).unwrap().tables.values_mut().next().unwrap());
         let text = &mut t.cell_mut(0, 0).unwrap().text;
@@ -948,10 +948,10 @@ mod gradient_text_tests {
             f.over.fill = Some(g.clone());
             f.over.size = Some(24.0);
         });
-        let mut rr = designcraft_render::Renderer::new();
-        let cache = designcraft_compose::Cache::new();
+        let mut rr = pliego_render::Renderer::new();
+        let cache = pliego_compose::Cache::new();
         let screen = rr.render_page(&d, &cache, 0, 1.0, false, &Default::default()).unwrap();
-        let pdf = designcraft_pdf::export_pdf(&d, &cache, &Default::default()).unwrap();
+        let pdf = pliego_pdf::export_pdf(&d, &cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 300, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "cell.pdf", "x": 0, "y": 0, "width": 300})).unwrap();
@@ -970,7 +970,7 @@ mod gradient_text_tests {
 
 #[cfg(test)]
 mod kern_pair_tests {
-    use designcraft_doc::{Kerning, StoryId};
+    use pliego_doc::{Kerning, StoryId};
     use serde_json::json;
 
     use crate::Session;
@@ -1037,13 +1037,13 @@ mod kern_pair_tests {
 
 #[cfg(test)]
 mod pick_up_format_tests {
-    use designcraft_doc::ItemId;
+    use pliego_doc::ItemId;
     use serde_json::json;
 
     use crate::Session;
 
     /// Typefool's video (12:04): select body text, Eyedropper, click the third header: the body
-    /// text takes the header's font, size and paragraph settings. DesignCraft copied the frame's
+    /// text takes the header's font, size and paragraph settings. Pliego copied the frame's
     /// fill and stroke instead.
     #[test]
     fn the_eyedropper_copies_text_formatting_to_selected_text() {

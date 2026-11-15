@@ -45,8 +45,8 @@ fn two_layer_pdf_options(generation: i32, config: &str, trailer: &str) -> Vec<u8
 fn pdf_layer_update_preserves_catalog_configuration_and_generations() {
     for generation in [0, 1] {
         let original = two_layer_pdf_generation(generation);
-        let updated = designcraft_render::pdf_hide_layers(&original, &["Red".into()]).unwrap();
-        assert_eq!(designcraft_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
+        let updated = pliego_render::pdf_hide_layers(&original, &["Red".into()]).unwrap();
+        assert_eq!(pliego_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
         let appended = std::str::from_utf8(&updated[original.len()..]).unwrap();
         for token in [
             "/Lang(en-GB)".to_string(),
@@ -59,8 +59,8 @@ fn pdf_layer_update_preserves_catalog_configuration_and_generations() {
             assert!(appended.contains(&token), "missing {token}: {appended}");
         }
         assert!(!appended.contains("9999000"));
-        let all_on = designcraft_render::pdf_hide_layers(&updated, &[]).unwrap();
-        assert!(designcraft_render::pdf_layers(&all_on).iter().all(|(_, visible)| *visible));
+        let all_on = pliego_render::pdf_hide_layers(&updated, &[]).unwrap();
+        assert!(pliego_render::pdf_layers(&all_on).iter().all(|(_, visible)| *visible));
     }
 }
 
@@ -80,11 +80,11 @@ fn pdf_layer_update_accepts_xref_streams_and_rejects_unsupported_updates() {
     stream_pdf.extend_from_slice(format!("9 0 obj\n<</Type/XRef/Size 10/Root 1 0 R/W[1 4 2]/Length {}>>\nstream\n", entries.len()).as_bytes());
     stream_pdf.extend_from_slice(&entries);
     stream_pdf.extend_from_slice(format!("\nendstream\nendobj\nstartxref\n{offset}\n%%EOF\n").as_bytes());
-    let updated = designcraft_render::pdf_hide_layers(&stream_pdf, &["Red".into()]).unwrap();
-    assert_eq!(designcraft_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
+    let updated = pliego_render::pdf_hide_layers(&stream_pdf, &["Red".into()]).unwrap();
+    assert_eq!(pliego_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
     for unsupported in ["/Encrypt 7 0 R", "/Encrypt << /Filter /Standard >>", "/XRefStm 0"] {
         let altered = text.replace("/Size 9", &format!("{unsupported}/Size 9"));
-        assert!(designcraft_render::pdf_hide_layers(altered.as_bytes(), &["Red".into()]).is_none());
+        assert!(pliego_render::pdf_hide_layers(altered.as_bytes(), &["Red".into()]).is_none());
     }
 }
 
@@ -100,12 +100,12 @@ fn pdf_layer_update_follows_forward_prev_and_rejects_cycles() {
     let old: usize = text.rsplit_once("startxref").unwrap().1.split_whitespace().next().unwrap().parse().unwrap();
     forward.extend_from_slice(text[old..].split("startxref").next().unwrap().as_bytes());
     forward.extend_from_slice(format!("startxref\n{first}\n%%EOF\n").as_bytes());
-    let updated = designcraft_render::pdf_hide_layers(&forward, &["Red".into()]).unwrap();
-    assert_eq!(designcraft_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
+    let updated = pliego_render::pdf_hide_layers(&forward, &["Red".into()]).unwrap();
+    assert_eq!(pliego_render::pdf_layers(&updated), vec![("Blue".into(), true), ("Red".into(), false)]);
     let mut cyclic = original;
     cyclic.extend_from_slice(link(first).as_bytes());
     cyclic.extend_from_slice(format!("startxref\n{first}\n%%EOF\n").as_bytes());
-    assert!(designcraft_render::pdf_hide_layers(&cyclic, &[]).is_none());
+    assert!(pliego_render::pdf_hide_layers(&cyclic, &[]).is_none());
 }
 
 fn add_pdf_revision(bytes: &mut Vec<u8>) {
@@ -124,7 +124,7 @@ fn place(s: &mut Session, bytes: &[u8], x: f64) -> serde_json::Value {
 }
 
 fn pixel(s: &Session, x: u32) -> [u8; 4] {
-    let mut renderer = designcraft_render::Renderer::new();
+    let mut renderer = pliego_render::Renderer::new();
     renderer.threads = 0;
     renderer.render_page(&s.doc().unwrap().doc, &s.cache, 0, 1.0, false, &Default::default()).unwrap().pixel(x, 50)
 }
@@ -154,8 +154,8 @@ fn unrewritable_layer_choices_are_rejected_atomically_without_an_undo_step() {
     for _ in 0..32 {
         add_pdf_revision(&mut unsupported);
     }
-    assert_eq!(designcraft_render::pdf_layers(&unsupported).len(), 2);
-    assert!(designcraft_render::pdf_hide_layers(&unsupported, &["Red".into()]).is_none());
+    assert_eq!(pliego_render::pdf_layers(&unsupported).len(), 2);
+    assert!(pliego_render::pdf_hide_layers(&unsupported, &["Red".into()]).is_none());
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 200, "height": 100, "pages": 1})).unwrap();
     let good = place(&mut s, &two_layer_pdf(), 0.0);
@@ -195,8 +195,8 @@ fn explicit_all_on_validates_an_actual_rewrite_before_editing() {
     for _ in 0..32 {
         add_pdf_revision(&mut unsupported);
     }
-    assert_eq!(designcraft_render::pdf_layers(&unsupported).len(), 2);
-    assert!(designcraft_render::pdf_hide_layers(&unsupported, &[]).is_none());
+    assert_eq!(pliego_render::pdf_layers(&unsupported).len(), 2);
+    assert!(pliego_render::pdf_hide_layers(&unsupported, &[]).is_none());
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 200, "height": 100, "pages": 1})).unwrap();
     let good = place(&mut s, &two_layer_pdf(), 0.0);
@@ -232,12 +232,12 @@ fn explicit_all_on_validates_an_actual_rewrite_before_editing() {
 fn unreadable_non_null_prev_entries_refuse_layer_rewrites() {
     for prev in ["7 0 R", "-1", "false", "<<>>", "[]", "/Unknown", "(unknown)"] {
         let bytes = two_layer_pdf_options(0, "", &format!("/Prev {prev}"));
-        assert_eq!(designcraft_render::pdf_layers(&bytes).len(), 2, "reader control: {prev}");
-        assert!(designcraft_render::pdf_hide_layers(&bytes, &["Red".into()]).is_none(), "must not truncate unknown history: {prev}");
+        assert_eq!(pliego_render::pdf_layers(&bytes).len(), 2, "reader control: {prev}");
+        assert!(pliego_render::pdf_hide_layers(&bytes, &["Red".into()]).is_none(), "must not truncate unknown history: {prev}");
     }
     for trailer in ["", "/Prev null"] {
         let bytes = two_layer_pdf_options(0, "", trailer);
-        assert!(designcraft_render::pdf_hide_layers(&bytes, &["Red".into()]).is_some(), "end-of-chain control: {trailer}");
+        assert!(pliego_render::pdf_hide_layers(&bytes, &["Red".into()]).is_some(), "end-of-chain control: {trailer}");
     }
     let mut revised = two_layer_pdf();
     let prev =
@@ -246,7 +246,7 @@ fn unreadable_non_null_prev_entries_refuse_layer_rewrites() {
     let real_prev = std::str::from_utf8(&revised).unwrap().replace(&format!("/Prev {prev}>>"), &format!("/Prev {prev}.0>>"));
     assert!(real_prev.contains(&format!("/Prev {prev}.0>>")));
     for bytes in [revised, real_prev.into_bytes()] {
-        assert!(designcraft_render::pdf_hide_layers(&bytes, &["Red".into()]).is_some(), "readable integer/real history must still work");
+        assert!(pliego_render::pdf_hide_layers(&bytes, &["Red".into()]).is_some(), "readable integer/real history must still work");
     }
 }
 
@@ -260,14 +260,14 @@ fn fake_null_trailer_cannot_bypass_hybrid_rejection() {
             let inside = text.replacen("xref\n", &format!("xref\n{comment}"), 1);
             assert!(inside.contains(&format!("xref\n{comment}")));
             // Repair-only comments inside a table are always refused, guard or not.
-            assert_eq!(designcraft_render::pdf_layers(inside.as_bytes()).len(), 2);
-            assert!(designcraft_render::pdf_hide_layers(inside.as_bytes(), &["Red".into()]).is_none());
+            assert_eq!(pliego_render::pdf_layers(inside.as_bytes()).len(), 2);
+            assert!(pliego_render::pdf_hide_layers(inside.as_bytes(), &["Red".into()]).is_none());
             // Before xref or after the dictionary, the real trailer decides.
             let leading = text.replacen("xref\n", &format!("{comment}xref\n"), 1);
             let trailing = text.replacen("startxref\n", &format!("{comment}startxref\n"), 1);
             for source in [leading, trailing] {
-                assert_eq!(designcraft_render::pdf_layers(source.as_bytes()).len(), 2);
-                assert_eq!(designcraft_render::pdf_hide_layers(source.as_bytes(), &["Red".into()]).is_some(), real_guard.is_empty());
+                assert_eq!(pliego_render::pdf_layers(source.as_bytes()).len(), 2);
+                assert_eq!(pliego_render::pdf_hide_layers(source.as_bytes(), &["Red".into()]).is_some(), real_guard.is_empty());
             }
         }
     }
@@ -275,7 +275,7 @@ fn fake_null_trailer_cannot_bypass_hybrid_rejection() {
 
 #[test]
 fn content_all_still_measures_layerless_and_stub_properties() {
-    use designcraft_doc::PdfCrop;
+    use pliego_doc::PdfCrop;
     for props in ["", "/OCProperties null", "/OCProperties<<>>", "/OCProperties<</OCGs[]/D<<>>>>"] {
         let content = "0 0 1 rg 0 0 50 100 re f";
         let objs = [
@@ -296,23 +296,23 @@ fn content_all_still_measures_layerless_and_stub_properties() {
             bytes.extend_from_slice(format!("{at:010} 00000 n\r\n").as_bytes());
         }
         bytes.extend_from_slice(format!("trailer\n<</Size 5/Root 1 0 R>>\nstartxref\n{xref}\n%%EOF\n").as_bytes());
-        assert!(designcraft_render::pdf_layers(&bytes).is_empty());
-        assert_eq!(designcraft_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap().1, (50.0, 100.0), "{props}");
+        assert!(pliego_render::pdf_layers(&bytes).is_empty());
+        assert_eq!(pliego_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap().1, (50.0, 100.0), "{props}");
     }
 }
 
 #[test]
 fn content_all_keeps_the_whole_page_when_layer_rewriting_is_unsupported() {
-    use designcraft_doc::PdfCrop;
+    use pliego_doc::PdfCrop;
     let mut bytes = two_layer_pdf_options(0, "/BaseState/OFF/ON[5 0 R]", "");
-    assert_eq!(designcraft_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentVisible).unwrap().1, (50.0, 100.0));
-    assert_eq!(designcraft_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap().1, (100.0, 100.0));
+    assert_eq!(pliego_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentVisible).unwrap().1, (50.0, 100.0));
+    assert_eq!(pliego_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap().1, (100.0, 100.0));
     for _ in 0..32 {
         add_pdf_revision(&mut bytes);
     }
-    assert!(designcraft_render::pdf_hide_layers(&bytes, &[]).is_none());
-    assert_eq!(designcraft_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentVisible).unwrap().1, (50.0, 100.0));
-    assert_eq!(designcraft_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap(), ([0.0, 0.0, 1.0, 1.0], (100.0, 100.0)));
+    assert!(pliego_render::pdf_hide_layers(&bytes, &[]).is_none());
+    assert_eq!(pliego_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentVisible).unwrap().1, (50.0, 100.0));
+    assert_eq!(pliego_render::pdf_crop_box(&bytes, 0, PdfCrop::ContentAll).unwrap(), ([0.0, 0.0, 1.0, 1.0], (100.0, 100.0)));
 }
 
 #[test]
@@ -329,7 +329,7 @@ fn placed_pdf_layers_hide() {
     assert_eq!(l[0]["name"], "Blue");
     let px = |s: &Session, x: u32| {
         let d = s.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap().pixel(x, 150)
     };
@@ -342,14 +342,14 @@ fn placed_pdf_layers_hide() {
     let r = s.execute("file.exportPdf", &json!({})).unwrap();
     assert!(r["warnings"].as_array().unwrap().is_empty(), "{r}");
     let bytes = super::super::file::base64_decode(r["base64"].as_str().unwrap());
-    let image = designcraft_render::render_pdf_page(&bytes, 0, 792).unwrap();
+    let image = pliego_render::render_pdf_page(&bytes, 0, 792).unwrap();
     let width = usize::from(image.width());
     assert!(image.data()[150 * width + 125].a > 200);
     assert_eq!(image.data()[150 * width + 175].a, 0);
 }
 #[test]
 fn placed_pdf_all_on_is_distinct_from_defaults_and_survives_exports() {
-    let pdf = designcraft_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
+    let pdf = pliego_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let id = s
@@ -358,7 +358,7 @@ fn placed_pdf_all_on_is_distinct_from_defaults_and_survives_exports() {
         .clone();
     let visible = |s: &mut Session| s.execute("object.pdfLayers", &json!({"id": id})).unwrap()[1]["visible"].as_bool().unwrap();
     let pixel = |s: &Session| {
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         rr.render_page(&s.doc().unwrap().doc, &s.cache, 0, 1.0, false, &Default::default()).unwrap().pixel(175, 150)
     };
@@ -371,20 +371,20 @@ fn placed_pdf_all_on_is_distinct_from_defaults_and_survives_exports() {
     assert!(!visible(&mut s));
     s.execute("edit.redo", &json!({})).unwrap();
     assert!(visible(&mut s));
-    let bytes = designcraft_format::save(&s.doc().unwrap().doc).unwrap();
-    let roundtrip = designcraft_format::load(&bytes).unwrap();
-    let item = roundtrip.item(designcraft_doc::ItemId(id.as_u64().unwrap())).unwrap();
+    let bytes = pliego_format::save(&s.doc().unwrap().doc).unwrap();
+    let roundtrip = pliego_format::load(&bytes).unwrap();
+    let item = roundtrip.item(pliego_doc::ItemId(id.as_u64().unwrap())).unwrap();
     assert!(item.pdf_layer_override && item.pdf_hidden_layers.is_empty());
     let exported = s.execute("file.exportPdf", &json!({})).unwrap();
     let bytes = super::super::file::base64_decode(exported["base64"].as_str().unwrap());
-    let raster = designcraft_render::render_pdf_page(&bytes, 0, 842).unwrap();
+    let raster = pliego_render::render_pdf_page(&bytes, 0, 842).unwrap();
     let px = raster.data().get(150 * usize::from(raster.width()) + 175).unwrap();
     assert!(px.r > 200 && px.g < 40, "PDF export retains red: {px:?}");
     let idml = s.execute("file.exportIdml", &json!({})).unwrap();
     let bytes = super::super::file::base64_decode(idml["base64"].as_str().unwrap());
-    let imported = designcraft_idml::import_idml(&bytes).unwrap();
-    let pdf_asset = imported.assets.values().find(|a| designcraft_render::is_pdf(&a.data)).unwrap();
-    assert!(designcraft_render::pdf_layers(&pdf_asset.data).iter().all(|(_, on)| *on));
+    let imported = pliego_idml::import_idml(&bytes).unwrap();
+    let pdf_asset = imported.assets.values().find(|a| pliego_render::is_pdf(&a.data)).unwrap();
+    assert!(pliego_render::pdf_layers(&pdf_asset.data).iter().all(|(_, on)| *on));
     assert!(s.execute("file.exportIdml", &json!({"embedImages":false})).is_err());
     assert_eq!(s.doc().unwrap().doc.assets.values().find(|a| a.name == "off.pdf").unwrap().data.as_slice(), pdf);
     s.execute("object.layerOptions", &json!({"ids":[id],"hidden":[]})).unwrap();
@@ -396,7 +396,7 @@ fn placed_pdf_all_on_is_distinct_from_defaults_and_survives_exports() {
 #[test]
 fn parent_page_choices_reach_idml_variants_and_raster_export() {
     // Red is hidden by the file itself, so "show every layer" is a visible difference.
-    let pdf = designcraft_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
+    let pdf = pliego_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 100, "height": 100, "pages": 1})).unwrap();
     let id = s
@@ -406,14 +406,14 @@ fn parent_page_choices_reach_idml_variants_and_raster_export() {
         )
         .unwrap()["id"]
         .clone();
-    let item = designcraft_doc::ItemId(id.as_u64().unwrap());
-    assert!(matches!(s.doc().unwrap().doc.find(item).unwrap().spread, designcraft_doc::SpreadRef::Parent(0)), "the placement sits on a parent page");
+    let item = pliego_doc::ItemId(id.as_u64().unwrap());
+    assert!(matches!(s.doc().unwrap().doc.find(item).unwrap().spread, pliego_doc::SpreadRef::Parent(0)), "the placement sits on a parent page");
     s.execute("object.layerOptions", &json!({"ids": [id], "hidden": [], "useDefaults": false})).unwrap();
     // Embedded IDML: the parent-page placement gets its own variant, like a document one.
     let idml = s.execute("file.exportIdml", &json!({})).unwrap();
-    let imported = designcraft_idml::import_idml(&super::super::file::base64_decode(idml["base64"].as_str().unwrap())).unwrap();
-    let asset = imported.assets.values().find(|a| designcraft_render::is_pdf(&a.data)).unwrap();
-    assert!(designcraft_render::pdf_layers(&asset.data).iter().all(|(_, on)| *on), "the embedded copy shows every layer");
+    let imported = pliego_idml::import_idml(&super::super::file::base64_decode(idml["base64"].as_str().unwrap())).unwrap();
+    let asset = imported.assets.values().find(|a| pliego_render::is_pdf(&a.data)).unwrap();
+    assert!(pliego_render::pdf_layers(&asset.data).iter().all(|(_, on)| *on), "the embedded copy shows every layer");
     // An external-only copy would keep the original file's defaults: the choice is rejected.
     let err = s.execute("file.exportIdml", &json!({"embedImages": false})).unwrap_err().to_string();
     assert!(err.contains("embedded images"), "{err}");
@@ -427,13 +427,13 @@ fn parent_page_choices_reach_idml_variants_and_raster_export() {
 /// quietly falling back to the file's defaults.
 #[test]
 fn an_anchored_placement_keeps_its_layer_choice_in_saves_and_exports() {
-    use designcraft_doc::{AnchoredObject, Content, Graphic, Item, Shape, SpreadRef};
-    use designcraft_geom::{Affine, Rect, shapes};
+    use pliego_doc::{AnchoredObject, Content, Graphic, Item, Shape, SpreadRef};
+    use pliego_geom::{Affine, Rect, shapes};
 
-    let pdf = designcraft_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
-    let mut d = designcraft_doc::Document::new(&Default::default());
-    let asset = designcraft_doc::AssetId(d.alloc());
-    d.add_asset(designcraft_doc::Asset {
+    let pdf = pliego_render::pdf_hide_layers(&two_layer_pdf(), &["Red".into()]).unwrap();
+    let mut d = pliego_doc::Document::new(&Default::default());
+    let asset = pliego_doc::AssetId(d.alloc());
+    d.add_asset(pliego_doc::Asset {
         id: asset,
         name: "anchored.pdf".into(),
         mime: "application/pdf".into(),
@@ -441,7 +441,7 @@ fn an_anchored_placement_keeps_its_layer_choice_in_saves_and_exports() {
         ..Default::default()
     });
     let mut item =
-        Item::new(designcraft_doc::ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 100.0, 100.0)));
+        Item::new(pliego_doc::ItemId(d.alloc()), d.default_layer(), Shape::Rectangle, shapes::rectangle(Rect::new(0.0, 0.0, 100.0, 100.0)));
     item.pdf_layer_override = true;
     item.content = Content::Graphic(Graphic {
         asset,
@@ -463,11 +463,11 @@ fn an_anchored_placement_keeps_its_layer_choice_in_saves_and_exports() {
     s.add_document(crate::DocState::new(d, None));
     // Embedded IDML carries a variant that shows every layer.
     let idml = s.execute("file.exportIdml", &json!({})).unwrap();
-    let imported = designcraft_idml::import_idml(&super::super::file::base64_decode(idml["base64"].as_str().unwrap())).unwrap();
-    let copies: Vec<_> = imported.assets.values().filter(|a| designcraft_render::is_pdf(&a.data)).collect();
+    let imported = pliego_idml::import_idml(&super::super::file::base64_decode(idml["base64"].as_str().unwrap())).unwrap();
+    let copies: Vec<_> = imported.assets.values().filter(|a| pliego_render::is_pdf(&a.data)).collect();
     assert!(!copies.is_empty(), "the anchored placement is exported");
     assert!(
-        copies.iter().all(|a| designcraft_render::pdf_layers(&a.data).iter().all(|(_, on)| *on)),
+        copies.iter().all(|a| pliego_render::pdf_layers(&a.data).iter().all(|(_, on)| *on)),
         "the embedded copy must not fall back to the file's defaults"
     );
     // An external-only copy would keep the original file's defaults.
@@ -482,14 +482,14 @@ fn an_anchored_placement_keeps_its_layer_choice_in_saves_and_exports() {
 /// the export walks ask for, so it does not name the stale field, and exports run unaffected.
 #[test]
 fn a_stale_choice_on_a_non_pdf_placement_is_not_a_placed_pdf_choice() {
-    let png = designcraft_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
+    let png = pliego_render::Rendered { width: 4, height: 3, pixels: [30, 90, 180, 255].repeat(12) }.to_png();
     let mut s = Session::new();
     s.execute("file.new", &json!({"width": 200, "height": 200})).unwrap();
     let id = s
         .execute("file.place", &json!({"base64": super::super::file::base64_encode(&png), "name": "photo.png", "x": 0, "y": 0, "width": 100}))
         .unwrap()["id"]
         .clone();
-    let item = designcraft_doc::ItemId(id.as_u64().unwrap());
+    let item = pliego_doc::ItemId(id.as_u64().unwrap());
     // The state a relink from a PDF leaves behind: fields set, asset no longer a PDF.
     std::sync::Arc::make_mut(&mut s.doc_mut().unwrap().doc).item_mut(item).unwrap().pdf_hidden_layers = vec!["Red".into()];
     let d = &s.doc().unwrap().doc;
@@ -517,7 +517,7 @@ fn layerless_pdf_rejects_overrides_without_breaking_idml_export() {
     assert_eq!(serde_json::to_value(&*s.doc().unwrap().doc).unwrap(), before);
     assert!(s.execute("file.exportIdml", &json!({})).is_ok());
     s.execute("object.layerOptions", &json!({"ids":[id],"hidden":[],"useDefaults":true})).unwrap();
-    assert!(!s.doc().unwrap().doc.item(designcraft_doc::ItemId(id.as_u64().unwrap())).unwrap().has_pdf_layer_override());
+    assert!(!s.doc().unwrap().doc.item(pliego_doc::ItemId(id.as_u64().unwrap())).unwrap().has_pdf_layer_override());
 }
 
 #[test]
@@ -534,7 +534,7 @@ fn pdf_layer_options_ignore_non_pdf_targets_in_mixed_selection() {
     }
     assert!(s.execute("object.pdfLayers", &json!({"id":other["id"]})).is_err(), "explicit non-PDF id remains an error");
     s.execute("object.layerOptions", &json!({"ids":[placed["id"],other["id"]],"hidden":[],"useDefaults":false})).unwrap();
-    assert!(!s.doc().unwrap().doc.item(designcraft_doc::ItemId(other["id"].as_u64().unwrap())).unwrap().has_pdf_layer_override());
+    assert!(!s.doc().unwrap().doc.item(pliego_doc::ItemId(other["id"].as_u64().unwrap())).unwrap().has_pdf_layer_override());
     assert!(s.execute("object.layerOptions", &json!({"ids":[placed["id"]],"hidden":["Red"],"useDefaults":true})).is_err());
     assert!(s.execute("object.layerOptions", &json!({"ids":[placed["id"]],"useDefaults":"false"})).is_err());
 }

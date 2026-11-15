@@ -5,14 +5,14 @@ use super::*;
 
 impl Exporter<'_> {
     /// Story `sid` composed for `page` ([`Cache::get`]), asked of the cache once per export.
-    fn composed(&mut self, sid: designcraft_doc::StoryId, page: Option<usize>) -> Arc<designcraft_compose::ComposedStory> {
+    fn composed(&mut self, sid: pliego_doc::StoryId, page: Option<usize>) -> Arc<pliego_compose::ComposedStory> {
         let (doc, cache) = (self.doc, self.cache);
         self.composed.entry((sid, page)).or_insert_with(|| cache.get(doc, sid, page)).clone()
     }
 
     /// The parent pages' items on `layer` shown on page `pi` of spread `si`: the parent's bases
     /// first, then the parent.
-    fn parent_items(&mut self, s: &mut Surface, si: usize, pi: usize, layer: &designcraft_doc::Layer, first: usize) {
+    fn parent_items(&mut self, s: &mut Surface, si: usize, pi: usize, layer: &pliego_doc::Layer, first: usize) {
         for (xf, it) in shown_parent_items(self.doc, si, pi) {
             if it.layer == layer.id {
                 self.top_item(s, it, xf, Some(first + pi), true);
@@ -357,14 +357,14 @@ impl Exporter<'_> {
                 let cs = self.composed(tfr.story, page);
                 if let (Some(ft), Some(pt)) = (cs.frame(it.id), &tfr.options.path) {
                     // Type on a path: the glyphs as outlines along the path.
-                    for (si, gp) in designcraft_compose::path_glyphs(&cs, ft, bp, pt) {
+                    for (si, gp) in pliego_compose::path_glyphs(&cs, ft, bp, pt) {
                         let st = &cs.styles[si as usize];
                         // A gradient spans the path's box.
-                        let fill = designcraft_doc::Fill {
+                        let fill = pliego_doc::Fill {
                             swatch: st.fill.clone(),
                             tint: st.fill_tint,
                             overprint: st.overprint_fill,
-                            ..designcraft_doc::Fill::none()
+                            ..pliego_doc::Fill::none()
                         };
                         if let (Some(paint), Some(p)) = (self.fill_paint(&fill, bp.bounding_box()), to_path(&gp)) {
                             let op = self.overprints(&st.fill, st.fill_tint, st.overprint_fill);
@@ -415,7 +415,7 @@ impl Exporter<'_> {
 
     /// Draw embedded page items after restoring the surface, retaining spread-space
     /// transforms for page culling (also for anonymous note and cell stories).
-    pub(crate) fn frame_objects(&mut self, s: &mut Surface, ft: &designcraft_compose::FrameText, xf: Affine, page: Option<usize>) {
+    pub(crate) fn frame_objects(&mut self, s: &mut Surface, ft: &pliego_compose::FrameText, xf: Affine, page: Option<usize>) {
         let mut pending = vec![(ft, xf)];
         while let Some((frame, transform)) = pending.pop() {
             for object in &frame.objects {

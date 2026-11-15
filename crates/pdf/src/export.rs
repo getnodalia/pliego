@@ -1,4 +1,4 @@
-//! Document → PDF. The item walk mirrors `designcraft-render`'s `draw_spread` / `draw_item`.
+//! Document → PDF. The item walk mirrors `pliego-render`'s `draw_spread` / `draw_item`.
 
 #[cfg(test)]
 #[path = "registration_tests.rs"]
@@ -9,12 +9,6 @@ use std::sync::Arc;
 
 use craft_pdf::write::backend as krilla;
 use craft_pdf::write::{self, Metadata, Writer};
-use designcraft_color::swatch::{ColorType, SwatchValue};
-use designcraft_color::{BlendMode as DcBlend, Color, GradientKind};
-use designcraft_compose::Cache;
-use designcraft_doc::{AssetId, Content, Document, Item, PageSide, Spread, SpreadRef, StrokeAlign, StrokeType};
-use designcraft_geom::kurbo::{PathEl, Shape as _};
-use designcraft_geom::{Affine, BezPath, Rect, Vec2, corners};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Archival, PdfVersion};
 use krilla::geom::{Path, PathBuilder, Size, Transform};
@@ -24,6 +18,12 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, Identifier, Tag, TagGroup, TagTree};
+use pliego_color::swatch::{ColorType, SwatchValue};
+use pliego_color::{BlendMode as DcBlend, Color, GradientKind};
+use pliego_compose::Cache;
+use pliego_doc::{AssetId, Content, Document, Item, PageSide, Spread, SpreadRef, StrokeAlign, StrokeType};
+use pliego_geom::kurbo::{PathEl, Shape as _};
+use pliego_geom::{Affine, BezPath, Rect, Vec2, corners};
 
 use crate::{ExportReport, PdfError, PdfOptions, Result, Standard};
 
@@ -64,12 +64,12 @@ pub(crate) struct Exporter<'a> {
     pub cache: &'a Cache,
     /// Each story's composition per page it is shown on, for this export: the document doesn't
     /// change while it runs, and asking the cache checks every frame of the story again.
-    composed: HashMap<(designcraft_doc::StoryId, Option<usize>), Arc<designcraft_compose::ComposedStory>>,
+    composed: HashMap<(pliego_doc::StoryId, Option<usize>), Arc<pliego_compose::ComposedStory>>,
     pub opts: &'a PdfOptions,
     /// Current sheet's visible area (spread space) for culling.
     pub clip: Rect,
     pub warnings: Vec<String>,
-    drawing_items: Vec<designcraft_doc::ItemId>,
+    drawing_items: Vec<pliego_doc::ItemId>,
     images: HashMap<AssetId, Option<Image>>,
     // Immutable export options (including rgb_only) make bytes the complete conversion key.
     // PDF-page/SVG/media routing precedes this path. Failures remain per AssetId.
@@ -88,22 +88,22 @@ pub(crate) struct Exporter<'a> {
     /// Placed PDFs too new to embed in this version ("name is PDF 2.0"): the export fails.
     too_new: Vec<String>,
     /// Parsed placed SVGs.
-    svgs: HashMap<AssetId, Option<Arc<designcraft_images::usvg::Tree>>>,
+    svgs: HashMap<AssetId, Option<Arc<pliego_images::usvg::Tree>>>,
     pub fonts: HashMap<u32, Option<krilla::text::Font>>,
     pub reverse_cmaps: HashMap<u32, Arc<HashMap<u32, char>>>,
     /// Convert CMYK to RGB (PDF/A: krilla needs a CMYK output profile we don't ship yet).
     pub rgb_only: bool,
     /// Tagged PDF: the structure in reading order (stories gather their frames' content).
     tags: Vec<TagEntry>,
-    story_tags: HashMap<designcraft_doc::StoryId, Vec<Identifier>>,
+    story_tags: HashMap<pliego_doc::StoryId, Vec<Identifier>>,
     /// While drawing a story's frame for the structure tree: the story (text runs are tagged
     /// per paragraph, everything else in the frame is an artifact).
-    pub(crate) tag_story: Option<designcraft_doc::StoryId>,
+    pub(crate) tag_story: Option<pliego_doc::StoryId>,
     /// While drawing a frame's text: the frame's box in text space, which a gradient on the text
     /// spans (as InDesign lays it across the frame).
     pub(crate) text_area: Option<Rect>,
     /// Marked content of each (story, paragraph index).
-    pub(crate) para_tags: HashMap<(designcraft_doc::StoryId, usize), Vec<Identifier>>,
+    pub(crate) para_tags: HashMap<(pliego_doc::StoryId, usize), Vec<Identifier>>,
 }
 
 impl CoverageImage {
@@ -272,7 +272,7 @@ mod unwind_tests {
 
     #[test]
     fn export_entry_points_recover_in_a_subprocess() {
-        const CHILD: &str = "DESIGNCRAFT_PDF_EXPORT_PANIC_PROBE";
+        const CHILD: &str = "PLIEGO_PDF_EXPORT_PANIC_PROBE";
         if std::env::var_os(CHILD).is_none() {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "export::unwind_tests::export_entry_points_recover_in_a_subprocess", "--nocapture"])
@@ -283,7 +283,7 @@ mod unwind_tests {
             assert!(String::from_utf8_lossy(&output.stdout).contains("all three export entry points recovered"));
             return;
         }
-        let doc = Document::new(&designcraft_doc::build::NewDocument { pages: 1, ..Default::default() });
+        let doc = Document::new(&pliego_doc::build::NewDocument { pages: 1, ..Default::default() });
         let cache = Cache::new();
         let source = export_pdf(&doc, &cache, &Default::default()).unwrap();
         let parts = [(source, vec![(612.0, 792.0)])];

@@ -10,7 +10,7 @@ const FILL: &str = "Fill (X)";
 const STATUS_H: f32 = 17.0;
 
 fn app(double: bool) -> crate::DesignApp {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.tools_double_column = double;
     app
 }
@@ -43,7 +43,7 @@ fn hungarian_tool_buttons_translate_every_tool_and_keep_shortcuts() {
         let mut app = app(double);
         app.ui.language = "hu".into();
         let mut h = test_window::open(app, vec2(1400.0, 1000.0));
-        for tool in designcraft_tools::TOOL_GROUPS.iter().flat_map(|group| group.iter()) {
+        for tool in pliego_tools::TOOL_GROUPS.iter().flat_map(|group| group.iter()) {
             h.state_mut().app.run("tool.select", serde_json::json!({"tool": tool.id})).unwrap();
             h.run_steps(3);
             let label = crate::i18n::tr("hu", tool.label);
@@ -62,10 +62,10 @@ fn hungarian_tool_buttons_translate_every_tool_and_keep_shortcuts() {
                 serde_json::json!({"id": "tool.select", "params": {"tool": "ellipseFrame"}, "shortcut": custom_shortcut, "steal": true}),
             )
             .unwrap();
-        for (gi, group) in designcraft_tools::TOOL_GROUPS.iter().enumerate() {
+        for (gi, group) in pliego_tools::TOOL_GROUPS.iter().enumerate() {
             // Single tools have no flyout; the collector group is split into separate
             // buttons in two-column mode and is covered by the tooltip checks above.
-            if group.len() < 2 || (double && designcraft_tools::SPLIT_IN_TWO_COLUMNS.contains(&group[0].id)) {
+            if group.len() < 2 || (double && pliego_tools::SPLIT_IN_TWO_COLUMNS.contains(&group[0].id)) {
                 continue;
             }
             let first = group[0];
@@ -211,7 +211,7 @@ fn hungarian_flyout_scrolls_horizontally_in_narrow_windows() {
 
 /// Saves synthetic UI evidence only when the local review explicitly requests it.
 fn review_shot(h: &mut egui_kittest::Harness<'static, test_window::Window>, name: &str) {
-    if let Some(dir) = std::env::var_os("DESIGNCRAFT_HU_REVIEW_SHOTS") {
+    if let Some(dir) = std::env::var_os("PLIEGO_HU_REVIEW_SHOTS") {
         h.render().unwrap().save(std::path::Path::new(&dir).join(name)).unwrap();
     }
 }
@@ -222,7 +222,7 @@ fn review_shot(h: &mut egui_kittest::Harness<'static, test_window::Window>, name
 fn a_tool_flyout_closes_on_escape_and_on_a_click_elsewhere() {
     use egui::{Event, Modifiers, PointerButton};
     use egui_kittest::kittest::Queryable;
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let mut h = crate::test_window::open(app, vec2(1400.0, 900.0));
     let open = |h: &mut egui_kittest::Harness<'static, crate::test_window::Window>| {
         let at = h.get_by_label("Rectangle Frame Tool (F)").rect().center();
@@ -255,7 +255,7 @@ fn a_tool_flyout_closes_on_escape_and_on_a_click_elsewhere() {
 fn a_tool_flyout_opened_by_holding_stays_open_and_esc_keeps_the_tool() {
     use egui::{Event, Modifiers, PointerButton};
     use egui_kittest::kittest::Queryable;
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     let mut h = crate::test_window::open_stepped(app, vec2(1400.0, 900.0), 1.0, 1.0 / 60.0);
     h.state_mut().app.select_tool("rectangleFrame");
     h.run_steps(2);
@@ -350,7 +350,7 @@ fn the_color_picker_from_the_fill_box_follows_formatting_affects_text() {
     let mut app = app(false);
     app.run("file.new", serde_json::json!({})).unwrap();
     let r = app.run("frame.create", serde_json::json!({"rect": [72, 72, 300, 200], "content": "text", "text": "words", "caret": false})).unwrap();
-    let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+    let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
     app.run("selection.set", serde_json::json!({"ids": [id.0]})).unwrap();
     app.ui.formatting_affects_text = true;
     let mut h = double_click_fill(app);
@@ -433,7 +433,7 @@ fn apply_color_and_gradient_reuse_the_last_ones() {
     app.run("color.applyGradient", json!({})).unwrap();
     let g = fill(&app).0;
     let doc = &app.session.active().unwrap().doc;
-    let grad = designcraft_color::swatch::resolve_gradient(&doc.swatches, &g).expect("a gradient");
+    let grad = pliego_color::swatch::resolve_gradient(&doc.swatches, &g).expect("a gradient");
     assert_eq!((grad.stops[0].color.to_rgb(), grad.stops[1].color.to_rgb()), ([1.0; 3], [0.0; 3]));
     app.run("color.applyColor", json!({})).unwrap();
     // With the stroke in front, it goes to the stroke; the fill keeps its colour.
@@ -513,7 +513,7 @@ fn with_nothing_selected_the_proxy_sets_the_next_shapes_colours() {
     // The next rectangle has them.
     let id = app.run("frame.create", json!({"rect": [72, 72, 200, 200], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
     let st = app.session.active().unwrap();
-    let it = st.doc.item(designcraft_doc::ItemId(id)).unwrap();
+    let it = st.doc.item(pliego_doc::ItemId(id)).unwrap();
     assert_eq!((it.fill.swatch.as_str(), it.stroke.swatch.as_str()), (red.as_str(), "[None]"));
 }
 
@@ -578,7 +578,7 @@ fn fill_stroke_proxy_keys() {
 fn alt_click_cycles_the_tool_flyout_group() {
     use egui::{Event, Modifiers, PointerButton};
     use egui_kittest::kittest::Queryable;
-    let app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     // 1 ms frames so an Alt-click and a following plain click can form a real double-click
     // (default open() spaces frames by 0.25 s, outside egui's double-click window).
     let mut h = crate::test_window::open_stepped(app, vec2(1400.0, 900.0), 1.0, 0.001);

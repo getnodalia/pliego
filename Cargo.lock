@@ -1273,363 +1273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "designcraft"
-version = "0.17.0"
-dependencies = [
- "arboard",
- "craft-window",
- "designcraft-engine",
- "designcraft-ui-egui",
- "eframe",
- "egui",
- "fmv-macos-events",
- "log",
- "muda",
- "objc2 0.6.5",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "rfd",
- "serde",
- "serde_json",
- "winit",
- "winresource",
- "winsafe",
-]
-
-[[package]]
-name = "designcraft-cli"
-version = "0.17.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-engine",
- "designcraft-format",
- "designcraft-geom",
- "designcraft-mcp",
- "designcraft-pdf",
- "designcraft-render",
- "image",
- "serde_json",
-]
-
-[[package]]
-name = "designcraft-color"
-version = "0.17.0"
-dependencies = [
- "craft-cms",
- "kurbo",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-compose"
-version = "0.17.0"
-dependencies = [
- "designcraft-color",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "fancy-regex",
- "hypher",
- "log",
- "miniz_oxide 0.8.9",
- "proptest",
- "regex",
- "unicode-bidi",
- "unicode-bidi-mirroring",
- "unicode-script",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "designcraft-doc"
-version = "0.17.0"
-dependencies = [
- "chrono",
- "designcraft-color",
- "designcraft-geom",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-engine"
-version = "0.17.0"
-dependencies = [
- "caseless",
- "craft-atomic",
- "craft-docpath",
- "craft-prepress",
- "craft-print",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-epub",
- "designcraft-fonts",
- "designcraft-format",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-images",
- "designcraft-pdf",
- "designcraft-pptx",
- "designcraft-render",
- "designcraft-textimport",
- "designcraft-tools",
- "hayro-cmap",
- "hayro-interpret",
- "hayro-syntax",
- "indd",
- "kurbo",
- "log",
- "quick-xml",
- "same-file",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "unicode-segmentation",
- "wasm-bindgen-test",
- "zip",
-]
-
-[[package]]
-name = "designcraft-epub"
-version = "0.17.0"
-dependencies = [
- "chrono",
- "designcraft-color",
- "designcraft-doc",
- "zip",
-]
-
-[[package]]
-name = "designcraft-fonts"
-version = "0.17.0"
-dependencies = [
- "core-text",
- "harfrust 0.13.3",
- "kurbo",
- "log",
- "skrifa 0.47.0",
- "unicode-bidi",
- "unicode-script",
-]
-
-[[package]]
-name = "designcraft-format"
-version = "0.17.0"
-dependencies = [
- "designcraft-doc",
- "designcraft-images",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-geom"
-version = "0.17.0"
-dependencies = [
- "flo_curves",
- "kurbo",
- "proptest",
- "qrcodegen",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "designcraft-idml"
-version = "0.17.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
- "designcraft-images",
- "log",
- "quick-xml",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-images"
-version = "0.17.0"
-dependencies = [
- "craft-cms",
- "designcraft-color",
- "designcraft-fonts",
- "flate2",
- "image",
- "log",
- "quick-xml",
- "resvg",
- "skrifa 0.47.0",
- "tiff",
- "zune-core",
- "zune-jpeg",
-]
-
-[[package]]
-name = "designcraft-mcp"
-version = "0.17.0"
-dependencies = [
- "designcraft-engine",
- "designcraft-geom",
- "designcraft-render",
- "designcraft-tools",
- "image",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "designcraft-pdf"
-version = "0.17.0"
-dependencies = [
- "chrono",
- "craft-cms",
- "craft-pdf",
- "craft-prepress",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "flate2",
- "hayro-cmap",
- "hayro-interpret",
- "hayro-syntax",
- "image",
- "krilla-svg",
- "kurbo",
- "log",
- "thiserror 2.0.21",
- "tiff",
-]
-
-[[package]]
-name = "designcraft-pptx"
-version = "0.17.0"
-dependencies = [
- "chrono",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "image",
- "quick-xml",
- "skrifa 0.47.0",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "designcraft-render"
-version = "0.17.0"
-dependencies = [
- "craft-pdf",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-images",
- "image",
- "log",
- "serde",
- "thiserror 2.0.21",
- "vello_common 0.2.0",
- "vello_cpu 0.2.0",
-]
-
-[[package]]
-name = "designcraft-textimport"
-version = "0.17.0"
-dependencies = [
- "designcraft-doc",
- "quick-xml",
- "zip",
-]
-
-[[package]]
-name = "designcraft-tools"
-version = "0.17.0"
-dependencies = [
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-geom",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "designcraft-ui-egui"
-version = "0.17.0"
-dependencies = [
- "craft-dialogs",
- "craft-keymap",
- "craft-prepress",
- "craft-ui",
- "craft-window",
- "designcraft-color",
- "designcraft-compose",
- "designcraft-doc",
- "designcraft-engine",
- "designcraft-fonts",
- "designcraft-geom",
- "designcraft-idml",
- "designcraft-render",
- "designcraft-textimport",
- "designcraft-tools",
- "egui",
- "egui_extras",
- "egui_kittest",
- "log",
- "nodalia-update",
- "raw-window-handle",
- "serde",
- "serde_json",
- "tempfile",
- "toml",
- "unicode-bidi",
- "web-time",
- "zip",
-]
-
-[[package]]
-name = "designcraft-web"
-version = "0.17.0"
-dependencies = [
- "designcraft-engine",
- "designcraft-format",
- "designcraft-ui-egui",
- "eframe",
- "egui",
- "form_urlencoded",
- "js-sys",
- "log",
- "rfd",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "dify"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4373,6 +4016,363 @@ name = "plain"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
+name = "pliego"
+version = "0.17.0"
+dependencies = [
+ "arboard",
+ "craft-window",
+ "eframe",
+ "egui",
+ "fmv-macos-events",
+ "log",
+ "muda",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "pliego-engine",
+ "pliego-ui-egui",
+ "rfd",
+ "serde",
+ "serde_json",
+ "winit",
+ "winresource",
+ "winsafe",
+]
+
+[[package]]
+name = "pliego-cli"
+version = "0.17.0"
+dependencies = [
+ "image",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-engine",
+ "pliego-format",
+ "pliego-geom",
+ "pliego-mcp",
+ "pliego-pdf",
+ "pliego-render",
+ "serde_json",
+]
+
+[[package]]
+name = "pliego-color"
+version = "0.17.0"
+dependencies = [
+ "craft-cms",
+ "kurbo",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pliego-compose"
+version = "0.17.0"
+dependencies = [
+ "fancy-regex",
+ "hypher",
+ "log",
+ "miniz_oxide 0.8.9",
+ "pliego-color",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "proptest",
+ "regex",
+ "unicode-bidi",
+ "unicode-bidi-mirroring",
+ "unicode-script",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "pliego-doc"
+version = "0.17.0"
+dependencies = [
+ "chrono",
+ "pliego-color",
+ "pliego-geom",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pliego-engine"
+version = "0.17.0"
+dependencies = [
+ "caseless",
+ "craft-atomic",
+ "craft-docpath",
+ "craft-prepress",
+ "craft-print",
+ "hayro-cmap",
+ "hayro-interpret",
+ "hayro-syntax",
+ "indd",
+ "kurbo",
+ "log",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-epub",
+ "pliego-fonts",
+ "pliego-format",
+ "pliego-geom",
+ "pliego-idml",
+ "pliego-images",
+ "pliego-pdf",
+ "pliego-pptx",
+ "pliego-render",
+ "pliego-textimport",
+ "pliego-tools",
+ "quick-xml",
+ "same-file",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "unicode-segmentation",
+ "wasm-bindgen-test",
+ "zip",
+]
+
+[[package]]
+name = "pliego-epub"
+version = "0.17.0"
+dependencies = [
+ "chrono",
+ "pliego-color",
+ "pliego-doc",
+ "zip",
+]
+
+[[package]]
+name = "pliego-fonts"
+version = "0.17.0"
+dependencies = [
+ "core-text",
+ "harfrust 0.13.3",
+ "kurbo",
+ "log",
+ "skrifa 0.47.0",
+ "unicode-bidi",
+ "unicode-script",
+]
+
+[[package]]
+name = "pliego-format"
+version = "0.17.0"
+dependencies = [
+ "pliego-doc",
+ "pliego-images",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "pliego-geom"
+version = "0.17.0"
+dependencies = [
+ "flo_curves",
+ "kurbo",
+ "proptest",
+ "qrcodegen",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pliego-idml"
+version = "0.17.0"
+dependencies = [
+ "log",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-geom",
+ "pliego-images",
+ "quick-xml",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "pliego-images"
+version = "0.17.0"
+dependencies = [
+ "craft-cms",
+ "flate2",
+ "image",
+ "log",
+ "pliego-color",
+ "pliego-fonts",
+ "quick-xml",
+ "resvg",
+ "skrifa 0.47.0",
+ "tiff",
+ "zune-core",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "pliego-mcp"
+version = "0.17.0"
+dependencies = [
+ "image",
+ "log",
+ "pliego-engine",
+ "pliego-geom",
+ "pliego-render",
+ "pliego-tools",
+ "serde_json",
+]
+
+[[package]]
+name = "pliego-pdf"
+version = "0.17.0"
+dependencies = [
+ "chrono",
+ "craft-cms",
+ "craft-pdf",
+ "craft-prepress",
+ "flate2",
+ "hayro-cmap",
+ "hayro-interpret",
+ "hayro-syntax",
+ "image",
+ "krilla-svg",
+ "kurbo",
+ "log",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
+ "thiserror 2.0.21",
+ "tiff",
+]
+
+[[package]]
+name = "pliego-pptx"
+version = "0.17.0"
+dependencies = [
+ "chrono",
+ "image",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
+ "quick-xml",
+ "skrifa 0.47.0",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "pliego-render"
+version = "0.17.0"
+dependencies = [
+ "craft-pdf",
+ "image",
+ "log",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-images",
+ "serde",
+ "thiserror 2.0.21",
+ "vello_common 0.2.0",
+ "vello_cpu 0.2.0",
+]
+
+[[package]]
+name = "pliego-textimport"
+version = "0.17.0"
+dependencies = [
+ "pliego-doc",
+ "quick-xml",
+ "zip",
+]
+
+[[package]]
+name = "pliego-tools"
+version = "0.17.0"
+dependencies = [
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-geom",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pliego-ui-egui"
+version = "0.17.0"
+dependencies = [
+ "craft-dialogs",
+ "craft-keymap",
+ "craft-prepress",
+ "craft-ui",
+ "craft-window",
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "log",
+ "nodalia-update",
+ "pliego-color",
+ "pliego-compose",
+ "pliego-doc",
+ "pliego-engine",
+ "pliego-fonts",
+ "pliego-geom",
+ "pliego-idml",
+ "pliego-render",
+ "pliego-textimport",
+ "pliego-tools",
+ "raw-window-handle",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "unicode-bidi",
+ "web-time",
+ "zip",
+]
+
+[[package]]
+name = "pliego-web"
+version = "0.17.0"
+dependencies = [
+ "eframe",
+ "egui",
+ "form_urlencoded",
+ "js-sys",
+ "log",
+ "pliego-engine",
+ "pliego-format",
+ "pliego-ui-egui",
+ "rfd",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "png"

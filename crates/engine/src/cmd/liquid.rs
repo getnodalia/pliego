@@ -3,8 +3,8 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::{Content, Document, Item, LiquidRule, ObjectLiquid, Orientation, SpreadRef};
-use designcraft_geom::{Affine, Rect};
+use pliego_doc::{Content, Document, Item, LiquidRule, ObjectLiquid, Orientation, SpreadRef};
+use pliego_geom::{Affine, Rect};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, has_selection, str_param, targets};
@@ -98,7 +98,7 @@ pub(crate) fn apply(d: &mut Document, sr: SpreadRef, pi: usize, old: Rect) {
             super::object::bake(it, inner);
             let ib = it.inner_bounds();
             if let Content::Graphic(g) = &mut it.content {
-                let o = inner * designcraft_geom::Point::ZERO;
+                let o = inner * pliego_geom::Point::ZERO;
                 g.xf = Affine::translate(o.to_vec2()) * g.xf;
                 if let Some(xf) = g.fitted(ib, g.auto_fit) {
                     g.xf = xf;
@@ -235,7 +235,7 @@ pub fn specs() -> Vec<CommandSpec> {
 }
 
 /// A layout named by a command parameter: its name or its index in [`Document::layouts`].
-fn layout_param(id: &str, d: &Document, v: Option<&Value>) -> Result<designcraft_doc::LayoutRange> {
+fn layout_param(id: &str, d: &Document, v: Option<&Value>) -> Result<pliego_doc::LayoutRange> {
     let layouts = d.layouts();
     let found = match v {
         Some(Value::Number(n)) => n.as_u64().and_then(|i| usize::try_from(i).ok()).and_then(|i| layouts.get(i)),
@@ -265,9 +265,9 @@ fn unique_layout_name(d: &Document, base: &str, except: Option<usize>) -> String
 }
 
 /// The section starting at absolute page `start`, made when there is none.
-fn section_at(d: &mut Document, start: usize) -> Option<&mut designcraft_doc::Section> {
+fn section_at(d: &mut Document, start: usize) -> Option<&mut pliego_doc::Section> {
     if !d.sections.iter().any(|x| x.start == start) {
-        d.sections.push(designcraft_doc::Section {
+        d.sections.push(pliego_doc::Section {
             start,
             start_number: if start == 0 { Some(1) } else { None },
             style: Default::default(),
@@ -286,7 +286,7 @@ fn section_at(d: &mut Document, start: usize) -> Option<&mut designcraft_doc::Se
 fn copy_layout(
     id: &str,
     d: &mut Document,
-    from: &designcraft_doc::LayoutRange,
+    from: &pliego_doc::LayoutRange,
     name: &str,
     size: Option<(f64, f64)>,
     rule: Option<LiquidRule>,
@@ -302,7 +302,7 @@ fn copy_layout(
     d.insert_pages(n.checked_sub(1), count, last_parent)?;
     // The new layout starts numbering at 1 and a spread of its own.
     d.sections.retain(|x| x.start != n);
-    d.sections.push(designcraft_doc::Section {
+    d.sections.push(pliego_doc::Section {
         start: n,
         start_number: Some(1),
         style: Default::default(),
@@ -351,7 +351,7 @@ fn copy_layout(
             .collect();
         sp.relayout();
         let to = sp.pages.get(tj).map_or(pb, |p| p.bounds());
-        let new = super::object::duplicate_from(d, &src, &ids, SpreadRef::Doc(ti), designcraft_geom::Vec2::new(to.x0 - pb.x0, to.y0 - pb.y0))?;
+        let new = super::object::duplicate_from(d, &src, &ids, SpreadRef::Doc(ti), pliego_geom::Vec2::new(to.x0 - pb.x0, to.y0 - pb.y0))?;
         // The copies' stories stay linked to the originals (Links panel: update when they change).
         for (old, new) in ids.iter().zip(&new) {
             let (Some(os), Some(ns)) =
@@ -458,8 +458,8 @@ mod tests {
 
     use crate::Session;
 
-    fn bounds(s: &Session, id: u64) -> designcraft_geom::Rect {
-        s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds()
+    fn bounds(s: &Session, id: u64) -> pliego_geom::Rect {
+        s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds()
     }
 
     #[test]
@@ -625,13 +625,13 @@ mod tests {
 
     #[test]
     fn layouts_survive_a_save_and_old_sections_load() {
-        let sec: designcraft_doc::Section = serde_json::from_value(json!({"start": 2, "marker": "x"})).unwrap();
+        let sec: pliego_doc::Section = serde_json::from_value(json!({"start": 2, "marker": "x"})).unwrap();
         assert_eq!(sec.layout, None);
         let mut s = Session::new();
         s.execute("file.new", &json!({"pages": 1})).unwrap();
         s.execute("layout.createAlternate", &json!({"name": "Wide", "width": 900, "height": 600})).unwrap();
         let d = &s.doc().unwrap().doc;
-        let back: Vec<designcraft_doc::Section> = serde_json::from_value(serde_json::to_value(&d.sections).unwrap()).unwrap();
+        let back: Vec<pliego_doc::Section> = serde_json::from_value(serde_json::to_value(&d.sections).unwrap()).unwrap();
         assert_eq!(back, d.sections);
         assert!(back.iter().any(|x| x.layout.as_deref() == Some("Wide")));
     }

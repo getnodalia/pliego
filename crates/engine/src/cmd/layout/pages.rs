@@ -15,7 +15,7 @@ pub(super) fn page_size(s: &mut crate::Session, p: &Value) -> Result<Value> {
     }
     let (mut w, mut h) = (p.get("width").and_then(Value::as_f64), p.get("height").and_then(Value::as_f64));
     if let Some(name) = str_param(p, "preset") {
-        let pr = designcraft_doc::build::PRESETS
+        let pr = pliego_doc::build::PRESETS
             .iter()
             .find(|x| x.name.eq_ignore_ascii_case(name))
             .ok_or_else(|| bad("layout.pageSize", format!("no preset `{name}`")))?;
@@ -54,27 +54,20 @@ pub(super) fn page_options(s: &mut crate::Session, p: &Value) -> Result<Value> {
 
 /// Give `pages` (1-based) their own size. Objects stay on their page; pages with a liquid rule
 /// re-flow their objects by it.
-pub(crate) fn resize_pages(d: &mut designcraft_doc::Document, pages: &[usize], w: Option<f64>, h: Option<f64>) {
+pub(crate) fn resize_pages(d: &mut pliego_doc::Document, pages: &[usize], w: Option<f64>, h: Option<f64>) {
     resize_pages_from(d, pages, w, h, 0);
 }
 
 /// [`resize_pages`] keeping reference point `anchor` (0–8, row-major from the top-left) in place:
 /// the page grows away from it, so objects keep their place relative to it.
-pub(crate) fn resize_pages_from(d: &mut designcraft_doc::Document, pages: &[usize], w: Option<f64>, h: Option<f64>, anchor: usize) {
+pub(crate) fn resize_pages_from(d: &mut pliego_doc::Document, pages: &[usize], w: Option<f64>, h: Option<f64>, anchor: usize) {
     for page in pages {
         let Some((si, pi)) = page.checked_sub(1).and_then(|i| d.page_loc(i)) else { continue };
-        resize_spread_page(d, designcraft_doc::SpreadRef::Doc(si), pi, w.map(|v| v.max(1.0)), h.map(|v| v.max(1.0)), anchor);
+        resize_spread_page(d, pliego_doc::SpreadRef::Doc(si), pi, w.map(|v| v.max(1.0)), h.map(|v| v.max(1.0)), anchor);
     }
 }
 
-pub(super) fn resize_spread_page(
-    d: &mut designcraft_doc::Document,
-    sr: designcraft_doc::SpreadRef,
-    pi: usize,
-    w: Option<f64>,
-    h: Option<f64>,
-    anchor: usize,
-) {
+pub(super) fn resize_spread_page(d: &mut pliego_doc::Document, sr: pliego_doc::SpreadRef, pi: usize, w: Option<f64>, h: Option<f64>, anchor: usize) {
     let (fx, fy) = ((anchor % 3) as f64 / 2.0, (anchor / 3).min(2) as f64 / 2.0);
     let Some(sp) = d.spread_mut(sr) else { return };
     let origin = sp.bounds().x0;
@@ -102,7 +95,7 @@ pub(super) fn resize_spread_page(
     if let Some(h) = h {
         pg.height = h;
     }
-    let left = pg.side == designcraft_doc::PageSide::Left;
+    let left = pg.side == pliego_doc::PageSide::Left;
     sp.relayout();
     // Relayout resets the origin; retain prior edits and grow left pages away from the spine.
     let offset = origin - if left { dw } else { 0.0 };
@@ -119,39 +112,39 @@ pub(super) fn resize_spread_page(
             && *dx != 0.0
         {
             let it = std::sync::Arc::make_mut(it);
-            it.xf = designcraft_geom::Affine::translate((*dx, 0.0)) * it.xf;
+            it.xf = pliego_geom::Affine::translate((*dx, 0.0)) * it.xf;
         }
     }
     // Page guides move with their page.
     for (k, q) in sp.pages.iter_mut().enumerate() {
         let dx = new[k] - old[k];
         if dx != 0.0 {
-            for g in q.guides.iter_mut().filter(|g| g.orientation == designcraft_doc::Orientation::Vertical) {
+            for g in q.guides.iter_mut().filter(|g| g.orientation == pliego_doc::Orientation::Vertical) {
                 g.position += dx;
             }
         }
     }
     // Growing away from the anchor: the page's objects and guides keep their place
     // relative to it.
-    let shift = designcraft_geom::Vec2::new(fx * dw, fy * dh);
-    if shift != designcraft_geom::Vec2::ZERO {
+    let shift = pliego_geom::Vec2::new(fx * dw, fy * dh);
+    if shift != pliego_geom::Vec2::ZERO {
         for i in &own {
             if let Some(it) = sp.items.get_mut(*i) {
                 let it = std::sync::Arc::make_mut(it);
-                it.xf = designcraft_geom::Affine::translate(shift) * it.xf;
+                it.xf = pliego_geom::Affine::translate(shift) * it.xf;
             }
         }
         for g in &mut sp.pages[pi].guides {
-            g.position += if g.orientation == designcraft_doc::Orientation::Vertical { shift.x } else { shift.y };
+            g.position += if g.orientation == pliego_doc::Orientation::Vertical { shift.x } else { shift.y };
         }
     }
     // Liquid rules: objects were carried along with the page's left edge (and the anchor).
-    let moved = old_bounds + designcraft_geom::Vec2::new(new[pi] - old[pi], 0.0) + shift;
+    let moved = old_bounds + pliego_geom::Vec2::new(new[pi] - old[pi], 0.0) + shift;
     crate::cmd::liquid::apply(d, sr, pi, moved);
 }
 
 /// File › Document Setup values.
-pub(super) fn document_setup(d: &designcraft_doc::Document) -> Value {
+pub(super) fn document_setup(d: &pliego_doc::Document) -> Value {
     let st = &d.settings;
     let start = d.sections.iter().find(|x| x.start == 0).and_then(|x| x.start_number).unwrap_or(1);
     json!({"width": st.page_width, "height": st.page_height, "pages": d.page_count(), "startPage": start, "facingPages": st.facing_pages,
@@ -198,7 +191,7 @@ mod setup_tests {
             d.spreads.iter().chain(&d.parents).flat_map(|sp| &sp.pages).all(|pg| pg.margins.top == 72.0 && pg.margins.bottom == 54.0),
             "every page and parent page"
         );
-        let b = d.item(designcraft_doc::ItemId(f["id"].as_u64().unwrap())).unwrap().bounds();
+        let b = d.item(pliego_doc::ItemId(f["id"].as_u64().unwrap())).unwrap().bounds();
         assert!((b.y0 - 72.0).abs() < 1e-6, "Adjust Layout: the frame follows the margins ({b:?})");
         // One step: undo brings back the margins and the bleed.
         s.execute("edit.undo", &json!({})).unwrap();
@@ -232,7 +225,7 @@ mod setup_tests {
         assert_eq!(r["intent"], "web");
         let d = &s.doc().unwrap().doc;
         assert_eq!(d.page_name(0), "2");
-        assert_eq!(d.page(0).unwrap().side, designcraft_doc::PageSide::Left);
+        assert_eq!(d.page(0).unwrap().side, pliego_doc::PageSide::Left);
         assert_eq!(d.spreads[0].pages.len(), 2, "pages 2–3 form the first spread");
         let r = s.execute("layout.documentSetup", &json!({"pages": 3})).unwrap();
         assert_eq!(r["pages"], 3);
@@ -241,7 +234,7 @@ mod setup_tests {
 
     #[test]
     fn right_to_left_binding_reverses_spreads() {
-        use designcraft_doc::PageSide::{Left, Right};
+        use pliego_doc::PageSide::{Left, Right};
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({"pages": 4})).unwrap();
         // A frame on page 2 stays on page 2.
@@ -250,12 +243,12 @@ mod setup_tests {
         let r = s.execute("layout.documentSetup", &json!({"binding": "rightToLeft"})).unwrap();
         assert_eq!(r["binding"], "rightToLeft");
         let d = &s.doc().unwrap().doc;
-        let shape: Vec<Vec<(designcraft_doc::PageSide, f64)>> = d.spreads.iter().map(|sp| sp.pages.iter().map(|p| (p.side, p.x)).collect()).collect();
+        let shape: Vec<Vec<(pliego_doc::PageSide, f64)>> = d.spreads.iter().map(|sp| sp.pages.iter().map(|p| (p.side, p.x)).collect()).collect();
         // Page 1 alone on the left; pages 2–3 with 2 on the right; page 4 alone on the right.
         assert_eq!(shape, vec![vec![(Left, 0.0)], vec![(Right, w), (Left, 0.0)], vec![(Right, 0.0)]]);
         let (si, _) = d.page_loc(1).unwrap();
         assert_eq!(si, 1);
-        let it = d.item(designcraft_doc::ItemId(f["id"].as_u64().unwrap())).unwrap();
+        let it = d.item(pliego_doc::ItemId(f["id"].as_u64().unwrap())).unwrap();
         assert_eq!(d.spreads[si].page_at_x(it.bounds().center().x), Some(0), "the frame is still on page 2");
         assert!(it.bounds().x0 >= w, "page 2 is the right page now");
         d.check().unwrap();
@@ -269,7 +262,7 @@ mod setup_tests {
     /// shows the parent page on its own side, at its own position, also after an IDML round trip.
     #[test]
     fn right_to_left_binding_shows_the_parent_page_of_the_same_side() {
-        use designcraft_doc::PageSide::{Left, Right};
+        use pliego_doc::PageSide::{Left, Right};
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({"pages": 4})).unwrap();
         s.execute("layout.documentSetup", &json!({"binding": "rightToLeft"})).unwrap();
@@ -280,7 +273,7 @@ mod setup_tests {
         }
         let d = s.doc().unwrap().doc.clone();
         assert_eq!(d.parents[0].pages.iter().map(|p| (p.side, p.x)).collect::<Vec<_>>(), vec![(Right, w), (Left, 0.0)]);
-        let docs = [(*d).clone(), designcraft_idml::import_idml(&designcraft_idml::export_idml(&d)).unwrap()];
+        let docs = [(*d).clone(), pliego_idml::import_idml(&pliego_idml::export_idml(&d)).unwrap()];
         for d in docs {
             let mut s = crate::Session::new();
             s.add_document(crate::DocState::new(d, None));
@@ -289,7 +282,7 @@ mod setup_tests {
                 let d = &s.doc().unwrap().doc;
                 let ids = r["ids"].as_array().unwrap();
                 assert_eq!(ids.len(), 1, "page {}", page + 1);
-                let it = d.item(designcraft_doc::ItemId(ids[0].as_u64().unwrap())).unwrap();
+                let it = d.item(pliego_doc::ItemId(ids[0].as_u64().unwrap())).unwrap();
                 let story = d.story(it.text_frame().unwrap().story).unwrap();
                 assert_eq!((d.page(page).unwrap().side, story.text.trim_end()), (side, text), "page {}", page + 1);
                 assert_eq!(d.page_of_item(it.id), Some(page), "page {}", page + 1);
@@ -301,7 +294,7 @@ mod setup_tests {
     /// stories made in a right-to-left-bound document start their columns on the right.
     #[test]
     fn new_stories_follow_the_binding_direction() {
-        use designcraft_doc::TextDirection::{LeftToRight, RightToLeft};
+        use pliego_doc::TextDirection::{LeftToRight, RightToLeft};
         let text = (1..=12).map(|i| format!("الفقرة {i}")).collect::<Vec<_>>().join("\n");
         for (binding, expected) in [("rightToLeft", RightToLeft), ("leftToRight", LeftToRight)] {
             let mut s = crate::Session::new();
@@ -309,7 +302,7 @@ mod setup_tests {
             s.execute("layout.documentSetup", &json!({"binding": binding})).unwrap();
             let f = s.execute("frame.create", &json!({"rect": [40, 170, 555, 260], "content": "text", "text": text})).unwrap();
             s.execute("object.textFrameOptions", &json!({"ids": [f["id"]], "columns": 2, "gutter": 20})).unwrap();
-            let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+            let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
             let st = s.doc().unwrap();
             assert_eq!(st.doc.story(sid).unwrap().direction, expected, "{binding}");
             let cs = s.cache.get(&st.doc, sid, None);
@@ -321,7 +314,7 @@ mod setup_tests {
             let g = s.execute("frame.create", &json!({"rect": [40, 400, 555, 500]})).unwrap();
             s.execute("object.content", &json!({"ids": [g["id"]], "type": "text"})).unwrap();
             let d = &s.doc().unwrap().doc;
-            let tf = d.item(designcraft_doc::ItemId(g["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+            let tf = d.item(pliego_doc::ItemId(g["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
             assert_eq!(d.story(tf).unwrap().direction, expected, "{binding}: object.content");
         }
     }
@@ -344,7 +337,7 @@ mod page_size_tests {
             for pi in [left, right] {
                 let x = before.spreads[si].pages[pi].x;
                 let id = s.execute("frame.create", &json!({"spread": si, "rect": [x + 80.0, 80, x + 180.0, 180]})).unwrap()["id"].as_u64().unwrap();
-                items.push(designcraft_doc::ItemId(id));
+                items.push(pliego_doc::ItemId(id));
                 s.execute("guide.add", &json!({"spread": si, "page": pi, "orientation": "vertical", "position": x + 120.0})).unwrap();
             }
             let first = before.first_page_of_spread(si) + 1;
@@ -390,7 +383,7 @@ mod page_size_tests {
         let left = &d.spreads[si].pages[0];
         assert_eq!((left.width, left.height), (300.0, 500.0));
         assert_eq!(d.spreads[si].pages[1].x, x0, "the spine stays");
-        let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = d.item(pliego_doc::ItemId(id)).unwrap();
         assert_eq!(it.bounds().x0, x0 + 100.0);
         assert_eq!(d.page_of_item(it.id), Some(2));
         s.execute("layout.pageSize", &json!({"pages": [3], "preset": "A4"})).unwrap();
@@ -417,7 +410,7 @@ mod spread_tests {
         let d = s.doc().unwrap().doc.clone();
         assert_eq!(d.spreads[1].pages.len(), 3);
         assert!(!d.spreads[1].allow_shuffle);
-        assert_eq!(d.page_of_item(designcraft_doc::ItemId(id)), Some(3), "the object went with its page");
+        assert_eq!(d.page_of_item(pliego_doc::ItemId(id)), Some(3), "the object went with its page");
         // Adding a page at the start reshuffles the others but keeps the 3-page spread.
         s.execute("layout.pages.insert", &json!({"after": 0, "count": 1})).unwrap();
         let d = s.doc().unwrap().doc.clone();
@@ -487,7 +480,7 @@ mod page_numbering_view_tests {
         ] {
             assert!(s.execute("layout.numberingOptions", &bad).is_err(), "{bad}");
             assert_eq!(names(&s), ["1", "2", "3", "4"], "{bad}");
-            assert_eq!(s.doc().unwrap().doc.settings.chapter_source, designcraft_doc::ChapterSource::Automatic, "{bad}");
+            assert_eq!(s.doc().unwrap().doc.settings.chapter_source, pliego_doc::ChapterSource::Automatic, "{bad}");
         }
         // Removing a section keeps the chapter part.
         s.execute("layout.section", &json!({"page": 3, "startNumber": 1})).unwrap();
@@ -526,7 +519,7 @@ mod page_numbering_view_tests {
         let sec = d.sections.iter().find(|x| x.start == 1).expect("the page-2 section is still the only one there");
         assert_eq!(sec.marker, "Second");
         assert_eq!(sec.start_number, Some(1), "startNumber is kept");
-        assert_eq!(sec.style, designcraft_doc::NumberStyle::LowerRoman, "style is kept");
+        assert_eq!(sec.style, pliego_doc::NumberStyle::LowerRoman, "style is kept");
         assert_eq!(sec.prefix, "A-", "prefix is kept");
         assert!(sec.include_prefix, "includePrefix is kept");
         assert_eq!(s.page_label(1), "A-i");

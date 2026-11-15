@@ -7,7 +7,7 @@ pub(super) fn draw_tool_overlays(app: &mut DesignApp, painter: &egui::Painter, x
     if let (Some((z, c)), Some(rect)) = (app.power_zoom, app.canvas_rect) {
         // The view that releasing returns to.
         let (w, h) = (rect.width() as f64 / z, rect.height() as f64 / z);
-        let r = xf.rect(designcraft_geom::Rect::new(c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0));
+        let r = xf.rect(pliego_geom::Rect::new(c.x - w / 2.0, c.y - h / 2.0, c.x + w / 2.0, c.y + h / 2.0));
         painter.rect_stroke(r, 0.0, egui::Stroke::new(1.5, Color32::from_rgb(230, 40, 40)), egui::StrokeKind::Middle);
     }
     let tok = Tokens::get(painter.ctx());
@@ -109,11 +109,11 @@ pub(super) fn draw_tool_overlays(app: &mut DesignApp, painter: &egui::Painter, x
 
 /// A path overlay (canvas coordinates; the Pencil's stroke while drawing, the Smooth and Erase
 /// drags) as screen polylines, its curves flattened to about a quarter of a screen pixel.
-fn draw_path_overlay(painter: &egui::Painter, xf: &Xf, path: &designcraft_geom::BezPath, color: Color32, dashed_line: bool) {
-    use designcraft_geom::PathEl;
+fn draw_path_overlay(painter: &egui::Painter, xf: &Xf, path: &pliego_geom::BezPath, color: Color32, dashed_line: bool) {
+    use pliego_geom::PathEl;
     let stroke = Stroke::new(1.0, color);
     let mut runs: Vec<Vec<Pos2>> = Vec::new();
-    designcraft_geom::kurbo::flatten(path, 0.25 / xf.zoom.max(1e-9), |el| match el {
+    pliego_geom::kurbo::flatten(path, 0.25 / xf.zoom.max(1e-9), |el| match el {
         PathEl::MoveTo(p) => runs.push(vec![xf.to_screen(p)]),
         PathEl::LineTo(p) => {
             if let Some(run) = runs.last_mut() {
@@ -141,7 +141,7 @@ fn draw_path_overlay(painter: &egui::Painter, xf: &Xf, path: &designcraft_geom::
 
 /// A frame's whole content drawn faintly over the canvas, the part outside the frame included,
 /// with its bounds outlined (while the content moves inside the frame).
-fn draw_content_ghost(painter: &egui::Painter, xf: &Xf, doc: &Document, layout: &CanvasLayout, id: designcraft_doc::ItemId) {
+fn draw_content_ghost(painter: &egui::Painter, xf: &Xf, doc: &Document, layout: &CanvasLayout, id: pliego_doc::ItemId) {
     let Some(it) = doc.item(id) else { return };
     let Some((a, _)) = item_canvas_xf(doc, layout, id) else { return };
     let outline = Stroke::new(1.0, Color32::from_rgb(196, 111, 43));
@@ -171,14 +171,14 @@ fn draw_content_ghost(painter: &egui::Painter, xf: &Xf, doc: &Document, layout: 
 }
 
 /// A screen-resolution proxy of a placed graphic for the ghost, cached per asset.
-fn ghost_texture(ctx: &egui::Context, doc: &Document, g: &designcraft_doc::Graphic) -> Option<egui::TextureHandle> {
+fn ghost_texture(ctx: &egui::Context, doc: &Document, g: &pliego_doc::Graphic) -> Option<egui::TextureHandle> {
     let asset = doc.assets.get(&g.asset)?;
     let key = egui::Id::unique(("content_ghost", std::sync::Arc::as_ptr(&asset.data) as usize, asset.data.len(), asset.page));
     if let Some(t) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(key)) {
         return Some(t);
     }
     // A 72 ppi proxy is enough for a faint preview.
-    let pm = designcraft_render::images::mip(&asset.data, asset.page, g.size.0, 1.0)?;
+    let pm = pliego_render::images::mip(&asset.data, asset.page, g.size.0, 1.0)?;
     let (pw, ph) = (pm.width() as usize, pm.height() as usize);
     if pw == 0 || ph == 0 {
         return None;
@@ -205,7 +205,7 @@ fn draw_liquid_pins(painter: &egui::Painter, o: Rect, page: Rect, pins: [bool; 4
     for m in mids {
         painter.circle_filled(m, 3.5, col);
     }
-    let (po, lo) = (designcraft_tools::PIN_OFFSET_PX as f32, designcraft_tools::LOCK_OFFSET_PX as f32);
+    let (po, lo) = (pliego_tools::PIN_OFFSET_PX as f32, pliego_tools::LOCK_OFFSET_PX as f32);
     let outward = [vec2(0.0, -1.0), vec2(1.0, 0.0), vec2(0.0, 1.0), vec2(-1.0, 0.0)];
     let edge = [pos2(c.x, page.min.y), pos2(page.max.x, c.y), pos2(c.x, page.max.y), pos2(page.min.x, c.y)];
     for i in 0..4 {
@@ -253,7 +253,7 @@ mod pencil_preview_tests {
 
     #[test]
     fn the_pencil_stroke_shows_while_drawing() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", serde_json::json!({})).unwrap();
         app.run("tool.select", serde_json::json!({"tool": "pencil"})).unwrap();
         let mut h = crate::test_window::open(app, vec2(1400.0, 900.0));

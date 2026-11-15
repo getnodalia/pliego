@@ -25,22 +25,22 @@ hicolor PNG, so it has the Linux margin and shadow.
 
 | File | Use |
 |---|---|
-| `designcraft.svg` | master: the portrait as a 1024 px image embedded in an SVG with the tile clip (canonical) |
-| `designcraft-small.svg` | lighter 512 px version; also the web favicon where there is one |
-| `designcraft-1024.png` | 1024 px render of the full tile |
-| `designcraft-macos-512.png` | Runtime Dock icon on macOS (embedded by `apps/designcraft`) |
-| `designcraft.icns` | macOS bundle icon (`CFBundleIconFile`) |
-| `designcraft.ico` | Windows exe icon, 16–256 px (embedded by `apps/designcraft/build.rs`) |
-| `hicolor/<size>/apps/ai.storyteller.designcraft.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
-| `hicolor/scalable/apps/ai.storyteller.designcraft.svg` | Linux scalable icon |
+| `pliego.svg` | master: the portrait as a 1024 px image embedded in an SVG with the tile clip (canonical) |
+| `pliego-small.svg` | lighter 512 px version; also the web favicon where there is one |
+| `pliego-1024.png` | 1024 px render of the full tile |
+| `pliego-macos-512.png` | Runtime Dock icon on macOS (embedded by `apps/pliego`) |
+| `pliego.icns` | macOS bundle icon (`CFBundleIconFile`) |
+| `pliego.ico` | Windows exe icon, 16–256 px (embedded by `apps/pliego/build.rs`) |
+| `hicolor/<size>/apps/dev.danielmiguelt.Pliego.png` | Linux icon theme, 16–512 px; the 256 px one is also the runtime window icon on Windows and Linux |
+| `hicolor/scalable/apps/dev.danielmiguelt.Pliego.svg` | Linux scalable icon |
 | `LICENSE.txt` | MIT OR Apache-2.0 |
 
-The app ID is `ai.storyteller.designcraft`. It's used for the hicolor icon names, the Wayland app ID and
-`packaging/linux/ai.storyteller.designcraft.desktop`.
+The app ID is `dev.danielmiguelt.Pliego`. It's used for the hicolor icon names, the Wayland app ID and
+`packaging/linux/dev.danielmiguelt.Pliego.desktop`.
 
 ## Regenerate
 
 The icon is a raster portrait, so the SVG files embed an image instead of traced paths. The
 derived files in this directory were rendered directly from the portrait. `packaging/icons.sh`
-still works on `designcraft.svg` (resvg renders embedded images), but its output will differ slightly
+still works on `pliego.svg` (resvg renders embedded images), but its output will differ slightly
 from the committed files in resampling.

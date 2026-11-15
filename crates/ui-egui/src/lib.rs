@@ -1,4 +1,4 @@
-//! DesignCraft's egui frontend: an InDesign-style UI over `designcraft-engine`.
+//! Pliego's egui frontend: an InDesign-style UI over `pliego-engine`.
 //!
 //! The UI is thin: every action goes through [`DesignApp::run`], which dispatches UI commands
 //! (view/window) here and everything else to the engine. Menus, shortcuts, the ⌘K palette and
@@ -9,7 +9,7 @@
 /// Where this app's releases live, for the in-app updates (`updates_ui`).
 #[cfg(not(target_arch = "wasm32"))]
 pub const UPDATE_APP: nodalia_update::App =
-    nodalia_update::App { name: "Pliego", repo: "getnodalia/pliego", bundle: "DesignCraft.app", version: env!("CARGO_PKG_VERSION"), edition: None };
+    nodalia_update::App { name: "Pliego", repo: "getnodalia/pliego", bundle: "Pliego.app", version: env!("CARGO_PKG_VERSION"), edition: None };
 
 pub mod about;
 pub mod canvas;
@@ -49,8 +49,8 @@ pub mod widgets;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
 
-use designcraft_engine::{Session, SnapView, UiRequest, ViewInfo};
-use designcraft_geom::{Point, Unit};
+use pliego_engine::{Session, SnapView, UiRequest, ViewInfo};
+use pliego_geom::{Point, Unit};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -159,7 +159,7 @@ pub struct DesignApp {
     pub focus_pane: u8,
     pub other_pane: Option<(CanvasCache, Option<egui::Rect>)>,
     /// Power Zoom in progress: the zoom to return to and the canvas point it will centre on.
-    pub power_zoom: Option<(f64, designcraft_geom::Point)>,
+    pub power_zoom: Option<(f64, pliego_geom::Point)>,
     /// The persisted colour settings have been applied this session.
     pub color_applied: bool,
     pub perf: Perf,
@@ -375,15 +375,15 @@ pub(crate) mod test_window {
     /// Ensure a Hebrew face is available for the interface's glyph assertions.
     ///
     /// Canonical craft-fonts builds bundle the face. Optional-input builds can pass
-    /// `DESIGNCRAFT_TEST_HEBREW_FONT=/abs/path/NotoSansHebrew.ttf` (the pinned OFL fixture)
+    /// `PLIEGO_TEST_HEBREW_FONT=/abs/path/NotoSansHebrew.ttf` (the pinned OFL fixture)
     /// and otherwise skip their Hebrew-only assertions explicitly.
     pub fn install_test_hebrew_face() -> bool {
-        let db = designcraft_fonts::FontDb::global();
+        let db = pliego_fonts::FontDb::global();
         if db.has_family("Noto Sans Hebrew") {
             return true;
         }
-        let Ok(path) = std::env::var("DESIGNCRAFT_TEST_HEBREW_FONT") else { return false };
-        designcraft_engine::io::read(path).is_ok_and(|bytes| db.add_font(bytes) > 0)
+        let Ok(path) = std::env::var("PLIEGO_TEST_HEBREW_FONT") else { return false };
+        pliego_engine::io::read(path).is_ok_and(|bytes| db.add_font(bytes) > 0)
     }
 
     /// The outer rect of a side or top panel, from egui's memory.

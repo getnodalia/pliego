@@ -103,7 +103,7 @@ fn context_entries(app: &DesignApp, kind: ContextMenu) -> Vec<&'static str> {
         ContextMenu::Object => {
             let (graphic, text) = app.session.active().map_or((false, false), |st| {
                 let items = || st.selection.items.iter().filter_map(|i| st.doc.item(*i));
-                (items().any(|it| matches!(it.content, designcraft_doc::Content::Graphic(_))), items().any(|it| it.is_text_frame()))
+                (items().any(|it| matches!(it.content, pliego_doc::Content::Graphic(_))), items().any(|it| it.is_text_frame()))
             });
             let mut v = CONTEXT_OBJECT.to_vec();
             if graphic {

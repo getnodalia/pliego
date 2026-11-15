@@ -123,7 +123,7 @@ fn hungarian_catalog_preserves_placeholders_context_and_counts() {
 #[test]
 fn hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts() {
     let definitions = crate::theme::font_definitions(&[], "hu");
-    let db = designcraft_fonts::FontDb::with_font_dirs(Vec::new());
+    let db = pliego_fonts::FontDb::with_font_dirs(Vec::new());
     db.set_system_fallback(false);
     let letters: std::collections::BTreeSet<_> = hu::TABLE
         .iter()
@@ -148,7 +148,7 @@ fn hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts() {
         "Hungarian glyph coverage: {} Latin catalog letters, including ŐőŰű, in Source Sans 3 Regular/Semibold and JetBrains Mono Regular; no system/craft fallback",
         letters.len()
     );
-    if let Some(dir) = std::env::var_os("DESIGNCRAFT_HU_REVIEW_SHOTS") {
+    if let Some(dir) = std::env::var_os("PLIEGO_HU_REVIEW_SHOTS") {
         let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(820.0, 260.0)).build_ui_state(
             |ui, ready: &mut bool| {
                 if !*ready {
@@ -176,7 +176,7 @@ fn hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts() {
         );
         h.run_steps(3);
         h.render().unwrap().save(std::path::Path::new(&dir).join("hungarian-bundled-ui-fonts.png")).unwrap();
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.ui.language = "hu".into();
         app.run("file.new", serde_json::json!({"pages": 1})).unwrap();
         app.run(
@@ -189,7 +189,7 @@ fn hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts() {
         app.run("type.char", serde_json::json!({"attrs": {"fontFamily": "Source Sans 3", "size": 28}})).unwrap();
         app.run("window.panel.activate", serde_json::json!({"panel": "character"})).unwrap();
         let mut interface = crate::test_window::open(app, egui::vec2(1400.0, 900.0));
-        interface.render().unwrap().save(std::path::Path::new(&dir).join("designcraft-hungarian-interface.png")).unwrap();
+        interface.render().unwrap().save(std::path::Path::new(&dir).join("pliego-hungarian-interface.png")).unwrap();
     }
 }
 
@@ -422,7 +422,7 @@ fn only_arabic_lays_out_right_to_left() {
 #[test]
 fn only_built_in_style_and_workspace_names_are_translated() {
     for (code, _) in LANGUAGES {
-        for name in [designcraft_doc::NO_PARA_STYLE, designcraft_doc::BASIC_PARAGRAPH, designcraft_doc::NO_CHAR_STYLE] {
+        for name in [pliego_doc::NO_PARA_STYLE, pliego_doc::BASIC_PARAGRAPH, pliego_doc::NO_CHAR_STYLE] {
             assert_eq!(style_name(code, name), tr(code, name), "{code}");
         }
         assert_eq!(workspace_name(code, "Essentials"), tr(code, "Essentials"), "{code}");
@@ -453,13 +453,13 @@ fn category_first_counts_put_the_category_before_every_number() {
 fn interface_strings() -> HashSet<&'static str> {
     let mut keys = HashSet::new();
     // Command labels and menu names reach `tr` from the engine and the UI command table.
-    for spec in designcraft_engine::command_specs() {
+    for spec in pliego_engine::command_specs() {
         keys.insert(spec.label);
         keys.extend(spec.menu.iter().copied());
     }
     keys.extend(crate::menus::UI_COMMANDS.iter().map(|(_, label, _, _)| *label));
     // Tool names reach `tr` from the Tools panel.
-    keys.extend(designcraft_tools::TOOL_GROUPS.iter().flat_map(|group| group.iter()).map(|tool| tool.label));
+    keys.extend(pliego_tools::TOOL_GROUPS.iter().flat_map(|group| group.iter()).map(|tool| tool.label));
     // So do the About window's tab names, app descriptions and the credits' column and sort labels.
     keys.extend(crate::about::ABOUT_TABS);
     keys.extend(crate::about::SIBLINGS.iter().map(|(_, _, what)| *what));
@@ -530,7 +530,7 @@ fn interface_strings() -> HashSet<&'static str> {
         "Auto Rename",
         "Character Style",
         "Company",
-        "DesignCraft page",
+        "Pliego page",
         "Equal fixed heights for the selected rows; cell text may become overset.",
         "Found",
         "Grab bag",

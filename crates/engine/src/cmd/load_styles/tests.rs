@@ -1,5 +1,5 @@
-use designcraft_color::{Color, Swatch, SwatchValue};
-use designcraft_doc::{CharAttrs, CharacterStyle, ExportTag, GrepStyle, NumberedList, ParaAttrs, ParagraphStyle, Rule, Styles};
+use pliego_color::{Color, Swatch, SwatchValue};
+use pliego_doc::{CharAttrs, CharacterStyle, ExportTag, GrepStyle, NumberedList, ParaAttrs, ParagraphStyle, Rule, Styles};
 use serde_json::{Value, json};
 
 use crate::Session;
@@ -256,7 +256,7 @@ fn styles_load_from_an_idml_file() {
 
 #[test]
 fn styles_load_from_a_path() {
-    let path = std::env::temp_dir().join(format!("dc-load-styles-{}.designcraft", std::process::id()));
+    let path = std::env::temp_dir().join(format!("dc-load-styles-{}.pliego", std::process::id()));
     std::fs::write(&path, super::super::file::to_bytes(&client().doc().unwrap().doc).unwrap()).unwrap();
     let mut s = new_doc();
     let r = s.execute("style.load", &json!({"path": path.to_str().unwrap(), "paragraph": [], "character": ["Small"]}));

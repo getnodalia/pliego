@@ -29,7 +29,7 @@ impl Default for DropShadow {
         DropShadow {
             on: false,
             mode: BlendMode::Multiply,
-            color: designcraft_color::swatch::BLACK.into(),
+            color: pliego_color::swatch::BLACK.into(),
             opacity: 0.75,
             angle: 120.0,
             distance: 7.0,
@@ -65,7 +65,7 @@ impl Default for InnerShadow {
         InnerShadow {
             on: false,
             mode: BlendMode::Multiply,
-            color: designcraft_color::swatch::BLACK.into(),
+            color: pliego_color::swatch::BLACK.into(),
             opacity: 0.75,
             angle: 120.0,
             distance: 7.0,
@@ -94,7 +94,7 @@ pub struct OuterGlow {
 impl Default for OuterGlow {
     fn default() -> Self {
         // InDesign starts a glow screened in white.
-        OuterGlow { on: false, color: designcraft_color::swatch::PAPER.into(), opacity: 0.75, size: 7.0, spread: 0.0, mode: BlendMode::Screen }
+        OuterGlow { on: false, color: pliego_color::swatch::PAPER.into(), opacity: 0.75, size: 7.0, spread: 0.0, mode: BlendMode::Screen }
     }
 }
 
@@ -188,7 +188,7 @@ impl Default for InnerGlow {
     fn default() -> Self {
         InnerGlow {
             on: false,
-            color: designcraft_color::swatch::PAPER.into(),
+            color: pliego_color::swatch::PAPER.into(),
             opacity: 0.75,
             size: 7.0,
             choke: 0.0,
@@ -224,9 +224,9 @@ impl Default for Bevel {
             depth: 100.0,
             angle: 120.0,
             global_light: true,
-            highlight: designcraft_color::swatch::PAPER.into(),
+            highlight: pliego_color::swatch::PAPER.into(),
             highlight_opacity: 0.75,
-            shadow: designcraft_color::swatch::BLACK.into(),
+            shadow: pliego_color::swatch::BLACK.into(),
             shadow_opacity: 0.75,
         }
     }
@@ -247,7 +247,7 @@ pub struct Satin {
 
 impl Default for Satin {
     fn default() -> Self {
-        Satin { on: false, color: designcraft_color::swatch::BLACK.into(), opacity: 0.5, angle: 120.0, distance: 7.0, size: 7.0, invert: false }
+        Satin { on: false, color: pliego_color::swatch::BLACK.into(), opacity: 0.5, angle: 120.0, distance: 7.0, size: 7.0, invert: false }
     }
 }
 
@@ -275,8 +275,8 @@ impl Default for GradientFeather {
 
 impl GradientFeather {
     /// The gradient's two points in item space for an object with inner bounds `b`.
-    pub fn points(&self, b: designcraft_geom::Rect) -> (designcraft_geom::Point, designcraft_geom::Point) {
-        use designcraft_geom::{Point, Vec2};
+    pub fn points(&self, b: pliego_geom::Rect) -> (pliego_geom::Point, pliego_geom::Point) {
+        use pliego_geom::{Point, Vec2};
         if let Some([x0, y0, x1, y1]) = self.vector {
             return (Point::new(x0, y0), Point::new(x1, y1));
         }

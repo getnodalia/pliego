@@ -34,7 +34,7 @@ const FIRST_CONTROL: &str = "Rotate 90° Counterclockwise";
 #[test]
 fn recent_files_are_looked_up_on_disk_every_few_seconds() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("a.designcraft");
+    let path = dir.path().join("a.pliego");
     std::fs::write(&path, b"x").unwrap();
     let path = path.to_string_lossy().to_string();
     let ctx = egui::Context::default();
@@ -46,7 +46,7 @@ fn recent_files_are_looked_up_on_disk_every_few_seconds() {
 }
 
 fn app() -> crate::DesignApp {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.control_bar = true;
     app
 }
@@ -79,7 +79,7 @@ fn search_node<'h>(h: &'h egui_kittest::Harness<'static, test_window::Window>) -
 
 /// A document with two frames, the Selection tool, German menus, and the search field clicked.
 fn searching() -> egui_kittest::Harness<'static, test_window::Window> {
-    let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.ui.language = "de".into();
     let mut h = test_window::open(app, vec2(1440.0, 900.0));
     let app = &mut h.state_mut().app;
@@ -260,7 +260,7 @@ fn long_document_names_keep_tabs_short_and_close_buttons_visible() {
     // the Hebrew tab explicitly instead of rendering tofu under the strict glyph policy.
     let hebrew_ok = test_window::install_test_hebrew_face();
     if !hebrew_ok {
-        eprintln!("skipped the Hebrew tab: set DESIGNCRAFT_TEST_HEBREW_FONT to the pinned NotoSansHebrew.ttf");
+        eprintln!("skipped the Hebrew tab: set PLIEGO_TEST_HEBREW_FONT to the pinned NotoSansHebrew.ttf");
     }
     let mut app = app();
     app.run("file.new", serde_json::json!({ "title": latin })).unwrap();
@@ -302,7 +302,7 @@ fn the_type_control_panel_lists_font_sizes_and_leadings() {
     };
     let size_of = |h: &egui_kittest::Harness<'static, test_window::Window>| {
         let st = h.state().app.session.doc().unwrap();
-        let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
         st.doc.story(sid).unwrap().format_after(0).over.size
     };
     // The ⌄ segment right of the size field opens the list; choosing 72 pt sets the size.
@@ -320,8 +320,8 @@ fn the_type_control_panel_lists_font_sizes_and_leadings() {
     h.get_by_label("60 pt").click();
     h.run_steps(3);
     let st = h.state().app.session.doc().unwrap();
-    let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
-    assert_eq!(st.doc.story(sid).unwrap().format_after(0).over.leading, Some(designcraft_doc::Leading::Points(60.0)));
+    let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
+    assert_eq!(st.doc.story(sid).unwrap().format_after(0).over.leading, Some(pliego_doc::Leading::Points(60.0)));
     // The spinner left of the size steps it by a point.
     let size = field(&h, "72 pt");
     press(&mut h, pos2(size.min.x - 5.0 - crate::widgets::SEG_W / 2.0, size.min.y + 3.0));
@@ -338,8 +338,8 @@ fn the_type_control_panel_lists_font_sizes_and_leadings() {
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     let st = h.state().app.session.doc().unwrap();
-    let sid = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
-    assert_eq!(st.doc.story(sid).unwrap().format_after(0).over.leading, Some(designcraft_doc::Leading::Points(87.6)));
+    let sid = pliego_doc::StoryId(f["story"].as_u64().unwrap());
+    assert_eq!(st.doc.story(sid).unwrap().format_after(0).over.leading, Some(pliego_doc::Leading::Points(87.6)));
     // Escape cancels: the same typing, then Escape, leaves the leading automatic.
     h.state_mut().app.run("type.char", serde_json::json!({"attrs": {"leading": {"kind": "auto"}}})).unwrap();
     h.run_steps(3);
@@ -519,7 +519,7 @@ fn the_page_tool_has_its_own_control_panel() {
     // Pages don't move within their spread, so there is no "Objects Move with Page" option, and
     // no "Controlled by Parent" rule until parent pages have rules of their own.
     assert!(h.query_by_label("Objects Move with Page").is_none());
-    assert!(!crate::panels::interactive::LIQUID_RULES.iter().any(|(r, _)| *r == designcraft_doc::LiquidRule::ControlledByParent));
+    assert!(!crate::panels::interactive::LIQUID_RULES.iter().any(|(r, _)| *r == pliego_doc::LiquidRule::ControlledByParent));
     assert_eq!(crate::panels::properties::preset_name(252.0, 144.0), "US Business Card");
     h.get_by_label("Show Parent Page Overlay").click();
     h.run_steps(4);
@@ -739,7 +739,7 @@ struct WindowHarness {
 
 impl WindowHarness {
     fn new() -> Self {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.custom_titlebar = true;
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx, "");
@@ -842,7 +842,7 @@ fn edges_resize_only_when_the_window_is_restored() {
 
 #[test]
 fn native_window_actions_are_unavailable_without_custom_chrome() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     assert!(!crate::menus::enabled(&app, "window.close"));
     assert!(app.run("window.close", json!({})).is_err());
     assert!(app.pending_window_commands.is_empty());
@@ -942,7 +942,7 @@ fn parent_resize_panel(properties: bool) {
         app.run("layout.parents.edit", serde_json::json!({"on": true, "parent": "A"})).unwrap();
         app.session.set_tool("page");
         app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, vec2(800.0, 600.0)));
-        *app.view_mut().unwrap() = crate::View { zoom: 1.0, origin: designcraft_geom::Point::new(-600.0, 0.0), fitted: true, rotation: 0 };
+        *app.view_mut().unwrap() = crate::View { zoom: 1.0, origin: pliego_geom::Point::new(-600.0, 0.0), fitted: true, rotation: 0 };
         let before = app.session.doc().unwrap().doc.clone();
         let mut h = Harness::builder().with_size(vec2(1600.0, 900.0)).build_ui_state(
             move |ui, app: &mut DesignApp| {
@@ -1017,12 +1017,12 @@ fn check_parent_margin_edits(h: &mut egui_kittest::Harness<'_, DesignApp>) {
     assert_eq!(h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Top").value().as_deref(), Some("3p0"));
     edit_parent_resize_field(h, "3p0", "72 pt");
     let edited = &h.state().session.doc().unwrap().doc;
-    assert_eq!(edited.parents[1].pages[1].margins, designcraft_doc::Margins::uniform(72.0));
+    assert_eq!(edited.parents[1].pages[1].margins, pliego_doc::Margins::uniform(72.0));
     assert_eq!(edited.parents[1].pages[0], saved.parents[1].pages[0]);
     assert_eq!(edited.parents[0], saved.parents[0]);
     assert_eq!(edited.page(0), saved.page(0), "local document margins stay unchanged");
     assert_eq!(edited.page(1), saved.page(1), "the other parent page's inheritor stays unchanged");
-    assert_eq!(edited.page(2).unwrap().margins, designcraft_doc::Margins::uniform(72.0));
+    assert_eq!(edited.page(2).unwrap().margins, pliego_doc::Margins::uniform(72.0));
     assert_eq!(edited.settings, saved.settings);
     h.state_mut().run("edit.undo", json!({})).unwrap();
     h.run_steps(3);
@@ -1031,7 +1031,7 @@ fn check_parent_margin_edits(h: &mut egui_kittest::Harness<'_, DesignApp>) {
     h.run_steps(3);
     edit_parent_resize_field(h, "3p0", "84 pt");
     let edited = &h.state().session.doc().unwrap().doc;
-    let margins = designcraft_doc::Margins { top: 84.0, bottom: 48.0, inside: 60.0, outside: 72.0 };
+    let margins = pliego_doc::Margins { top: 84.0, bottom: 48.0, inside: 60.0, outside: 72.0 };
     assert_eq!(edited.parents[1].pages[1].margins, margins);
     assert_eq!(edited.parents[1].pages[0], saved.parents[1].pages[0]);
     assert_eq!(edited.parents[0], saved.parents[0]);

@@ -9,7 +9,7 @@ use super::*;
 /// A link to a panel whose flyout is open leaves the flyout open.
 #[test]
 fn a_panel_link_keeps_its_open_flyout() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     show_panel(&mut app, "stroke");
     assert_eq!(app.ui.docking_flyout.as_deref(), Some("stroke"));
     show_panel(&mut app, "stroke");
@@ -20,10 +20,10 @@ fn language(app: &mut DesignApp) -> Value {
     text_attrs(app).unwrap()["chars"]["language"].clone()
 }
 
-fn linked_graphics(paths: &[Option<&str>]) -> (DesignApp, Vec<designcraft_doc::ItemId>, Vec<designcraft_doc::AssetId>) {
-    use designcraft_doc::{Asset, AssetId, Content, Graphic, ItemId};
+fn linked_graphics(paths: &[Option<&str>]) -> (DesignApp, Vec<pliego_doc::ItemId>, Vec<pliego_doc::AssetId>) {
+    use pliego_doc::{Asset, AssetId, Content, Graphic, ItemId};
     use std::sync::Arc;
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"title": "Linked graphics"})).unwrap();
     let mut items = Vec::new();
     let mut assets = Vec::new();
@@ -51,7 +51,7 @@ fn linked_graphics(paths: &[Option<&str>]) -> (DesignApp, Vec<designcraft_doc::I
             layer_options: None,
             asset: aid,
             size: (72.0, 72.0),
-            xf: designcraft_geom::Affine::IDENTITY,
+            xf: pliego_geom::Affine::IDENTITY,
             clip: None,
             auto_fit: Default::default(),
             fit_align: 4,
@@ -99,7 +99,7 @@ fn last_line_indent_may_be_negative() {
 
 #[test]
 fn stroke_panel_shows_the_text_stroke_options_while_text_is_selected() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 400, 400], "content": "text", "caret": true})).unwrap();
     let mut ready = false;
@@ -124,7 +124,7 @@ fn stroke_panel_shows_the_text_stroke_options_while_text_is_selected() {
 /// page alone; Back returns to the document.
 #[test]
 fn edit_page_shows_the_page_and_sets_its_size_alone() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"pages": 3, "facingPages": false})).unwrap();
     app.ui.dock_tab = "properties".into();
     let mut h = crate::test_window::open(app, vec2(1400.0, 900.0));
@@ -193,7 +193,7 @@ fn links_panel_keeps_long_source_paths_inside_a_narrow_panel() {
 
 #[test]
 fn properties_character_section_sets_the_language() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "bunun", "caret": true})).unwrap();
     app.run("edit.selectAll", json!({})).unwrap();
@@ -226,13 +226,13 @@ fn properties_character_section_sets_the_language() {
 /// the Effects dialog does (#1523): in picas a typed `7` is 7 picas in both.
 #[test]
 fn effects_panel_shadow_fields_use_the_document_unit() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 144, 144]})).unwrap()["id"].clone();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
     app.run("object.dropShadow", json!({"on": true, "distance": 7.0, "size": 5.0})).unwrap();
     let shadow = |app: &DesignApp| {
-        let d = app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id.as_u64().unwrap())).unwrap().effects.drop_shadow.clone();
+        let d = app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id.as_u64().unwrap())).unwrap().effects.drop_shadow.clone();
         (d.distance, d.size)
     };
     let mut h = panel_harness(app, effects_panel);
@@ -241,7 +241,7 @@ fn effects_panel_shadow_fields_use_the_document_unit() {
         |h: &Harness<'static, DesignApp>| -> Vec<String> { h.get_all_by_role(egui::accesskit::Role::TextInput).filter_map(|n| n.value()).collect() };
     let shown = values(&h);
     assert!(shown.contains(&"0p7".to_string()) && shown.contains(&"0p5".to_string()), "{shown:?}");
-    for (old, typed, want) in [("0p7", "7", (84.0, 5.0)), ("0p5", "3mm", (84.0, 3.0 * designcraft_geom::units::PT_PER_MM))] {
+    for (old, typed, want) in [("0p7", "7", (84.0, 5.0)), ("0p5", "3mm", (84.0, 3.0 * pliego_geom::units::PT_PER_MM))] {
         let field = h.get_all_by_role(egui::accesskit::Role::TextInput).find(|n| n.value().as_deref() == Some(old)).unwrap();
         field.focus();
         h.run_steps(1);
@@ -262,7 +262,7 @@ fn effects_panel_shadow_fields_use_the_document_unit() {
 /// pressed, and a click turns alignment off instead of making it All Lines.
 #[test]
 fn more_options_grid_button_keeps_first_line_only() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "If fine plants", "caret": true})).unwrap();
     app.run("edit.selectAll", json!({})).unwrap();
@@ -280,7 +280,7 @@ fn more_options_grid_button_keeps_first_line_only() {
 
 #[test]
 fn more_options_expand_character_and_paragraph_in_place() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "If fine plants", "caret": true})).unwrap();
     app.run("edit.selectAll", json!({})).unwrap();
@@ -447,7 +447,7 @@ fn panel_harness(app: DesignApp, panel: fn(&mut DesignApp, &mut egui::Ui)) -> Ha
 }
 
 fn text_app() -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "AVATAR", "caret": true})).unwrap();
     app.run("edit.selectAll", json!({})).unwrap();
@@ -541,7 +541,7 @@ fn system_variable_font() -> Option<&'static str> {
     let candidates = [("/System/Library/Fonts/Supplemental/Skia.ttf", "Skia"), ("/System/Library/Fonts/NewYork.ttf", "New York")];
     candidates.into_iter().find_map(|(path, family)| {
         let bytes = std::fs::read(path).ok()?;
-        let db = designcraft_fonts::FontDb::global();
+        let db = pliego_fonts::FontDb::global();
         db.add_font(bytes);
         let style = db.styles(family).first().cloned()?;
         (db.axes(family, &style).len() >= 2).then_some(family)
@@ -620,7 +620,7 @@ fn character_size_field_reads_the_unit_typed() {
     let mut h = panel_harness(text_app(), character_panel);
     h.run_steps(3);
     let size = |app: &mut DesignApp| text_attrs(app).unwrap()["chars"]["size"].as_f64().unwrap();
-    for (typed, pt) in [("13Q", 13.0 * designcraft_geom::units::PT_PER_Q), ("5mm", 5.0 * designcraft_geom::units::PT_PER_MM), ("14", 14.0)] {
+    for (typed, pt) in [("13Q", 13.0 * pliego_geom::units::PT_PER_Q), ("5mm", 5.0 * pliego_geom::units::PT_PER_MM), ("14", 14.0)] {
         let field = h
             .get_all_by_role(egui::accesskit::Role::TextInput)
             .find(|n| n.value().is_some_and(|v| v.ends_with(" pt") && !v.starts_with('(') && v != "0 pt"))
@@ -653,18 +653,18 @@ fn a_manual_kerning_value_at_a_caret_kerns_the_pair() {
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     let st = h.state_mut().session.active().unwrap().doc.story(story).unwrap().format_after(0).over.kerning;
-    assert_eq!(st, Some(designcraft_doc::Kerning::Manual(-80.0)), "A of the A|V pair");
+    assert_eq!(st, Some(pliego_doc::Kerning::Manual(-80.0)), "A of the A|V pair");
     assert_eq!(kerning(h.state_mut()), json!({"kind": "manual", "value": -80.0}));
 }
 
 #[test]
 fn clicking_a_swatch_chip_in_the_appearance_fill_menu_applies_it() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     // A graphic frame: the Appearance section shows a single Fill chip.
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
-    let before = app.session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().fill.swatch.clone();
+    let before = app.session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().fill.swatch.clone();
     assert_ne!(before, "[Paper]");
     let mut h = Harness::builder().with_size(vec2(320.0, 1400.0)).build_ui_state(
         |ui, app: &mut DesignApp| {
@@ -692,7 +692,7 @@ fn clicking_a_swatch_chip_in_the_appearance_fill_menu_applies_it() {
     h.drag_at(p);
     h.drop_at(p);
     h.run_steps(4);
-    let after = h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().fill.swatch.clone();
+    let after = h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().fill.swatch.clone();
     assert_eq!(after, name, "clicking the swatch chip applies it");
 }
 
@@ -729,7 +729,7 @@ fn double_clicking_a_fill_chip_opens_the_color_picker() {
         h
     };
     let frame = || {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
         app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -746,7 +746,7 @@ fn double_clicking_a_fill_chip_opens_the_color_picker() {
     double_click(&mut h, "Stroke swatch");
     assert_eq!(h.state().ui.dialog.as_ref().map(|d| d.s("target")), Some("stroke".into()));
     // Selected text: its own Fill chip.
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "Lemon"})).unwrap();
     app.run("text.select", json!({"story": f["story"], "anchor": 0, "focus": 5})).unwrap();
@@ -777,7 +777,7 @@ fn panel(app: DesignApp) -> Harness<'static, DesignApp> {
 /// and Numbering dialog, as InDesign's, not the Paragraph panel.
 #[test]
 fn bullets_options_open_the_bullets_and_numbering_dialog() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "4 eggs"})).unwrap();
     app.run("text.select", json!({"story": f["story"], "anchor": 0, "focus": 6})).unwrap();
@@ -793,7 +793,7 @@ fn bullets_options_open_the_bullets_and_numbering_dialog() {
 /// bullets with InDesign's hanging indent; pressed again, both go.
 #[test]
 fn the_bulleted_list_button_applies_a_hanging_indent() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let f = app
         .run(
@@ -820,7 +820,7 @@ fn the_bulleted_list_button_applies_a_hanging_indent() {
 
 #[test]
 fn several_shapes_show_pathfinder_and_intersect_combines_them() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [100, 100, 300, 300], "shape": "ellipse"})).unwrap()["id"].clone();
     let b = app.run("frame.create", json!({"rect": [200, 100, 300, 200]})).unwrap()["id"].clone();
@@ -848,11 +848,11 @@ fn several_shapes_show_pathfinder_and_intersect_combines_them() {
 /// is one undo step; the Opacity link still opens the Effects panel.
 #[test]
 fn the_opacity_arrow_opens_a_slider_and_a_drag_is_one_undo_step() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "shape": "rectangle"})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
-    let opacity = |app: &DesignApp| app.session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().opacity;
+    let opacity = |app: &DesignApp| app.session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().opacity;
     let steps = undo_steps(&app);
     let mut h = Harness::builder().with_size(vec2(320.0, 1400.0)).build_ui_state(
         |ui, app: &mut DesignApp| {
@@ -902,14 +902,14 @@ fn the_opacity_arrow_opens_a_slider_and_a_drag_is_one_undo_step() {
 /// Auto-Fit makes the picture refit when its frame is resized.
 #[test]
 fn properties_frame_fitting_sets_auto_fit_and_opens_its_options() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 272, 172]})).unwrap()["id"].as_u64().unwrap();
-    let png = designcraft_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
-    app.run("file.place", json!({"base64": designcraft_engine::cmd::base64_encode(&png), "name": "p.png", "frame": id})).unwrap();
+    let png = pliego_render::Rendered { width: 40, height: 20, pixels: vec![200; 40 * 20 * 4] }.to_png();
+    app.run("file.place", json!({"base64": pliego_engine::cmd::base64_encode(&png), "name": "p.png", "frame": id})).unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
-    let graphic = |app: &DesignApp| app.session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().graphic().unwrap().clone();
-    assert_eq!(graphic(&app).auto_fit, designcraft_doc::Fitting::None);
+    let graphic = |app: &DesignApp| app.session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().graphic().unwrap().clone();
+    assert_eq!(graphic(&app).auto_fit, pliego_doc::Fitting::None);
     let mut h = panel(app);
     // A checkbox its section disables says so: Invert, with no text wrap.
     use egui_kittest::kittest::NodeT;
@@ -917,11 +917,11 @@ fn properties_frame_fitting_sets_auto_fit_and_opens_its_options() {
     assert!(!h.get_by_label("Auto-Fit").accesskit_node().is_disabled());
     h.get_by_label("Auto-Fit").click();
     h.run_steps(3);
-    assert_ne!(graphic(h.state()).auto_fit, designcraft_doc::Fitting::None, "Auto-Fit is on");
+    assert_ne!(graphic(h.state()).auto_fit, pliego_doc::Fitting::None, "Auto-Fit is on");
     // The frame resized: the picture follows it.
     h.state_mut().run("transform.resize", json!({"from": [72, 72, 272, 172], "to": [72, 72, 372, 272]})).unwrap();
     let g = graphic(h.state());
-    let r = g.xf.transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
+    let r = g.xf.transform_rect_bbox(pliego_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
     assert!(r.width() > 250.0, "refitted to the larger frame: {r:?}");
     h.get_by_label("Options").click();
     h.run_steps(3);
@@ -932,12 +932,12 @@ fn properties_frame_fitting_sets_auto_fit_and_opens_its_options() {
 /// Properties panel does: linked at first, so one value sets all four; unlinked, one side.
 #[test]
 fn properties_text_wrap_shows_and_sets_the_offsets() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "shape": "rectangle"})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
     app.run("object.textWrap", json!({"mode": "boundingBox", "offset": 0})).unwrap();
-    let offsets = |app: &DesignApp| app.session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().wrap.offsets;
+    let offsets = |app: &DesignApp| app.session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().wrap.offsets;
     let mut h = panel(app);
     // The fields between the Text Wrap heading and Quick Actions: Top, Left, Bottom, Right.
     let fields = |h: &Harness<'_, DesignApp>| {
@@ -973,16 +973,14 @@ fn properties_text_wrap_shows_and_sets_the_offsets() {
     // each keeps its other three.
     let other = h.state_mut().run("frame.create", json!({"rect": [72, 300, 300, 400], "shape": "rectangle"})).unwrap()["id"].as_u64().unwrap();
     h.state_mut().run("object.textWrap", json!({"mode": "contour", "offset": [3, 4, 5, 6], "ids": [other]})).unwrap();
-    let of =
-        |h: &Harness<'_, DesignApp>, id: u64| h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().wrap.offsets;
+    let of = |h: &Harness<'_, DesignApp>, id: u64| h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().wrap.offsets;
     h.state_mut().run("selection.set", json!({"ids": [id, other]})).unwrap();
     h.run_steps(3);
     let f = fields(&h);
     type_in(&mut h, f[0], "9pt");
     assert_eq!((of(&h, id), of(&h, other)), ([9.0, 12.0, 6.0, 12.0], [9.0, 4.0, 5.0, 6.0]), "the top alone, on each");
-    let mode =
-        |h: &Harness<'_, DesignApp>, id: u64| h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().wrap.mode;
-    assert_eq!((mode(&h, id), mode(&h, other)), (designcraft_doc::WrapMode::BoundingBox, designcraft_doc::WrapMode::Contour), "each keeps its mode");
+    let mode = |h: &Harness<'_, DesignApp>, id: u64| h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().wrap.mode;
+    assert_eq!((mode(&h, id), mode(&h, other)), (pliego_doc::WrapMode::BoundingBox, pliego_doc::WrapMode::Contour), "each keeps its mode");
     // An object whose offsets are the same starts linked, though the link was off before.
     let third = h.state_mut().run("frame.create", json!({"rect": [320, 72, 500, 200], "shape": "rectangle"})).unwrap()["id"].as_u64().unwrap();
     h.state_mut().run("object.textWrap", json!({"mode": "boundingBox", "offset": 4, "ids": [third]})).unwrap();
@@ -1015,7 +1013,7 @@ fn preview_rows_fit_long_translated_names() {
 /// the shape and the current one is marked.
 #[test]
 fn the_corner_shape_list_has_glyph_rows_and_picks_a_shape() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "shape": "rectangle"})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -1028,8 +1026,8 @@ fn the_corner_shape_list_has_glyph_rows_and_picks_a_shape() {
     }
     h.get_by_role_and_label(egui::accesskit::Role::Button, "Bevel").click();
     h.run_steps(3);
-    let it = h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().clone();
-    assert!(it.corners.corners.iter().all(|c| c.shape == designcraft_geom::corners::CornerShape::Bevel), "{:?}", it.corners);
+    let it = h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().clone();
+    assert!(it.corners.corners.iter().all(|c| c.shape == pliego_geom::corners::CornerShape::Bevel), "{:?}", it.corners);
     h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Corner Shape").click();
     h.run_steps(3);
     use egui_kittest::kittest::NodeT;
@@ -1047,7 +1045,7 @@ const CYAN: &str = "C=100 M=0 Y=0 K=0";
 
 #[test]
 fn the_fill_menu_sets_a_tint() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200]})).unwrap()["id"].as_u64().unwrap();
     app.run("object.fill", json!({"swatch": CYAN, "ids": [id]})).unwrap();
@@ -1068,13 +1066,13 @@ fn the_fill_menu_sets_a_tint() {
     h.event(egui::Event::Text("25".into()));
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
-    let fill = h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().fill.clone();
+    let fill = h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().fill.clone();
     assert_eq!((fill.swatch.as_str(), fill.tint), (CYAN, 0.25), "the tint, on the same swatch");
 }
 
 #[test]
 fn a_tint_on_several_objects_keeps_each_ones_swatch() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [72, 72, 200, 200]})).unwrap()["id"].as_u64().unwrap();
     let b = app.run("frame.create", json!({"rect": [220, 72, 300, 200]})).unwrap()["id"].as_u64().unwrap();
@@ -1095,17 +1093,17 @@ fn a_tint_on_several_objects_keeps_each_ones_swatch() {
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     let doc = &h.state().session.active().unwrap().doc;
-    let fill = |id: u64| doc.item(designcraft_doc::ids::ItemId(id)).unwrap().fill.clone();
+    let fill = |id: u64| doc.item(pliego_doc::ids::ItemId(id)).unwrap().fill.clone();
     assert_eq!((fill(a).swatch.as_str(), fill(a).tint), (CYAN, 0.25));
     assert_eq!((fill(b).swatch.as_str(), fill(b).tint), ("[Black]", 0.25), "the second keeps its own swatch");
 }
 
 #[test]
 fn apply_to_text_colours_a_text_frames_text_not_the_frame() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let r = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "Heading"})).unwrap();
-    let (id, story) = (r["id"].as_u64().unwrap(), designcraft_doc::StoryId(r["story"].as_u64().unwrap()));
+    let (id, story) = (r["id"].as_u64().unwrap(), pliego_doc::StoryId(r["story"].as_u64().unwrap()));
     app.run("selection.set", json!({"ids": [id]})).unwrap();
     let mut h = panel(app);
     h.get_by_label("Fill swatch").click();
@@ -1116,7 +1114,7 @@ fn apply_to_text_colours_a_text_frames_text_not_the_frame() {
     h.run_steps(3);
     let doc = &h.state().session.active().unwrap().doc;
     assert_eq!(doc.story(story).unwrap().char_format_at(0).over.fill.as_deref(), Some(CYAN), "the text is cyan");
-    assert_eq!(doc.item(designcraft_doc::ids::ItemId(id)).unwrap().fill.swatch, "[None]", "the frame isn't");
+    assert_eq!(doc.item(pliego_doc::ids::ItemId(id)).unwrap().fill.swatch, "[None]", "the frame isn't");
 }
 
 /// The Align To button shows the target picked in its menu.
@@ -1131,14 +1129,14 @@ fn the_align_to_button_shows_its_target() {
 
 #[test]
 fn apply_to_text_colours_the_text_of_several_text_frames() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let mut ids = vec![];
     let mut stories = vec![];
     for x in [72, 250, 430] {
         let r = app.run("frame.create", json!({"rect": [x, 72, x + 150, 140], "content": "text", "text": "75%"})).unwrap();
         ids.push(r["id"].as_u64().unwrap());
-        stories.push(designcraft_doc::StoryId(r["story"].as_u64().unwrap()));
+        stories.push(pliego_doc::StoryId(r["story"].as_u64().unwrap()));
     }
     app.run("selection.set", json!({"ids": ids})).unwrap();
     let mut h = panel(app);
@@ -1153,7 +1151,7 @@ fn apply_to_text_colours_the_text_of_several_text_frames() {
     let doc = &h.state().session.active().unwrap().doc;
     for (id, story) in ids.iter().zip(&stories) {
         assert_eq!(doc.story(*story).unwrap().char_format_at(0).over.fill.as_deref(), Some(CYAN), "every frame's text is cyan");
-        assert_eq!(doc.item(designcraft_doc::ids::ItemId(*id)).unwrap().fill.swatch, "[None]", "the frames aren't");
+        assert_eq!(doc.item(pliego_doc::ids::ItemId(*id)).unwrap().fill.swatch, "[None]", "the frames aren't");
     }
 }
 
@@ -1161,7 +1159,7 @@ fn apply_to_text_colours_the_text_of_several_text_frames() {
 /// Points and the Delete Point(s) quick action, as in the Zero2Graphic tutorial (1:25).
 #[test]
 fn selected_points_show_convert_points_and_delete_points() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [72, 72, 172, 172]})).unwrap()["id"].as_u64().unwrap();
     let b = app.run("frame.create", json!({"rect": [200, 72, 300, 172]})).unwrap()["id"].as_u64().unwrap();
@@ -1177,7 +1175,7 @@ fn selected_points_show_convert_points_and_delete_points() {
     h.run_steps(3);
     let d = &h.state().session.active().unwrap().doc;
     for id in [a, b] {
-        assert_eq!(d.item(designcraft_doc::ids::ItemId(id)).unwrap().path.subpaths[0].anchors.len(), 3, "one point gone from each");
+        assert_eq!(d.item(pliego_doc::ids::ItemId(id)).unwrap().path.subpaths[0].anchors.len(), 3, "one point gone from each");
     }
 }
 
@@ -1185,12 +1183,12 @@ fn selected_points_show_convert_points_and_delete_points() {
 /// that corner, not the frame, and X moves the corner alone; W spreads two points apart.
 #[test]
 fn transform_measures_and_moves_the_selected_points() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [72, 72, 172, 172]})).unwrap()["id"].as_u64().unwrap();
     let corner = |app: &DesignApp, i: usize| {
         let d = &app.session.active().unwrap().doc;
-        let it = d.item(designcraft_doc::ids::ItemId(a)).unwrap();
+        let it = d.item(pliego_doc::ids::ItemId(a)).unwrap();
         it.xf * it.path.subpaths[0].anchors[i].p
     };
     let first = corner(&app, 0);
@@ -1199,8 +1197,8 @@ fn transform_measures_and_moves_the_selected_points() {
     assert_eq!((i.page_rect.width(), i.page_rect.height()), (0.0, 0.0), "a point, not the frame");
     app.ui.ref_point = 0;
     transform_anchors(&mut app, &json!({"x": i.page_rect.x0 + 10.0})).unwrap();
-    assert_eq!(corner(&app, 0), first + designcraft_geom::Vec2::new(10.0, 0.0), "the corner moved");
-    assert_eq!(corner(&app, 2), designcraft_geom::Point::new(172.0, 172.0), "the opposite corner stayed");
+    assert_eq!(corner(&app, 0), first + pliego_geom::Vec2::new(10.0, 0.0), "the corner moved");
+    assert_eq!(corner(&app, 2), pliego_geom::Point::new(172.0, 172.0), "the opposite corner stayed");
     // Two points 100 pt apart, W 200 from the left: the right one goes 100 further.
     app.run("selection.set", json!({"anchors": [[a, 0, 2], [a, 0, 3]]})).unwrap();
     let (p2, p3) = (corner(&app, 2), corner(&app, 3));
@@ -1216,7 +1214,7 @@ fn transform_measures_and_moves_the_selected_points() {
 /// measure (and set) their own.
 #[test]
 fn one_selected_point_shows_its_frames_size_greyed() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let a = app.run("frame.create", json!({"rect": [72, 72, 172, 222]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"anchors": [[a, 0, 0]]})).unwrap();
@@ -1227,7 +1225,7 @@ fn one_selected_point_shows_its_frames_size_greyed() {
         h.query_all_by(|n| n.role() == egui::accesskit::Role::TextInput && n.is_disabled()).filter_map(|n| n.value()).collect::<Vec<_>>()
     };
     let u = units(h.state());
-    let f = |v| designcraft_geom::units::format_measure(v, u);
+    let f = |v| pliego_geom::units::format_measure(v, u);
     assert_eq!(greyed(&h), [f(100.0), f(150.0)], "the frame's W and H, greyed");
     h.state_mut().run("selection.set", json!({"anchors": [[a, 0, 0], [a, 0, 2]]})).unwrap();
     h.run_steps(2);
@@ -1236,12 +1234,12 @@ fn one_selected_point_shows_its_frames_size_greyed() {
 
 #[test]
 fn transform_flips_and_rotates_from_properties() {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     let id = app.run("frame.create", json!({"rect": [72, 72, 300, 200]})).unwrap()["id"].as_u64().unwrap();
     app.run("selection.set", json!({"ids": [id]})).unwrap();
     let mut h = panel(app);
-    let xf = |h: &Harness<'_, DesignApp>| h.state().session.active().unwrap().doc.item(designcraft_doc::ids::ItemId(id)).unwrap().xf;
+    let xf = |h: &Harness<'_, DesignApp>| h.state().session.active().unwrap().doc.item(pliego_doc::ids::ItemId(id)).unwrap().xf;
     // Flip Horizontal mirrors the frame (a negative determinant); Flip Vertical as well brings it
     // back to a half turn, as in the tutorial's petal.
     h.get_by_label("Flip Horizontal").click();

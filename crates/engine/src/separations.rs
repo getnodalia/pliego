@@ -9,11 +9,11 @@
 use std::sync::Arc;
 
 use craft_prepress::{CmsConversion, Fallback, InkId, Options, Plates, Process};
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, PageSide};
-use designcraft_geom::Rect;
-use designcraft_pdf::PdfOptions;
-pub use designcraft_pdf::Standard;
+use pliego_compose::Cache;
+use pliego_doc::{Document, PageSide};
+use pliego_geom::Rect;
+use pliego_pdf::PdfOptions;
+pub use pliego_pdf::Standard;
 
 use crate::{EngineError, Result};
 
@@ -59,7 +59,7 @@ fn sheet_area(doc: &Document, si: usize) -> Option<Rect> {
 
 /// The print profile: the working CMYK space's output intent, as PDF/X-4 export embeds it.
 fn printing_condition() -> (Fallback, CmsConversion) {
-    let Ok(intent) = designcraft_color::cms::active().output_intent() else { return (Fallback::Fogra39, CmsConversion::fogra39()) };
+    let Ok(intent) = pliego_color::cms::active().output_intent() else { return (Fallback::Fogra39, CmsConversion::fogra39()) };
     match CmsConversion::new(&intent.icc) {
         Ok(cms) => (Fallback::Profile(Arc::from(intent.icc.as_ref())), cms),
         Err(_) => (Fallback::Fogra39, CmsConversion::fogra39()),
@@ -132,9 +132,9 @@ impl Sheet {
     }
 
     /// Converts a pixel position to spread coordinates.
-    pub fn to_spread(&self, x: u32, y: u32) -> designcraft_geom::Point {
+    pub fn to_spread(&self, x: u32, y: u32) -> pliego_geom::Point {
         let k = 72.0 / f64::from(self.plates.dpi.max(f32::MIN_POSITIVE));
-        designcraft_geom::Point::new(self.area.x0 + f64::from(x) * k, self.area.y0 + f64::from(y) * k)
+        pliego_geom::Point::new(self.area.x0 + f64::from(x) * k, self.area.y0 + f64::from(y) * k)
     }
 }
 

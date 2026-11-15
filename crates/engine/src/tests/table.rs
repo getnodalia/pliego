@@ -155,11 +155,11 @@ fn escape_toggles_text_and_cell_selection() {
     let tid = s.execute("table.insert", &json!({"rows": 2, "cols": 2})).unwrap()["table"].as_u64().unwrap();
     s.execute("table.nextCell", &json!({})).unwrap();
     s.execute("text.insert", &json!({"text": "Phone"})).unwrap();
-    let cell = designcraft_doc::CellAddr { table: tid, row: 0, col: 1 };
+    let cell = pliego_doc::CellAddr { table: tid, row: 0, col: 1 };
     assert_eq!(s.execute("table.toggleSelection", &json!({})).unwrap(), json!({"cells": true}));
     let sel = s.doc().unwrap().selection.clone();
     let cells = sel.cells.unwrap();
-    assert_eq!((cells.story.0, cells.table, cells.range), (sid, tid, designcraft_doc::CellRange::cell(0, 1)));
+    assert_eq!((cells.story.0, cells.table, cells.range), (sid, tid, pliego_doc::CellRange::cell(0, 1)));
     assert_eq!(sel.text.unwrap().cell, Some(cell));
     assert_eq!(s.execute("table.toggleSelection", &json!({})).unwrap(), json!({"cells": false}));
     let sel = s.doc().unwrap().selection.clone();
@@ -167,7 +167,7 @@ fn escape_toggles_text_and_cell_selection() {
     let t = sel.text.unwrap();
     assert_eq!((t.cell, t.range()), (Some(cell), 0..5), "the cell's text is selected");
     s.execute("table.prevCell", &json!({})).unwrap();
-    assert_eq!(s.doc().unwrap().selection.text.unwrap().cell, Some(designcraft_doc::CellAddr { col: 0, ..cell }));
+    assert_eq!(s.doc().unwrap().selection.text.unwrap().cell, Some(pliego_doc::CellAddr { col: 0, ..cell }));
     // With the cell selected, typing replaces its text and leaves the caret after it.
     s.execute("table.nextCell", &json!({})).unwrap();
     s.execute("table.toggleSelection", &json!({})).unwrap();
@@ -188,7 +188,7 @@ fn escape_toggles_text_and_cell_selection() {
     s.execute("table.merge", &json!({})).unwrap();
     s.execute("table.select", &json!({"rows": [1, 1], "cols": [0, 1]})).unwrap();
     s.execute("table.toggleSelection", &json!({})).unwrap();
-    assert_eq!(s.doc().unwrap().selection.text.unwrap().cell, Some(designcraft_doc::CellAddr { row: 0, col: 0, ..cell }));
+    assert_eq!(s.doc().unwrap().selection.text.unwrap().cell, Some(pliego_doc::CellAddr { row: 0, col: 0, ..cell }));
     // Outside a table there is nothing to toggle.
     s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 0})).unwrap();
     assert!(s.execute("table.toggleSelection", &json!({})).is_err());
@@ -347,7 +347,7 @@ fn cell_style_sampling_resolves_covered_point_but_retains_upper_left_policy() {
 
 #[test]
 fn selected_merged_owners_convert_graphics_back_to_text() {
-    let png = designcraft_render::Rendered { width: 1, height: 1, pixels: vec![255, 0, 0, 255] }.to_png();
+    let png = pliego_render::Rendered { width: 1, height: 1, pixels: vec![255, 0, 0, 255] }.to_png();
     let image = crate::cmd::base64_encode(&png);
     for column in [true, false] {
         let (mut s, sid, tid, _) = selected_merged_table(column);
@@ -420,7 +420,7 @@ fn insert_type_in_cells_and_tab() {
     assert_eq!(t["cells"][1]["text"], "Value");
     // The story text holds only the anchor.
     let story = s.execute("story.get", &json!({"story": sid})).unwrap();
-    assert!(story["text"].as_str().unwrap().contains(designcraft_doc::TABLE_ANCHOR));
+    assert!(story["text"].as_str().unwrap().contains(pliego_doc::TABLE_ANCHOR));
     assert!(!story["text"].as_str().unwrap().contains("Name"));
     // Backspace edits the cell.
     s.execute("text.delete", &json!({})).unwrap();
@@ -502,7 +502,7 @@ fn insert_table_with_a_style_is_one_step() {
     for bad in [json!("Missing"), json!(7)] {
         assert!(s.execute("table.insert", &json!({"tableStyle": bad})).is_err(), "{bad}");
     }
-    assert!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().tables.is_empty());
+    assert!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().tables.is_empty());
     for over in [json!({"rows": 501}), json!({"cols": 201}), json!({"headerRows": 101})] {
         assert!(s.execute("table.insert", &over).is_err(), "{over}");
     }
@@ -513,7 +513,7 @@ fn insert_table_with_a_style_is_one_step() {
     use crate::cmd::table::{MAX_BODY_ROWS, MAX_COLUMNS, MAX_HEADER_FOOTER_ROWS};
     assert_eq!((n("rows"), n("columns")), (MAX_BODY_ROWS + MAX_HEADER_FOOTER_ROWS, MAX_COLUMNS));
     s.execute("edit.undo", &json!({})).unwrap();
-    assert!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().tables.is_empty(), "one undo");
+    assert!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().tables.is_empty(), "one undo");
 }
 
 #[test]
@@ -527,11 +527,11 @@ fn convert_text_to_table_and_back() {
     let t = s.execute("table.get", &json!({"table": r["table"]})).unwrap();
     assert_eq!(t["columns"].as_array().unwrap().len(), 2);
     assert_eq!(t["cells"][3]["text"], "80%");
-    let story = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text.clone();
-    assert_eq!(story, format!("{}\nAfter", designcraft_doc::TABLE_ANCHOR));
+    let story = s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text.clone();
+    assert_eq!(story, format!("{}\nAfter", pliego_doc::TABLE_ANCHOR));
     s.execute("table.convertToText", &json!({"table": r["table"]})).unwrap();
     check(&s);
-    assert_eq!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text, "Ink\tCoverage\nPlum\t80%\nSunset\t45%\nAfter");
+    assert_eq!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text, "Ink\tCoverage\nPlum\t80%\nSunset\t45%\nAfter");
 }
 
 /// InDesign's Convert Text to Table and Convert Table to Text separators: tab, comma, paragraph or
@@ -569,7 +569,7 @@ fn convert_text_to_table_with_indesigns_separators() {
     assert_eq!(s.execute("table.get", &json!({"table": r["table"]})).unwrap()["style"], "Grid");
     // A short last row: its padding cell takes the text's format too.
     let r = convert(&mut s, "a\nb\nc", json!({"columnSeparator": "paragraph", "rowSeparator": "paragraph", "columns": 2})).unwrap();
-    let t = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().tables[&r["table"].as_u64().unwrap()].clone();
+    let t = s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().tables[&r["table"].as_u64().unwrap()].clone();
     let fmt = |c: usize| t.cell(1, c).unwrap().text.chars[0].format.clone();
     assert_eq!(fmt(1), fmt(0), "the padding cell's format is the text's");
     for bad in [
@@ -588,10 +588,10 @@ fn convert_text_to_table_with_indesigns_separators() {
     assert!(convert(&mut s, &wide, json!({})).is_err(), "a row wider than a table can be");
     let long = vec!["a\tb"; MAX_CONVERTED_CELLS as usize / 2 + 1].join("\n");
     assert!(convert(&mut s, &long, json!({})).is_err(), "more cells than a table can have");
-    assert_eq!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text, format!("{long}\nAfter"));
-    let tall = vec!["a"; designcraft_doc::MAX_TABLE_ROWS + 1].join("\n");
+    assert_eq!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text, format!("{long}\nAfter"));
+    let tall = vec!["a"; pliego_doc::MAX_TABLE_ROWS + 1].join("\n");
     assert!(convert(&mut s, &tall, json!({})).is_err(), "more rows than a table can have");
-    assert_eq!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text, format!("{tall}\nAfter"), "no text is dropped");
+    assert_eq!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text, format!("{tall}\nAfter"), "no text is dropped");
     let at_most = vec!["x"; MAX_COLUMNS as usize].join("\t");
     assert!(convert(&mut s, &at_most, json!({})).is_ok(), "a row as wide as a table can be");
     check(&s);
@@ -599,7 +599,7 @@ fn convert_text_to_table_with_indesigns_separators() {
     let r = convert(&mut s, "Plum\t80%\nSunset\t45%", json!({})).unwrap();
     s.execute("table.convertToText", &json!({"table": r["table"], "columnSeparator": "comma", "rowSeparator": "tab"})).unwrap();
     check(&s);
-    assert_eq!(s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text, "Plum,80%\tSunset,45%\nAfter");
+    assert_eq!(s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text, "Plum,80%\tSunset,45%\nAfter");
 }
 
 #[test]
@@ -611,7 +611,7 @@ fn caret_placement_in_cells_and_cell_formatting() {
     // Click inside cell (1,1): spread coordinates = frame inner space here.
     let (rect, _) = {
         let st = s.doc().unwrap();
-        let cs = s.cache.get(&st.doc, designcraft_doc::StoryId(sid), None);
+        let cs = s.cache.get(&st.doc, pliego_doc::StoryId(sid), None);
         let c = cs.frames[0].tables[0].cell(1, 1).unwrap().clone();
         (c.rect, c)
     };
@@ -630,15 +630,15 @@ fn caret_placement_in_cells_and_cell_formatting() {
     s.execute("table.select", &json!({"table": tid, "what": "table"})).unwrap();
     s.execute("type.para", &json!({"attrs": {"align": "center"}})).unwrap();
     let st = s.doc().unwrap();
-    let t = &st.doc.story(designcraft_doc::StoryId(sid)).unwrap().tables[&tid];
-    assert!(t.cells.iter().all(|c| c.text.paras[0].para.align == Some(designcraft_doc::Align::Center)));
+    let t = &st.doc.story(pliego_doc::StoryId(sid)).unwrap().tables[&tid];
+    assert!(t.cells.iter().all(|c| c.text.paras[0].para.align == Some(pliego_doc::Align::Center)));
     // Typing after the table starts a new paragraph instead of hiding text in the anchor paragraph.
-    let a = st.doc.story(designcraft_doc::StoryId(sid)).unwrap().table_anchor(tid).unwrap();
+    let a = st.doc.story(pliego_doc::StoryId(sid)).unwrap().table_anchor(tid).unwrap();
     s.execute("text.select", &json!({"story": sid, "anchor": a + 3, "focus": a + 3})).unwrap();
     s.execute("text.insert", &json!({"text": "Tail"})).unwrap();
     check(&s);
-    let text = s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text.clone();
-    assert!(text.contains(&format!("{}\nTail", designcraft_doc::TABLE_ANCHOR)), "{text:?}");
+    let text = s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text.clone();
+    assert!(text.contains(&format!("{}\nTail", pliego_doc::TABLE_ANCHOR)), "{text:?}");
 }
 
 #[test]
@@ -650,13 +650,13 @@ fn file_roundtrip_keeps_tables() {
     let bytes = crate::cmd::file_bytes(&d).unwrap();
     let back = crate::cmd::file_from(&bytes).unwrap();
     back.check().unwrap();
-    let st = back.story(designcraft_doc::StoryId(sid)).unwrap();
+    let st = back.story(pliego_doc::StoryId(sid)).unwrap();
     assert_eq!(st.tables.values().next().unwrap().cells[0].text.text, "A1");
 }
 
 #[test]
 fn backspace_and_paste_between_tables_keep_both_and_the_file_reopens() {
-    let n = designcraft_doc::TABLE_ANCHOR.len_utf8();
+    let n = pliego_doc::TABLE_ANCHOR.len_utf8();
     let anchor_of = |s: &Session, sid: u64, tid: u64| s.doc().unwrap().doc.story(doc::StoryId(sid)).unwrap().table_anchor(tid).unwrap();
     let reopens_with = |s: &Session, sid: u64, ids: &[u64]| {
         let back = crate::cmd::file_from(&crate::cmd::file_bytes(&s.doc().unwrap().doc).unwrap()).unwrap();
@@ -906,8 +906,8 @@ fn editing_beside_a_merged_cell_only_changes_the_selected_edge_segment() {
             let unselected = frag.cell(1, 1).unwrap().rect;
             let visible: Vec<_> = frag.strokes.iter().filter(|s| s.stroke.weight == 7.0).collect();
             assert_eq!(visible.len(), 1);
-            assert_eq!(visible[0].a, designcraft_geom::Point::new(unselected.x0, unselected.y0));
-            assert_eq!(visible[0].b, designcraft_geom::Point::new(unselected.x1, unselected.y0));
+            assert_eq!(visible[0].a, pliego_geom::Point::new(unselected.x0, unselected.y0));
+            assert_eq!(visible[0].b, pliego_geom::Point::new(unselected.x1, unselected.y0));
             s.execute("edit.undo", &json!({})).unwrap();
             assert_eq!(table_for(&s, sid, tid), &before);
         }
@@ -1139,10 +1139,10 @@ fn assert_split_case(horizontal: bool, merged: bool) {
 }
 
 fn assert_split_cells(
-    before: &designcraft_doc::Table,
-    after: &designcraft_doc::Table,
-    before_fragment: &designcraft_compose::TableFrag,
-    after_fragment: &designcraft_compose::TableFrag,
+    before: &pliego_doc::Table,
+    after: &pliego_doc::Table,
+    before_fragment: &pliego_compose::TableFrag,
+    after_fragment: &pliego_compose::TableFrag,
     range: doc::CellRange,
     horizontal: bool,
 ) {

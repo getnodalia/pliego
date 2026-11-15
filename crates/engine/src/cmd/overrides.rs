@@ -2,8 +2,8 @@
 //! can be edited there (the parent's version is hidden on that page), remove those local
 //! overrides, or detach them from the parent.
 
-use designcraft_doc::{Document, ItemId, SpreadRef};
-use designcraft_geom::Vec2;
+use pliego_doc::{Document, ItemId, SpreadRef};
+use pliego_geom::Vec2;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc};
@@ -108,7 +108,7 @@ fn override_items(s: &mut Session, p: &Value) -> Result<Value> {
         }
         let pg = &mut std::sync::Arc::make_mut(&mut d.spreads[si]).pages[pi];
         pg.overridden.extend(ids.iter().copied());
-        *sel = designcraft_doc::Selection::items(new.clone());
+        *sel = pliego_doc::Selection::items(new.clone());
         Ok(json!({"ids": new.iter().map(|i| i.0).collect::<Vec<_>>()}))
     })
 }

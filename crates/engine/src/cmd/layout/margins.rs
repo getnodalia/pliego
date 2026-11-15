@@ -2,7 +2,7 @@ use super::parents::parent_spread_index;
 use super::{Margins, Result, Session, Value, bad, has_doc, json};
 
 /// Each page's margin box, by spread and page id.
-pub(super) fn margin_boxes(d: &designcraft_doc::Document) -> Vec<(designcraft_doc::SpreadRef, designcraft_doc::PageId, designcraft_geom::Rect)> {
+pub(super) fn margin_boxes(d: &pliego_doc::Document) -> Vec<(pliego_doc::SpreadRef, pliego_doc::PageId, pliego_geom::Rect)> {
     d.spread_refs()
         .filter_map(|r| d.spread(r).map(|sp| (r, sp)))
         .flat_map(|(r, sp)| sp.pages.iter().map(move |pg| (r, pg.id, pg.margin_rect())))
@@ -11,11 +11,8 @@ pub(super) fn margin_boxes(d: &designcraft_doc::Document) -> Vec<(designcraft_do
 
 /// Layout Adjustment: objects on each page move and resize from its old margin box to its new
 /// one (content keeps its size; frames that auto-fit refit).
-pub(super) fn adjust_layout(
-    d: &mut designcraft_doc::Document,
-    before: &[(designcraft_doc::SpreadRef, designcraft_doc::PageId, designcraft_geom::Rect)],
-) {
-    use designcraft_geom::Affine;
+pub(super) fn adjust_layout(d: &mut pliego_doc::Document, before: &[(pliego_doc::SpreadRef, pliego_doc::PageId, pliego_geom::Rect)]) {
+    use pliego_geom::Affine;
     let after = margin_boxes(d);
     for (r, pid, old) in before {
         let Some((_, _, new)) = after.iter().find(|(r2, p2, _)| r2 == r && p2 == pid) else { continue };
@@ -27,7 +24,7 @@ pub(super) fn adjust_layout(
             * Affine::translate((-old.x0, -old.y0));
         let Some(sp) = d.spread(*r) else { continue };
         // The page's objects (by centre, measured against the old boxes).
-        let ids: Vec<designcraft_doc::ItemId> = sp
+        let ids: Vec<pliego_doc::ItemId> = sp
             .items
             .iter()
             .filter(|it| {
@@ -43,7 +40,7 @@ pub(super) fn adjust_layout(
             .collect();
         for id in ids {
             let Some(it) = d.item_mut(id) else { continue };
-            if matches!(it.content, designcraft_doc::Content::Group { .. }) {
+            if matches!(it.content, pliego_doc::Content::Group { .. }) {
                 it.xf = m * it.xf;
             } else {
                 let inner = it.xf.inverse() * m * it.xf;
@@ -52,9 +49,9 @@ pub(super) fn adjust_layout(
                     w.transform(inner);
                 }
                 let ib = it.inner_bounds();
-                if let designcraft_doc::Content::Graphic(g) = &mut it.content {
+                if let pliego_doc::Content::Graphic(g) = &mut it.content {
                     // Content keeps its size but moves with the frame; auto-fit refits.
-                    let o = inner * designcraft_geom::Point::ZERO;
+                    let o = inner * pliego_geom::Point::ZERO;
                     g.xf = Affine::translate(o.to_vec2()) * g.xf;
                     if let Some(xf) = g.fitted(ib, g.auto_fit) {
                         g.xf = xf;
@@ -66,7 +63,7 @@ pub(super) fn adjust_layout(
 }
 
 /// Horizontal distance from `x` to a margin box (0 inside).
-fn dist(r: designcraft_geom::Rect, x: f64) -> f64 {
+fn dist(r: pliego_geom::Rect, x: f64) -> f64 {
     if x < r.x0 {
         r.x0 - x
     } else if x > r.x1 {
@@ -77,7 +74,7 @@ fn dist(r: designcraft_geom::Rect, x: f64) -> f64 {
 }
 
 /// Apply the `margins`, `columns` and `gutter` params of `layout.marginsAndColumns` to one page.
-pub(super) fn set_margins_columns(pg: &mut designcraft_doc::Page, p: &Value) {
+pub(super) fn set_margins_columns(pg: &mut pliego_doc::Page, p: &Value) {
     let width_before = pg.margin_rect().width();
     match p.get("margins") {
         Some(Value::Number(n)) => pg.margins = Margins::uniform(n.as_f64().unwrap_or(36.0)),
@@ -110,7 +107,7 @@ pub(super) fn set_margins_columns(pg: &mut designcraft_doc::Page, p: &Value) {
 /// Dragged column positions are measured across the margin box. When the box was
 /// `width_before` wide and now has another width, they scale with it, as InDesign's do; a set
 /// that doesn't scale into a valid one goes back to the even split rather than stay hidden.
-fn scale_columns(pg: &mut designcraft_doc::Page, width_before: f64) {
+fn scale_columns(pg: &mut pliego_doc::Page, width_before: f64) {
     let width = pg.margin_rect().width();
     if (width - width_before).abs() <= GUTTER_TOLERANCE {
         return;
@@ -133,7 +130,7 @@ fn scale_columns(pg: &mut designcraft_doc::Page, width_before: f64) {
 }
 
 /// Gives `pg` the page width `width`, scaling its dragged columns with the margin box.
-pub(super) fn set_page_width(pg: &mut designcraft_doc::Page, width: f64) {
+pub(super) fn set_page_width(pg: &mut pliego_doc::Page, width: f64) {
     let before = pg.margin_rect().width();
     pg.width = width;
     scale_columns(pg, before);
@@ -166,7 +163,7 @@ pub(super) fn move_column_guide(s: &mut Session, p: &Value) -> Result<Value> {
         p.get("position").and_then(Value::as_f64).filter(|v| v.is_finite()).ok_or_else(|| bad(CMD, "`position` must be a finite number"))?;
     let r = match p.get("parent") {
         None | Some(Value::Null) => crate::cmd::spread_param(p, CMD)?,
-        Some(v) => designcraft_doc::SpreadRef::Parent(parent_spread_index(&s.doc()?.doc, v).ok_or_else(|| bad(CMD, "no such parent"))?),
+        Some(v) => pliego_doc::SpreadRef::Parent(parent_spread_index(&s.doc()?.doc, v).ok_or_else(|| bad(CMD, "no such parent"))?),
     };
     s.edit(|d, _| {
         if d.settings.column_guides_locked {
@@ -183,8 +180,8 @@ pub(super) fn move_column_guide(s: &mut Session, p: &Value) -> Result<Value> {
         let left = positions.get(gutter * 2 + 1).map_or(position, |v| m.x0 + v);
         pg.columns.positions = Some(positions.clone());
         match r {
-            designcraft_doc::SpreadRef::Doc(_) => pg.local_margins = true,
-            designcraft_doc::SpreadRef::Parent(_) => d.sync_parent_margins(),
+            pliego_doc::SpreadRef::Doc(_) => pg.local_margins = true,
+            pliego_doc::SpreadRef::Parent(_) => d.sync_parent_margins(),
         }
         Ok(json!({"positions": positions, "left": left}))
     })
@@ -192,7 +189,7 @@ pub(super) fn move_column_guide(s: &mut Session, p: &Value) -> Result<Value> {
 
 #[cfg(test)]
 mod adjust_tests {
-    use designcraft_doc::Margins;
+    use pliego_doc::Margins;
     use serde_json::json;
 
     use crate::Session;
@@ -204,14 +201,14 @@ mod adjust_tests {
         // Letter, 36 pt margins: a frame filling the left half of the margin box.
         let id = s.execute("frame.create", &json!({"rect": [36, 36, 306, 756]})).unwrap()["id"].as_u64().unwrap();
         s.execute("layout.documentSetup", &json!({"width": 1224, "adjustLayout": true})).unwrap();
-        let b = s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+        let b = s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
         assert!((b.x0 - 36.0).abs() < 1e-6 && (b.x1 - 612.0).abs() < 1e-6, "half of the wider margin box: {b:?}");
         s.execute("layout.marginsAndColumns", &json!({"margins": 72, "adjustLayout": true})).unwrap();
-        let b = s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+        let b = s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
         assert!((b.x0 - 72.0).abs() < 1e-6 && (b.y0 - 72.0).abs() < 1e-6 && (b.y1 - 720.0).abs() < 1e-6, "{b:?}");
         // Without the option objects stay put.
         s.execute("layout.marginsAndColumns", &json!({"margins": 36})).unwrap();
-        let b2 = s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().bounds();
+        let b2 = s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().bounds();
         assert_eq!(b, b2);
     }
 
@@ -246,7 +243,7 @@ mod adjust_tests {
         let drag = |s: &mut Session| {
             s.edit(|d, _| {
                 let pg = &mut std::sync::Arc::make_mut(&mut d.spreads[0]).pages[0];
-                pg.columns = designcraft_doc::Columns { count: 2, gutter: 12.0, positions: Some(vec![0.0, 100.0, 130.0, 540.0]) };
+                pg.columns = pliego_doc::Columns { count: 2, gutter: 12.0, positions: Some(vec![0.0, 100.0, 130.0, 540.0]) };
                 Ok(())
             })
             .unwrap();
@@ -287,8 +284,8 @@ mod adjust_tests {
 
     const DRAGGED: [f64; 4] = [0.0, 100.0, 130.0, 540.0];
 
-    fn dragged() -> designcraft_doc::Columns {
-        designcraft_doc::Columns { count: 2, gutter: 12.0, positions: Some(DRAGGED.to_vec()) }
+    fn dragged() -> pliego_doc::Columns {
+        pliego_doc::Columns { count: 2, gutter: 12.0, positions: Some(DRAGGED.to_vec()) }
     }
 
     /// `positions` are [`DRAGGED`] scaled from its 540 pt margin box to one `width` wide.

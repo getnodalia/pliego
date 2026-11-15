@@ -142,7 +142,7 @@ pub(crate) fn transform_anchors(app: &mut DesignApp, set: &Value) -> Result<Valu
     let r = i.page_rect;
     let (fx, fy) = ((rp % 3) as f64 / 2.0, (rp / 3) as f64 / 2.0);
     // Page coordinates and spread coordinates differ by the ruler origin only.
-    let b = points.iter().skip(1).fold(designcraft_geom::Rect::from_points(points[0].1, points[0].1), |b, (_, p)| b.union_pt(*p));
+    let b = points.iter().skip(1).fold(pliego_geom::Rect::from_points(points[0].1, points[0].1), |b, (_, p)| b.union_pt(*p));
     let origin = (b.x0 - r.x0, b.y0 - r.y0);
     let reference = (r.x0 + r.width() * fx + origin.0, r.y0 + r.height() * fy + origin.1);
     let num = |k: &str| set.get(k).and_then(Value::as_f64).filter(|v| v.is_finite());
@@ -508,7 +508,7 @@ pub(super) fn appearance_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) 
 
 /// The Color Picker for a Fill or Stroke chip (a double-click on it, as in InDesign), with the
 /// chip's colour: the objects', or with `text` the selected text's.
-pub(super) fn open_color_picker(app: &mut DesignApp, doc: &designcraft_doc::Document, swatch: &str, stroke: bool, text: bool) {
+pub(super) fn open_color_picker(app: &mut DesignApp, doc: &pliego_doc::Document, swatch: &str, stroke: bool, text: bool) {
     let mut fields = crate::panels::swatches::picker_fields(doc.resolve_color(swatch, 1.0), stroke);
     fields["text"] = json!(text);
     app.ui.dialog = Some(crate::dialogs::Dialog::new("colorPicker", fields));
@@ -560,7 +560,7 @@ fn opacity_slider(app: &mut DesignApp, resp: &egui::Response, opacity: f64) {
 pub(super) fn swatch_menu(
     app: &mut DesignApp,
     resp: &egui::Response,
-    doc: &designcraft_doc::Document,
+    doc: &pliego_doc::Document,
     cur: &str,
     stroke: bool,
     text_frame: bool,

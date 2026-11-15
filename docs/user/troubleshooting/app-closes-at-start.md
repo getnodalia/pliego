@@ -5,7 +5,7 @@ order: 10
 verified: 0.7.1
 ---
 
-If Pliego flashes a spinner and closes, update to the [latest release](https://github.com/storytold/designcraft/releases/latest). If it still closes, set the environment variable `WGPU_BACKEND` to `dx12` and start it again.
+If Pliego flashes a spinner and closes, update to the [latest release](https://github.com/getnodalia/pliego/releases/latest). If it still closes, set the environment variable `WGPU_BACKEND` to `dx12` and start it again.
 
 ## Symptoms
 
@@ -15,7 +15,7 @@ If Pliego flashes a spinner and closes, update to the [latest release](https://g
 
 ## Fix
 
-1. Install the [latest release](https://github.com/storytold/designcraft/releases/latest). Pliego remembers a start that never showed a window and tries the next graphics backend on the following start. On Windows the order is DirectX 12, Vulkan, then OpenGL, and the status bar says when it switches. A reporter who could not start 0.5.0 on Windows 11 Enterprise wrote that 0.6.0 launched without trouble ([issue #273](https://github.com/storytold/designcraft/issues/273)).
+1. Install the [latest release](https://github.com/getnodalia/pliego/releases/latest). Pliego remembers a start that never showed a window and tries the next graphics backend on the following start. On Windows the order is DirectX 12, Vulkan, then OpenGL, and the status bar says when it switches. A reporter who could not start 0.5.0 on Windows 11 Enterprise wrote that 0.6.0 launched without trouble ([issue #273](https://github.com/storytold/designcraft/issues/273)).
 2. If it still closes, set an environment variable named `WGPU_BACKEND` with the value `dx12`. Start Pliego from a shell where it is set, or add it in Windows settings for your account. People who hit this crash with an AMD graphics driver reported that Pliego starts with `WGPU_BACKEND=dx12`. `dx12` also avoids Intel's Vulkan driver (`igvk64.dll`), which crashed in [issue #192](https://github.com/storytold/designcraft/issues/192).
 3. Start Pliego again.
 
@@ -31,4 +31,4 @@ Pliego keeps its record of failed backends in a file called `gpu.json` in its se
 
 ## Still stuck?
 
-Send the log. See [Report a problem](get-help.md) for where it is. Or ask in [Discord](https://discord.gg/artcraft).
+Send the log. See [Report a problem](get-help.md) for where it is. Or ask in [Discord](https://github.com/getnodalia/pliego/issues).

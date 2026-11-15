@@ -159,8 +159,8 @@ pub(super) fn column_width(s: &Session, t: &TextSel) -> f64 {
 
 /// The direction of the paragraph at `offset` in `story`, as composition resolves it (its style
 /// chain, then local overrides). A table created there takes it.
-pub(super) fn para_direction(d: &Document, story: StoryId, offset: usize) -> designcraft_doc::TextDirection {
+pub(super) fn para_direction(d: &Document, story: StoryId, offset: usize) -> pliego_doc::TextDirection {
     d.story(story)
         .and_then(|st| st.paras.get(st.para_at(offset)))
-        .map_or(designcraft_doc::TextDirection::LeftToRight, |pf| d.styles.resolve_para(pf).0.direction)
+        .map_or(pliego_doc::TextDirection::LeftToRight, |pf| d.styles.resolve_para(pf).0.direction)
 }

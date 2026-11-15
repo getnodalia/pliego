@@ -1,7 +1,7 @@
 use super::{CanvasLayout, Color32, DesignApp, Point, Pos2, Rect, View, Xf, json, render_texture, vec2};
 
 fn app_with_document_object() -> DesignApp {
-    let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+    let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({"width": 64, "height": 64, "pages": 1, "facingPages": true, "margins": 4})).unwrap();
     app.run("frame.create", json!({"rect": [24, 24, 40, 40], "content": "unassigned"})).unwrap();
     app.run("object.fill", json!({"swatch": "[Black]"})).unwrap();

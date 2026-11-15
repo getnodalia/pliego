@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use designcraft_color::swatch::resolve_gradient;
-use designcraft_color::{BlendMode, GradientKind};
-use designcraft_compose::Cache;
-use designcraft_doc::{Arrowhead, AssetId, Cap, Content, Document, Graphic, Item, Join, Shape, Stroke, StrokeAlign, StrokeType};
-use designcraft_geom::kurbo::{PathEl, Shape as _};
-use designcraft_geom::{Affine, BezPath, Point, Rect, Vec2, corners};
+use pliego_color::swatch::resolve_gradient;
+use pliego_color::{BlendMode, GradientKind};
+use pliego_compose::Cache;
+use pliego_doc::{Arrowhead, AssetId, Cap, Content, Document, Graphic, Item, Join, Shape, Stroke, StrokeAlign, StrokeType};
+use pliego_geom::kurbo::{PathEl, Shape as _};
+use pliego_geom::{Affine, BezPath, Point, Rect, Vec2, corners};
 
 use crate::fonts::Fonts;
 use crate::package::{Media, REL_IMAGE, Rel, Slide};
@@ -260,7 +260,7 @@ impl<'a> Exporter<'a> {
         self.clip = Rect::new(bounds.x0 - b[2].max(b[3]), bounds.y0 - b[0], bounds.x1 + b[2].max(b[3]), bounds.y1 + b[1]);
         let page_name = doc.page_name(abs);
         // What the canvas hides: this page's overrides and those of the parent pages behind it.
-        let overridden = doc.page_loc(abs).map(|(si, pi)| doc.overridden_parent_items(designcraft_doc::SpreadRef::Doc(si), pi)).unwrap_or_default();
+        let overridden = doc.page_loc(abs).map(|(si, pi)| doc.overridden_parent_items(pliego_doc::SpreadRef::Doc(si), pi)).unwrap_or_default();
         for layer in doc.layers.iter().rev() {
             if !layer.visible || !layer.printable {
                 continue;
@@ -413,7 +413,7 @@ impl<'a> Exporter<'a> {
         Some(srgb(c.to_rgb(), alpha))
     }
 
-    pub fn fill(&mut self, f: &designcraft_doc::Fill, closed: bool, opacity: f32) -> String {
+    pub fn fill(&mut self, f: &pliego_doc::Fill, closed: bool, opacity: f32) -> String {
         if f.is_none() || !closed {
             return "<a:noFill/>".into();
         }
@@ -513,7 +513,7 @@ impl<'a> Exporter<'a> {
                     return String::new();
                 }
             };
-            // PowerPoint's large heads come closest to DesignCraft's at the same weight.
+            // PowerPoint's large heads come closest to Pliego's at the same weight.
             format!("<a:{tag} type=\"{kind}\" w=\"lg\" len=\"lg\"/>")
         };
         let head = ends("headEnd", s.start, self);
@@ -581,7 +581,7 @@ impl<'a> Exporter<'a> {
             return None;
         }
         let n = self.media.len() + 1;
-        let mime = designcraft_images::mime(data);
+        let mime = pliego_images::mime(data);
         let ext = match mime {
             "image/png" => Some("png"),
             "image/jpeg" => Some("jpeg"),
@@ -594,7 +594,7 @@ impl<'a> Exporter<'a> {
             return Some((name, None));
         }
         if mime == "image/svg+xml" {
-            let png = designcraft_images::render_svg(data, 2048).and_then(|(px, w, h)| encode_png(unpremultiply(px), w, h));
+            let png = pliego_images::render_svg(data, 2048).and_then(|(px, w, h)| encode_png(unpremultiply(px), w, h));
             let Some(png) = png else {
                 self.warn(format!("`{}` could not be read; left out", a.name));
                 return None;
@@ -612,7 +612,7 @@ impl<'a> Exporter<'a> {
             ));
             return None;
         }
-        let Some(img) = designcraft_images::decode_rgba(data) else {
+        let Some(img) = pliego_images::decode_rgba(data) else {
             self.warn(format!("`{}` could not be read; left out", a.name));
             return None;
         };

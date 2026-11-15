@@ -5,9 +5,9 @@ use super::{CellRange, Result, Session, TableSel, Value, bad, json};
 pub(super) fn drop_cells(s: &mut Session, p: &Value) -> Result<Value> {
     const ID: &str = "table.dropCells";
     let frame = crate::cmd::id_param(p, "frame").ok_or_else(|| bad(ID, "`frame` required"))?;
-    let pt = |k: &str| -> Result<designcraft_geom::Point> {
+    let pt = |k: &str| -> Result<pliego_geom::Point> {
         let a = p.get(k).and_then(Value::as_array).ok_or_else(|| bad(ID, format!("`{k}` required")))?;
-        Ok(designcraft_geom::Point::new(a.first().and_then(Value::as_f64).unwrap_or(0.0), a.get(1).and_then(Value::as_f64).unwrap_or(0.0)))
+        Ok(pliego_geom::Point::new(a.first().and_then(Value::as_f64).unwrap_or(0.0), a.get(1).and_then(Value::as_f64).unwrap_or(0.0)))
     };
     let (from, to) = (pt("from")?, pt("to")?);
     let sel = s.doc()?.selection.cells;
@@ -34,7 +34,7 @@ pub(super) fn drop_cells(s: &mut Session, p: &Value) -> Result<Value> {
             let n = hi - lo + 1;
             let r2 = s.edit(|d, selm| {
                 let t = d.story_mut(sid).and_then(|st| st.table_mut(tid)).ok_or_else(|| bad(ID, "no table"))?;
-                let mv = |t: &mut designcraft_doc::Table, a: usize, b: usize| if rows { t.move_row(a, b) } else { t.move_col(a, b) };
+                let mv = |t: &mut pliego_doc::Table, a: usize, b: usize| if rows { t.move_row(a, b) } else { t.move_col(a, b) };
                 let new_lo = if target > hi {
                     for _ in 0..n {
                         mv(t, lo, target).map_err(|e| bad(ID, e))?;
@@ -63,8 +63,8 @@ pub(super) fn place_graphic(s: &mut Session, p: &Value) -> Result<Value> {
     const ID: &str = "table.placeGraphic";
     let g = target(s, p, ID)?;
     let (bytes, name, link) = crate::cmd::file::read_source(p)?;
-    let (pw, ph) = designcraft_render::image_size(&bytes).ok_or_else(|| bad(ID, "unsupported or corrupt image"))?;
-    let (nw, nh) = designcraft_render::natural_size(&bytes, 0).ok_or_else(|| bad(ID, "invalid image dimensions"))?;
+    let (pw, ph) = pliego_render::image_size(&bytes).ok_or_else(|| bad(ID, "unsupported or corrupt image"))?;
+    let (nw, nh) = pliego_render::natural_size(&bytes, 0).ok_or_else(|| bad(ID, "invalid image dimensions"))?;
     let fill = p.get("fit").and_then(Value::as_str) == Some("fill");
     // Compute fitting before the edit: a small EPS can overflow in a huge cell.
     let t = s.doc()?.doc.story(g.story).and_then(|st| st.tables.get(&g.table)).ok_or_else(|| bad(ID, "no table"))?;
@@ -76,12 +76,12 @@ pub(super) fn place_graphic(s: &mut Session, p: &Value) -> Result<Value> {
     let ins = cell.insets;
     let (bw, bh) = ((w - ins[1] - ins[3]).max(1.0), (h - ins[0] - ins[2]).max(1.0));
     let k = if fill { (bw / nw).max(bh / nh) } else { (bw / nw).min(bh / nh) };
-    let xf = designcraft_geom::Affine::translate(((bw - nw * k) / 2.0, (bh - nh * k) / 2.0)) * designcraft_geom::Affine::scale(k);
-    crate::cmd::file::validate_placement((nw, nh), designcraft_geom::Rect::new(0.0, 0.0, bw, bh), xf, ID)?;
+    let xf = pliego_geom::Affine::translate(((bw - nw * k) / 2.0, (bh - nh * k) / 2.0)) * pliego_geom::Affine::scale(k);
+    crate::cmd::file::validate_placement((nw, nh), pliego_geom::Rect::new(0.0, 0.0, bw, bh), xf, ID)?;
     s.edit(|d, sel| {
-        let fresh = designcraft_doc::AssetId(d.alloc());
-        let mime = designcraft_render::image_mime(&bytes).to_string();
-        let aid = d.add_asset(designcraft_doc::Asset {
+        let fresh = pliego_doc::AssetId(d.alloc());
+        let mime = pliego_render::image_mime(&bytes).to_string();
+        let aid = d.add_asset(pliego_doc::Asset {
             id: fresh,
             name,
             mime,
@@ -93,13 +93,13 @@ pub(super) fn place_graphic(s: &mut Session, p: &Value) -> Result<Value> {
         let st = d.story_mut(g.story).ok_or_else(|| bad(ID, "no story"))?;
         let t = st.table_mut(g.table).ok_or_else(|| bad(ID, "no table"))?;
         let cell = t.cell_mut(r, c).ok_or_else(|| bad(ID, format!("no cell {r},{c}")))?;
-        cell.graphic = Some(designcraft_doc::Graphic {
+        cell.graphic = Some(pliego_doc::Graphic {
             layer_options: None,
             asset: aid,
             size: (nw, nh),
             xf,
             clip: None,
-            auto_fit: if fill { designcraft_doc::Fitting::FillProportionally } else { designcraft_doc::Fitting::FitProportionally },
+            auto_fit: if fill { pliego_doc::Fitting::FillProportionally } else { pliego_doc::Fitting::FitProportionally },
             fit_align: 4,
             crop: [0.0; 4],
             wrap: Default::default(),
@@ -166,7 +166,7 @@ mod sort_tests {
         s
     }
 
-    fn table(s: &Session) -> designcraft_doc::Table {
+    fn table(s: &Session) -> pliego_doc::Table {
         (**s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap()).clone()
     }
 
@@ -215,7 +215,7 @@ mod sort_tests {
         let result = s.execute("table.distributeRows", &json!({"story": sid.0, "table": tid, "rows": [1, 2]})).unwrap();
         assert!((result["height"].as_f64().unwrap() * 2.0 - total).abs() < 1e-6);
         assert!(table(&s).rows[1].height > 3.0);
-        assert_eq!(table(&s).rows[1].mode, designcraft_doc::RowHeightMode::Exactly);
+        assert_eq!(table(&s).rows[1].mode, pliego_doc::RowHeightMode::Exactly);
     }
 
     #[test]
@@ -288,7 +288,7 @@ mod sort_tests {
         s.execute("table.rowHeight", &json!({"height": 100})).ok();
         // A red image into the first cell.
         let px: Vec<u8> = (0..40 * 40).flat_map(|_| [255, 0, 0, 255]).collect();
-        let png = designcraft_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
+        let png = pliego_render::Rendered { width: 40, height: 40, pixels: px }.to_png();
         s.execute("table.setCell", &json!({"rows": [0, 0], "cols": [0, 0], "text": ""})).ok();
         let g = s.execute("table.placeGraphic", &json!({"base64": crate::cmd::file::base64_encode(&png), "name": "r.png", "fit": "fill"})).unwrap();
         assert_eq!((g["row"].as_u64(), g["col"].as_u64()), (Some(0), Some(0)));
@@ -299,7 +299,7 @@ mod sort_tests {
         let cell = cs.frames[0].tables[0].cells.iter().find(|c| c.row == 0 && c.col == 0).unwrap().clone();
         let fx = d.item(cs.frames[0].frame).unwrap().xf;
         let centre = fx * cell.clip.center();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         let img = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
         let p = img.pixel(centre.x as u32, centre.y as u32);

@@ -38,7 +38,7 @@ fn recovers_unsaved_documents() {
     // Saving a document drops its entry.
     s.recovery_dir = Some(dir.clone());
     assert_eq!(save(&s, &dir).unwrap(), 1);
-    let path = dir.join("saved.designcraft");
+    let path = dir.join("saved.pliego");
     s.execute("file.saveAs", &json!({"path": path.to_string_lossy()})).unwrap();
     assert!(list(&dir).is_empty());
     let _ = std::fs::remove_dir_all(&dir);
@@ -76,7 +76,7 @@ fn opening_recovery_again_does_not_duplicate_live_documents() {
 fn open_with_failed_republication(s: &mut Session, dir: &Path) -> Result<Vec<usize>> {
     let mut attempts = 0;
     let opened = open_with_publisher(s, dir, |path, bytes| {
-        assert_eq!(path.extension().and_then(|extension| extension.to_str()), Some("designcraft"));
+        assert_eq!(path.extension().and_then(|extension| extension.to_str()), Some("pliego"));
         std::fs::create_dir(path).unwrap();
         let result = publish_recovery_file(path, bytes, false);
         std::fs::remove_dir(path).unwrap();
@@ -174,11 +174,11 @@ fn symlink_recovery_directory_is_rejected() {
 
     assert!(save(&dirty_session(), &link).is_err());
     assert!(std::fs::read_dir(&destination).unwrap().next().is_none());
-    std::fs::write(destination.join("7.designcraft"), b"unchanged").unwrap();
+    std::fs::write(destination.join("7.pliego"), b"unchanged").unwrap();
     std::fs::write(destination.join("7.json"), b"{}").unwrap();
     assert!(list(&link).is_empty());
     discard(&link, 7);
-    assert_eq!(std::fs::read(destination.join("7.designcraft")).unwrap(), b"unchanged");
+    assert_eq!(std::fs::read(destination.join("7.pliego")).unwrap(), b"unchanged");
     assert!(open(&mut Session::new(), &link).is_err());
     assert!(std::fs::symlink_metadata(&link).unwrap().file_type().is_symlink());
 }
@@ -253,7 +253,7 @@ fn saving_a_coincident_document_preserves_another_documents_retained_source() {
     let checkpoint = files(root.path(), live_uid).0;
     let original = std::fs::read(&checkpoint).unwrap();
     session.execute("file.activate", &json!({"index": 0})).unwrap();
-    session.execute("file.saveAs", &json!({"path": root.path().join("saved-other.designcraft").to_string_lossy()})).unwrap();
+    session.execute("file.saveAs", &json!({"path": root.path().join("saved-other.pliego").to_string_lossy()})).unwrap();
     assert_eq!(std::fs::read(checkpoint).unwrap(), original);
 }
 
@@ -262,8 +262,8 @@ fn reverting_a_coincident_document_preserves_another_documents_retained_source()
     let (mut session, root, live_uid) = failed_republication_session();
     let checkpoint = files(root.path(), live_uid).0;
     let original = std::fs::read(&checkpoint).unwrap();
-    let saved = root.path().join("saved-other.designcraft");
-    std::fs::write(&saved, designcraft_format::save(&session.docs[0].doc).unwrap()).unwrap();
+    let saved = root.path().join("saved-other.pliego");
+    std::fs::write(&saved, pliego_format::save(&session.docs[0].doc).unwrap()).unwrap();
     session.docs[0].path = Some(saved.to_string_lossy().into_owned());
     session.execute("file.activate", &json!({"index": 0})).unwrap();
     session.execute("frame.create", &json!({"rect": [0,0,100,100]})).unwrap();
@@ -274,7 +274,7 @@ fn reverting_a_coincident_document_preserves_another_documents_retained_source()
 #[test]
 fn retained_source_provenance_is_consumed_before_its_uid_is_reused() {
     let (mut session, root, live_uid) = failed_republication_session();
-    session.execute("file.saveAs", &json!({"path": root.path().join("saved.designcraft").to_string_lossy()})).unwrap();
+    session.execute("file.saveAs", &json!({"path": root.path().join("saved.pliego").to_string_lossy()})).unwrap();
     session.execute("file.activate", &json!({"index": 0})).unwrap();
     session.execute("frame.create", &json!({"rect": [0,0,100,100], "content": "text", "text": "other live work"})).unwrap();
     session.execute("file.recovery.save", &json!({"dir": root.path().to_string_lossy()})).unwrap();
@@ -330,8 +330,8 @@ fn persisted_texts(dir: &Path) -> Vec<String> {
 #[test]
 #[ignore = "subprocess helper, executed by the restart recovery regression tests"]
 fn restart_recovery_child() {
-    let source = PathBuf::from(std::env::var("DESIGNCRAFT_TEST_RECOVERY_SOURCE").unwrap());
-    let mode = std::env::var("DESIGNCRAFT_TEST_RECOVERY_MODE").unwrap();
+    let source = PathBuf::from(std::env::var("PLIEGO_TEST_RECOVERY_SOURCE").unwrap());
+    let mode = std::env::var("PLIEGO_TEST_RECOVERY_MODE").unwrap();
     if mode == "occupied_destination" {
         let owned_root = tempfile::tempdir().unwrap();
         let destination = run_dir(owned_root.path()).unwrap();
@@ -349,7 +349,7 @@ fn restart_recovery_child() {
         assert!(session.docs.iter().all(|document| document.uid != 3));
         assert_eq!(persisted_texts(&destination), ["already in destination", "restart first", "restart second"]);
         assert!(list(&source).is_empty());
-        session.execute("file.saveAs", &json!({"path": source.join("saved.designcraft").to_string_lossy()})).unwrap();
+        session.execute("file.saveAs", &json!({"path": source.join("saved.pliego").to_string_lossy()})).unwrap();
         session.execute("file.close", &json!({"index": opened[0]})).unwrap();
         assert_eq!(list(&destination).len(), 1);
         assert_eq!(std::fs::read(existing_doc).unwrap(), doc_bytes);
@@ -391,9 +391,9 @@ fn restart_recovery_child() {
             assert!(list(&source).is_empty());
         }
         // A copy does not consume recovery. A successful Save and a Close do.
-        session.execute("file.saveACopy", &json!({"path": source.join("copy.designcraft").to_string_lossy()})).unwrap();
+        session.execute("file.saveACopy", &json!({"path": source.join("copy.pliego").to_string_lossy()})).unwrap();
         assert_eq!(list(&destination).len(), 2);
-        session.execute("file.saveAs", &json!({"path": source.join("saved.designcraft").to_string_lossy()})).unwrap();
+        session.execute("file.saveAs", &json!({"path": source.join("saved.pliego").to_string_lossy()})).unwrap();
         assert_eq!(list(&destination).len(), 1);
         if mode == "revert" {
             session.execute("frame.create", &json!({"rect": [0, 0, 100, 100], "content": "text", "text": "after saving"})).unwrap();
@@ -419,8 +419,8 @@ fn run_restart_case(mode: &str) {
     }
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", "recovery::tests::restart_recovery_child", "--ignored", "--nocapture"])
-        .env("DESIGNCRAFT_TEST_RECOVERY_SOURCE", source.path())
-        .env("DESIGNCRAFT_TEST_RECOVERY_MODE", mode)
+        .env("PLIEGO_TEST_RECOVERY_SOURCE", source.path())
+        .env("PLIEGO_TEST_RECOVERY_MODE", mode)
         .output()
         .unwrap();
     assert!(output.status.success(), "fresh child failed: {}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
@@ -632,7 +632,7 @@ fn run_left(root: &Path, name: &str, text: &str, uid: u64) -> PathBuf {
     dir
 }
 
-/// Every process numbers its first document 1: two running apps both wrote `1.designcraft`
+/// Every process numbers its first document 1: two running apps both wrote `1.pliego`
 /// into the one recovery folder, and only the document written last was recovered.
 #[test]
 fn documents_of_two_apps_that_ended_are_both_recovered() {
@@ -695,7 +695,7 @@ fn recovery_data_of_an_earlier_version_is_recovered() {
 fn an_unreadable_entry_of_a_run_that_ended_is_kept() {
     let root = tempfile::tempdir().unwrap();
     let left = run_left(root.path(), "run-7-0", "readable", 1);
-    std::fs::write(left.join("2.designcraft"), b"not a document").unwrap();
+    std::fs::write(left.join("2.pliego"), b"not a document").unwrap();
     let own = run_dir(root.path()).unwrap();
     let mut s = Session::new();
     assert_eq!(open(&mut s, &own).unwrap().len(), 1);
@@ -732,7 +732,7 @@ fn what_is_no_run_that_ended_is_passed_over() {
 #[test]
 fn a_document_taken_over_remembers_its_file() {
     let root = tempfile::tempdir().unwrap();
-    let file = root.path().join("layout.designcraft");
+    let file = root.path().join("layout.pliego");
     let recovery = root.path().join("recovery");
     let left = recovery.join("run-7-0");
     std::fs::create_dir_all(&left).unwrap();
@@ -754,14 +754,14 @@ fn only_what_the_app_left_goes_with_the_folder_of_a_run_that_ended() {
     let root = tempfile::tempdir().unwrap();
     let emptied = run_left(root.path(), "run-7-0", "moved", 1);
     std::fs::write(emptied.join("9.json"), b"{}").unwrap();
-    std::fs::write(emptied.join(".designcraft-recovery-abc.tmp"), b"half written").unwrap();
+    std::fs::write(emptied.join(".pliego-recovery-abc.tmp"), b"half written").unwrap();
     let kept = run_left(root.path(), "run-8-0", "moved too", 1);
-    std::fs::write(kept.join("copy.designcraft"), b"a copy someone put here").unwrap();
+    std::fs::write(kept.join("copy.pliego"), b"a copy someone put here").unwrap();
     let own = run_dir(root.path()).unwrap();
     let mut s = Session::new();
     assert_eq!(open(&mut s, &own).unwrap().len(), 2);
     assert!(!emptied.exists());
-    assert_eq!(std::fs::read(kept.join("copy.designcraft")).unwrap(), b"a copy someone put here");
+    assert_eq!(std::fs::read(kept.join("copy.pliego")).unwrap(), b"a copy someone put here");
     assert!(kept.join(LOCK).exists(), "still the folder of a run that ended");
 }
 
@@ -772,11 +772,11 @@ fn a_folder_that_is_there_is_not_made_this_runs() {
     let root = tempfile::tempdir().unwrap();
     let left = root.path().join(format!("run-{}-0", std::process::id()));
     std::fs::create_dir(&left).unwrap();
-    std::fs::write(left.join("1.designcraft"), b"left with no lock").unwrap();
+    std::fs::write(left.join("1.pliego"), b"left with no lock").unwrap();
     let own = run_dir(root.path()).unwrap();
     assert_ne!(own, left);
     assert!(!left.join(LOCK).exists());
-    assert_eq!(std::fs::read(left.join("1.designcraft")).unwrap(), b"left with no lock");
+    assert_eq!(std::fs::read(left.join("1.pliego")).unwrap(), b"left with no lock");
 }
 
 /// Another run's entry under uid 7 in a chosen folder, with a document of this run numbered

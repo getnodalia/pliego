@@ -10,9 +10,9 @@
 
 use std::collections::HashSet;
 
-use designcraft_doc::{Document, Item, ItemId, Orientation, Selection, SpreadRef, StrokeAlign};
-use designcraft_geom::snap::snap_to_grid;
-use designcraft_geom::{Affine, Point, Rect, Vec2, format_measure};
+use pliego_doc::{Document, Item, ItemId, Orientation, Selection, SpreadRef, StrokeAlign};
+use pliego_geom::snap::snap_to_grid;
+use pliego_geom::{Affine, Point, Rect, Vec2, format_measure};
 
 pub use crate::{Gesture, Snap, SnapRequest, SnapView};
 
@@ -278,7 +278,7 @@ fn rotation_of(xf: Affine) -> Option<f64> {
     if !xf_finite(xf) {
         return None;
     }
-    let rotation = designcraft_geom::decompose::decompose(xf).rotation;
+    let rotation = pliego_geom::decompose::decompose(xf).rotation;
     rotation.is_finite().then_some(rotation)
 }
 
@@ -410,7 +410,7 @@ fn grid_origin(cx: &ToolContext, req: &SnapRequest<'_>, axis: Axis) -> Option<f6
 ///
 /// Lines are `page.y0 + origin + n * increment` for n >= 0 while the line is inside the page
 /// (the bottom edge is not a line, matching the canvas), `origin` from
-/// [`BaselineGrid::origin`](designcraft_doc::BaselineGrid::origin). An increment of 0 or less
+/// [`BaselineGrid::origin`](pliego_doc::BaselineGrid::origin). An increment of 0 or less
 /// skips the pass. `view_threshold` is not read, and hiding the baseline grid does not turn this
 /// off. Only a page the rect crosses on x contributes. A dragged ruler guide
 /// ([`Gesture::Guide`]) doesn't snap to it.
@@ -978,7 +978,7 @@ fn leaf_own_size(item: &Item, abs: Affine) -> Option<(f64, f64)> {
     if !rect_finite(local) {
         return None;
     }
-    let decomposed = designcraft_geom::decompose::decompose(abs);
+    let decomposed = pliego_geom::decompose::decompose(abs);
     let sx = decomposed.scale_x.abs();
     let sy = decomposed.scale_y.abs();
     if !sx.is_finite() || !sy.is_finite() {
@@ -1031,7 +1031,7 @@ fn pass_guides(cx: &ToolContext, req: &SnapRequest<'_>, axis: Axis, tol: f64) ->
             .guides
             .iter()
             .enumerate()
-            .filter(|&(gi, _)| !req.exclude_guides.contains(&designcraft_doc::GuideSel { spread: req.spread, page: pi, index: gi }));
+            .filter(|&(gi, _)| !req.exclude_guides.contains(&pliego_doc::GuideSel { spread: req.spread, page: pi, index: gi }));
         for guide in own.map(|(_, g)| g.clone()).chain(cx.doc.parent_guides(page)) {
             if !guide.visible_in(cx.doc) || !guide.position.is_finite() || guide.orientation != axis_orientation(axis) {
                 continue;

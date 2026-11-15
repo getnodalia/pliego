@@ -1,0 +1,26 @@
+[package]
+name = "pliego-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pliego-cli"
+path = "src/main.rs"
+
+[dependencies]
+pliego-engine = { workspace = true }
+pliego-render = { workspace = true }
+pliego-doc = { workspace = true }
+pliego-geom = { workspace = true }
+pliego-color = { workspace = true }
+pliego-compose = { workspace = true }
+pliego-format = { workspace = true }
+pliego-pdf = { workspace = true }
+pliego-mcp = { workspace = true }
+image = { workspace = true }
+serde_json = { workspace = true }

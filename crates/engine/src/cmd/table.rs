@@ -6,9 +6,9 @@
 //! `col`) narrow the cell range (default: the selected cells, else the caret's cell, else the
 //! whole table).
 
-use designcraft_compose as compose;
-use designcraft_doc::story::floor_char_boundary;
-use designcraft_doc::{
+use pliego_compose as compose;
+use pliego_doc::story::floor_char_boundary;
+use pliego_doc::{
     AltFills, CellAddr, CellRange, CellStroke, Document, RowHeightMode, RowKind, Selection, StoryId, StrokeType, Table, TableSel, TextSel,
     VerticalJustification,
 };

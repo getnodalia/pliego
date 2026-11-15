@@ -3,7 +3,7 @@
     <img src="https://raw.githubusercontent.com/danielmigueltejedor/nodalia-web/main/assets/brand/nodalia-wordmark-badge.svg" width="150" alt="Nodalia">
   </a>
   <br><br>
-  <img src="https://raw.githubusercontent.com/danielmigueltejedor/pliego/main/assets/app-icon/hicolor/512x512/apps/ai.storyteller.designcraft.png" width="192" alt="Pliego">
+  <img src="https://raw.githubusercontent.com/danielmigueltejedor/pliego/main/assets/app-icon/hicolor/512x512/apps/dev.danielmiguelt.Pliego.png" width="192" alt="Pliego">
   <h1>Pliego</h1>
   <p><strong>The editorial layout application of the Nodalia suite.</strong></p>
 
@@ -40,7 +40,7 @@ You need a recent stable Rust toolchain.
 ```bash
 git clone https://github.com/getnodalia/pliego.git
 cd pliego
-cargo run --release -p designcraft
+cargo run --release -p pliego
 ```
 
 ## Project status

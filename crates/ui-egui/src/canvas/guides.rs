@@ -7,8 +7,8 @@ pub(super) const GUIDE_DRAG: &str = "canvas_guide_drag";
 /// A ruler guide being dragged: out of a ruler (`from` None) or an existing one.
 #[derive(Clone, Debug)]
 pub(super) struct GuideDrag {
-    pub(super) orientation: designcraft_doc::Orientation,
-    pub(super) from: Option<(designcraft_doc::SpreadRef, usize, usize)>,
+    pub(super) orientation: pliego_doc::Orientation,
+    pub(super) from: Option<(pliego_doc::SpreadRef, usize, usize)>,
     /// Pointer position (screen).
     pub(super) at: Option<Pos2>,
     /// Modifiers held at the pointer's last move: Shift snaps to the ruler's ticks, Command
@@ -34,7 +34,7 @@ const GUIDE_CLICK_SLOP: f32 = 3.0;
 /// in the document's ruler units. `None` with no document or rulers.
 pub(super) fn guide_readout(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<String> {
     let (label, value, unit) = guide_measure(app, xf, g)?;
-    Some(format!("{label}: {}", designcraft_geom::units::format_measure(value, unit)))
+    Some(format!("{label}: {}", pliego_geom::units::format_measure(value, unit)))
 }
 
 /// Where a pointer readout of `size` goes for a pointer at `p`: below right of it, on the other
@@ -50,7 +50,7 @@ pub(super) fn readout_at(p: Pos2, size: egui::Vec2, area: Rect) -> Pos2 {
 }
 
 /// [`guide_readout`]'s parts: the axis label, the value (points) and its unit.
-pub(super) fn guide_measure(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<(&'static str, f64, designcraft_geom::Unit)> {
+pub(super) fn guide_measure(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<(&'static str, f64, pliego_geom::Unit)> {
     let p = g.at?;
     let st = app.session.active()?;
     let layout = CanvasLayout::new(&st.doc, st.editing_parents);
@@ -68,12 +68,12 @@ pub(super) fn guide_measure(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<(
     let pieces = ruler_pieces_of(&st.doc, slot, st.doc.zero_point());
     let first = pieces.first()?;
     let (label, value, unit) = match g.orientation {
-        designcraft_doc::Orientation::Vertical => {
+        pliego_doc::Orientation::Vertical => {
             // The horizontal ruler restarts at each page: the piece under the guide measures it.
             let o = pieces.iter().find(|(from, to, _)| *from <= c.x && c.x < *to).unwrap_or(first).2;
             ("X", c.x - o.x, st.doc.settings.horizontal_units)
         }
-        designcraft_doc::Orientation::Horizontal => ("Y", c.y - first.2.y, st.doc.settings.vertical_units),
+        pliego_doc::Orientation::Horizontal => ("Y", c.y - first.2.y, st.doc.settings.vertical_units),
     };
     value.is_finite().then_some((label, value, unit))
 }
@@ -108,7 +108,7 @@ pub(super) fn guide_spot(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<Guid
     if g.mods.command || g.from.is_some_and(|(from, _, _)| from != r) {
         return Some(GuideSpot { spread: r, pointer, sp: pointer, screen: p, marks: Vec::new() });
     }
-    let vertical = matches!(g.orientation, designcraft_doc::Orientation::Vertical);
+    let vertical = matches!(g.orientation, pliego_doc::Orientation::Vertical);
     let place = |v: f64| if vertical { Point::new(v, pointer.y) } else { Point::new(pointer.x, v) };
     if g.mods.shift {
         let slot = layout.slot(r)?;
@@ -133,7 +133,7 @@ pub(super) fn guide_spot(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<Guid
     } else {
         (pointer.y, DRect::new(reach.x0, pointer.y, reach.x1, pointer.y), [false; 3], [true; 3])
     };
-    let cx = designcraft_tools::ToolContext {
+    let cx = pliego_tools::ToolContext {
         doc: &st.doc,
         selection: &st.selection,
         cache: &app.session.cache,
@@ -145,11 +145,11 @@ pub(super) fn guide_spot(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<Guid
         stroke_in_front: false,
         loaded: None,
     };
-    let s = designcraft_tools::snap::snap(
+    let s = pliego_tools::snap::snap(
         &cx,
-        designcraft_tools::SnapRequest {
+        pliego_tools::SnapRequest {
             spread: r,
-            gesture: designcraft_tools::Gesture::Guide,
+            gesture: pliego_tools::Gesture::Guide,
             rect,
             x_edges,
             y_edges,
@@ -169,13 +169,13 @@ pub(super) fn guide_spot(app: &DesignApp, xf: &Xf, g: &GuideDrag) -> Option<Guid
 /// The nearest ruler tick to spread point `sp` along a guide of `orientation`'s axis, in spread
 /// coordinates: the horizontal ruler's (the piece under the point) where that axis runs across the
 /// screen, else the vertical ruler's. `None` when the ruler has no ticks there.
-fn ruler_tick_of(doc: &Document, slot: &SpreadSlot, orientation: designcraft_doc::Orientation, zoom: f64, sp: Point) -> Option<f64> {
-    let vertical = matches!(orientation, designcraft_doc::Orientation::Vertical);
+fn ruler_tick_of(doc: &Document, slot: &SpreadSlot, orientation: pliego_doc::Orientation, zoom: f64, sp: Point) -> Option<f64> {
+    let vertical = matches!(orientation, pliego_doc::Orientation::Vertical);
     // A quarter-turned spread runs its x axis down the screen.
     let across = vertical == slot.rotation.is_multiple_of(2);
     let c = slot.to_canvas(sp);
     let pieces = ruler_pieces_of(doc, slot, doc.zero_point());
-    let step = |unit: designcraft_geom::Unit| {
+    let step = |unit: pliego_geom::Unit| {
         let (major, sub) = unit.ruler_ticks(zoom);
         let step = major / f64::from(sub.max(1));
         (step.is_finite() && step > 0.0).then_some(step)
@@ -193,7 +193,7 @@ fn ruler_tick_of(doc: &Document, slot: &SpreadSlot, orientation: designcraft_doc
 }
 
 /// The guide under a screen point (within 3 px), as (spread, page, index, orientation).
-pub(super) fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(designcraft_doc::SpreadRef, usize, usize, designcraft_doc::Orientation)> {
+pub(super) fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(pliego_doc::SpreadRef, usize, usize, pliego_doc::Orientation)> {
     let st = app.session.active()?;
     let layout = CanvasLayout::new(&st.doc, st.editing_parents);
     let cp = xf.to_canvas(p);
@@ -209,8 +209,8 @@ pub(super) fn guide_at(app: &DesignApp, xf: &Xf, p: Pos2) -> Option<(designcraft
                 }
                 let r = if g.spread { pr } else { pg.bounds() };
                 let hit = match g.orientation {
-                    designcraft_doc::Orientation::Horizontal => (local.y - g.position).abs() <= tol && local.x >= r.x0 && local.x <= r.x1,
-                    designcraft_doc::Orientation::Vertical => (local.x - g.position).abs() <= tol && local.y >= r.y0 - tol && local.y <= r.y1 + tol,
+                    pliego_doc::Orientation::Horizontal => (local.y - g.position).abs() <= tol && local.x >= r.x0 && local.x <= r.x1,
+                    pliego_doc::Orientation::Vertical => (local.x - g.position).abs() <= tol && local.y >= r.y0 - tol && local.y <= r.y1 + tol,
                 };
                 if hit && !g.locked {
                     return Some((slot.spread, pi, gi, g.orientation));
@@ -227,9 +227,9 @@ fn begin_guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Respons
     if full.contains(o) && !rect.contains(o) {
         // In a ruler (not the corner).
         let orientation = if o.y < rect.min.y && o.x >= rect.min.x {
-            Some(designcraft_doc::Orientation::Horizontal)
+            Some(pliego_doc::Orientation::Horizontal)
         } else if o.x < rect.min.x && o.y >= rect.min.y {
-            Some(designcraft_doc::Orientation::Vertical)
+            Some(pliego_doc::Orientation::Vertical)
         } else {
             None
         };
@@ -272,8 +272,8 @@ pub(super) fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Re
     g.mods = ui.input(|i| i.modifiers);
     if !released {
         ui.ctx().set_cursor_icon(match g.orientation {
-            designcraft_doc::Orientation::Horizontal => egui::CursorIcon::ResizeVertical,
-            designcraft_doc::Orientation::Vertical => egui::CursorIcon::ResizeHorizontal,
+            pliego_doc::Orientation::Horizontal => egui::CursorIcon::ResizeVertical,
+            pliego_doc::Orientation::Vertical => egui::CursorIcon::ResizeHorizontal,
         });
         ui.data_mut(|d| d.insert_temp(id, g));
         return true;
@@ -304,12 +304,12 @@ pub(super) fn guide_drag(app: &mut DesignApp, ui: &mut egui::Ui, resp: &egui::Re
         Some((spot.spread, spot.sp, on_page))
     });
     let pos_of = |sp: Point| match g.orientation {
-        designcraft_doc::Orientation::Horizontal => sp.y,
-        designcraft_doc::Orientation::Vertical => sp.x,
+        pliego_doc::Orientation::Horizontal => sp.y,
+        pliego_doc::Orientation::Vertical => sp.x,
     };
     let orient = match g.orientation {
-        designcraft_doc::Orientation::Horizontal => "horizontal",
-        designcraft_doc::Orientation::Vertical => "vertical",
+        pliego_doc::Orientation::Horizontal => "horizontal",
+        pliego_doc::Orientation::Vertical => "vertical",
     };
     match (g.from, on_canvas, target) {
         // Dropped back on a ruler: delete.
@@ -364,8 +364,8 @@ pub(super) fn guide_drag_delta(app: &DesignApp, xf: &Xf, g: &GuideDrag, origin: 
     let start = layout.slot(r)?.to_spread(xf.to_canvas(origin));
     let at = st.doc.spread(r)?.pages.get(pi)?.guides.get(gi)?.position;
     let (dx, dy) = match g.orientation {
-        designcraft_doc::Orientation::Vertical => (sp.x - at, sp.y - start.y),
-        designcraft_doc::Orientation::Horizontal => (sp.x - start.x, sp.y - at),
+        pliego_doc::Orientation::Vertical => (sp.x - at, sp.y - start.y),
+        pliego_doc::Orientation::Horizontal => (sp.x - start.x, sp.y - at),
     };
     (dx.is_finite() && dy.is_finite()).then_some((dx, dy))
 }
@@ -398,7 +398,7 @@ pub(super) fn moving_guides(app: &DesignApp, xf: &Xf, rect: Rect, g: &GuideDrag,
 pub(super) fn over_item(app: &DesignApp, xf: &Xf, p: Pos2) -> bool {
     let Some(st) = app.session.active() else { return false };
     let layout = CanvasLayout::new(&st.doc, st.editing_parents);
-    let cx = designcraft_tools::ToolContext {
+    let cx = pliego_tools::ToolContext {
         doc: &st.doc,
         selection: &st.selection,
         cache: &app.session.cache,

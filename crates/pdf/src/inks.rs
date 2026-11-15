@@ -1,13 +1,13 @@
 //! The document's inks as a [`craft_prepress::InkSet`]: the four process inks, each spot swatch
 //! with its color as the alternate, and the Ink Manager settings (aliases, spots to process).
 //!
-//! The document saves the Ink Manager by swatch name ([`designcraft_doc::InkManager`]); the set
+//! The document saves the Ink Manager by swatch name ([`pliego_doc::InkManager`]); the set
 //! is built from it whenever output needs it, so renaming or editing a swatch never leaves a
 //! stale copy.
 
 use craft_prepress::{Alternate, Ink, InkId, InkSet, Spot};
-use designcraft_color::swatch::{ColorType, Swatch, SwatchValue};
-use designcraft_doc::Document;
+use pliego_color::swatch::{ColorType, Swatch, SwatchValue};
+use pliego_doc::Document;
 
 fn is_spot(w: &Swatch) -> bool {
     matches!(w.value, SwatchValue::Color { color_type: ColorType::Spot, .. })
@@ -20,7 +20,7 @@ pub fn ink_set(doc: &Document) -> InkSet {
     for w in doc.swatches.iter().filter(|w| is_spot(w)) {
         let SwatchValue::Color { color, .. } = w.value else { continue };
         let alternate = match color {
-            designcraft_color::Color::Cmyk { c, m, y, k } => Alternate::Cmyk([c, m, y, k]),
+            pliego_color::Color::Cmyk { c, m, y, k } => Alternate::Cmyk([c, m, y, k]),
             other => {
                 let lab = other.to_lab();
                 Alternate::Lab([lab.l, lab.a, lab.b])
@@ -61,8 +61,8 @@ fn swatch_of<'a>(doc: &'a Document, set: &InkSet, id: InkId) -> Option<&'a str> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_color::Color;
-    use designcraft_doc::build::NewDocument;
+    use pliego_color::Color;
+    use pliego_doc::build::NewDocument;
 
     fn spot(d: &mut Document, name: &str, color: Color) {
         d.swatches.push(Swatch {

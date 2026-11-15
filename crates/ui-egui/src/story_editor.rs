@@ -5,8 +5,8 @@
 use egui::{pos2, vec2};
 use serde_json::json;
 
-use designcraft_compose::ComposedStory;
-use designcraft_doc::StoryId;
+use pliego_compose::ComposedStory;
+use pliego_doc::StoryId;
 
 use crate::DesignApp;
 use crate::theme::Tokens;
@@ -22,7 +22,7 @@ const OVERSET_RED: egui::Color32 = egui::Color32::from_rgb(230, 40, 40);
 /// to the document the story belongs to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Target {
-    /// [`designcraft_engine::DocState::uid`] of the story's document.
+    /// [`pliego_engine::DocState::uid`] of the story's document.
     pub doc: u64,
     pub story: StoryId,
 }
@@ -313,11 +313,11 @@ mod tests {
     /// column is deeper than the last line of the first.
     #[test]
     fn depths_run_through_columns() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let text = "Depth ruler line of words. ".repeat(80);
         let r = app.run("frame.create", json!({"rect": [72, 72, 372, 272], "content": "text", "text": text, "caret": false})).unwrap();
-        let (id, sid) = (r["id"].as_u64().unwrap(), designcraft_doc::StoryId(r["story"].as_u64().unwrap()));
+        let (id, sid) = (r["id"].as_u64().unwrap(), pliego_doc::StoryId(r["story"].as_u64().unwrap()));
         app.run("object.textFrameOptions", json!({"ids": [id], "columns": 2, "gutter": 12})).unwrap();
         let st = app.session.active().unwrap();
         let cs = app.session.cache.get(&st.doc, sid, None);
@@ -335,17 +335,17 @@ mod tests {
     /// split paragraphs goes on from the deeper sub-column.
     #[test]
     fn split_paragraph_sub_columns_count_once() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let text =
             format!("Opening line.\n{}\nMiddle line.\nTwo short lines set side by side.\nClosing line.", "Split column words go here. ".repeat(12));
         let r = app.run("frame.create", json!({"rect": [72, 72, 372, 672], "content": "text", "text": text, "caret": false})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let mut doc = (*app.session.active().unwrap().doc).clone();
         for i in [1, 3] {
-            doc.story_mut(sid).unwrap().paras[i].para.span_columns = Some(designcraft_doc::SpanColumns::Split(2));
+            doc.story_mut(sid).unwrap().paras[i].para.span_columns = Some(pliego_doc::SpanColumns::Split(2));
         }
-        let cs = designcraft_compose::compose_story(&doc, sid, &designcraft_compose::ComposeOptions::default());
+        let cs = pliego_compose::compose_story(&doc, sid, &pliego_compose::ComposeOptions::default());
         let lines = &cs.frames[0].lines;
         let depths = super::line_depths(&cs);
         assert!(lines.windows(2).any(|w| w[0].para == 1 && w[1].para == 1 && w[1].baseline < w[0].baseline), "para 1 restarts higher");
@@ -371,11 +371,11 @@ mod tests {
     /// second segment adds nothing to the depth.
     #[test]
     fn segments_beside_a_wrap_object_share_their_line_depth() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let text = "Words that wrap on both sides of the box in the middle. ".repeat(20);
         let r = app.run("frame.create", json!({"rect": [72, 72, 432, 472], "content": "text", "text": text, "caret": false})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let b = app.run("frame.create", json!({"rect": [232, 150, 272, 300], "content": "graphic"})).unwrap();
         app.run("object.textWrap", json!({"ids": [b["id"].as_u64().unwrap()], "mode": "boundingBox", "side": "bothSides"})).unwrap();
         let st = app.session.active().unwrap();
@@ -393,13 +393,13 @@ mod tests {
     /// Space after a paragraph moves the next one down the frame, and the depth goes down with it.
     #[test]
     fn paragraph_spacing_adds_to_the_depth() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let r = app.run("frame.create", json!({"rect": [72, 72, 372, 672], "content": "text", "text": "First.\nSecond.", "caret": false})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let mut doc = (*app.session.active().unwrap().doc).clone();
         doc.story_mut(sid).unwrap().paras[0].para.space_after = Some(72.0);
-        let cs = designcraft_compose::compose_story(&doc, sid, &designcraft_compose::ComposeOptions::default());
+        let cs = pliego_compose::compose_story(&doc, sid, &pliego_compose::ComposeOptions::default());
         let lines = &cs.frames[0].lines;
         let depths = super::line_depths(&cs);
         assert_eq!(lines.len(), 2);
@@ -450,7 +450,7 @@ mod tests {
     /// text, which moves right by the ruler's width; the setting is remembered.
     #[test]
     fn depth_ruler_shows_and_hides_from_the_view_menu() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let r = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "Ruler story", "caret": false})).unwrap();
         app.run("app.storyEditor", json!({"story": r["story"].as_u64().unwrap()})).unwrap();
@@ -484,7 +484,7 @@ mod tests {
                 _ => 0,
             }
         }
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let text = "First line\nSecond line\nThird line\n".repeat(4);
         let r = app.run("frame.create", json!({"rect": [72, 72, 372, 172], "content": "text", "text": text, "caret": false})).unwrap();
@@ -521,7 +521,7 @@ mod tests {
     /// still reaches the story.
     #[test]
     fn depth_ruler_toggle_keeps_the_text_focused() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let r = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "Ruler story", "caret": false})).unwrap();
         app.run("app.storyEditor", json!({"story": r["story"].as_u64().unwrap()})).unwrap();
@@ -541,7 +541,7 @@ mod tests {
     /// the other document's story with the same id.
     #[test]
     fn editor_stays_with_its_document() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         let mut stories = Vec::new();
         for text in ["Alpha story", "Bravo story"] {
             app.run("file.new", json!({})).unwrap();

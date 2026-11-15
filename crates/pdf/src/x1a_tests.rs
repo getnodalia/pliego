@@ -5,13 +5,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use designcraft_color::{Color, ColorType, Swatch, SwatchValue};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Content, Document, Fill, Item, ItemId, ParaFormat, SpreadRef};
-use designcraft_geom::Rect;
 use hayro_syntax::Pdf;
 use hayro_syntax::object::{Dict, Name, Object};
+use pliego_color::{Color, ColorType, Swatch, SwatchValue};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Content, Document, Fill, Item, ItemId, ParaFormat, SpreadRef};
+use pliego_geom::Rect;
 
 use crate::tests::extract_text;
 use crate::{PdfOptions, ShadowMask, Standard, check_pdfx1a, export_pdf_with_report};
@@ -19,7 +19,7 @@ use crate::{PdfOptions, ShadowMask, Standard, check_pdfx1a, export_pdf_with_repo
 fn add(d: &mut Document, r: Rect, swatch: &str, edit: impl FnOnce(&mut Item)) -> ItemId {
     let lid = d.default_layer();
     let id = ItemId(d.alloc());
-    let mut b = Item::new(id, lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+    let mut b = Item::new(id, lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
     b.fill = Fill::swatch(swatch);
     edit(&mut b);
     d.insert_item(SpreadRef::Doc(0), b, None).unwrap();
@@ -40,7 +40,7 @@ fn transparent_doc() -> (Document, PdfOptions) {
     add(&mut d, Rect::new(300.0, 72.0, 400.0, 172.0), "C=100 M=0 Y=0 K=0", |b| b.opacity = 0.5);
     let lid = d.default_layer();
     let child = |d: &mut Document, r: Rect, swatch: &str| {
-        let mut b = Item::new(ItemId(d.alloc()), lid, designcraft_doc::Shape::Rectangle, designcraft_geom::shapes::rectangle(r));
+        let mut b = Item::new(ItemId(d.alloc()), lid, pliego_doc::Shape::Rectangle, pliego_geom::shapes::rectangle(r));
         b.fill = Fill::swatch(swatch);
         b.opacity = 0.5;
         Arc::new(b)
@@ -49,8 +49,7 @@ fn transparent_doc() -> (Document, PdfOptions) {
         child(&mut d, Rect::new(72.0, 300.0, 172.0, 400.0), "C=100 M=0 Y=0 K=0"),
         child(&mut d, Rect::new(122.0, 350.0, 222.0, 450.0), "C=0 M=0 Y=100 K=0"),
     ];
-    let mut g =
-        Item::new(ItemId(d.alloc()), lid, designcraft_doc::Shape::Group, designcraft_geom::shapes::rectangle(Rect::new(72.0, 300.0, 222.0, 450.0)));
+    let mut g = Item::new(ItemId(d.alloc()), lid, pliego_doc::Shape::Group, pliego_geom::shapes::rectangle(Rect::new(72.0, 300.0, 222.0, 450.0)));
     g.content = Content::Group { items };
     g.knockout = true;
     d.insert_item(SpreadRef::Doc(0), g, None).unwrap();

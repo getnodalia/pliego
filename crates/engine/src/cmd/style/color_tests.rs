@@ -171,7 +171,7 @@ fn char_fill_accepts_omitted_and_null_attributes_when_used_at_all_boundaries() {
 
 #[test]
 fn percent_components_at_most_one_stay_percent() {
-    use designcraft_color::Color;
+    use pliego_color::Color;
     // {"c": 0.7, ..., "y": 12.2} is a pale cream (C 0.7 %, Y 12.2 %), not C 70 %.
     let Some(Color::Cmyk { c, m, y, k }) = parse_color(&json!({"c": 0.7, "m": 0, "y": 12.2, "k": 0})) else { panic!("not CMYK") };
     assert!((c - 0.007).abs() < 1e-6 && m == 0.0 && (y - 0.122).abs() < 1e-6 && k == 0.0, "got {c} {m} {y} {k}");
@@ -186,7 +186,7 @@ fn percent_components_at_most_one_stay_percent() {
 /// #910: `{c: 1, m: 0, y: 0, k: 0}` is a 1 % cyan tint, not solid cyan, though every component is within 0..1.
 #[test]
 fn cmyk_percentages_of_one_or_less_stay_percent() {
-    use designcraft_color::Color;
+    use pliego_color::Color;
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [0, 0, 50, 50]})).unwrap()["id"].as_u64().unwrap();
@@ -195,7 +195,7 @@ fn cmyk_percentages_of_one_or_less_stay_percent() {
     let d = &s.doc().unwrap().doc;
     let Some(Color::Cmyk { c, m, y, k }) = d.resolve_color("Tint1", 1.0) else { panic!("not CMYK") };
     assert!((c - 0.01).abs() < 1e-6 && m == 0.0 && y == 0.0 && k == 0.0, "got {c} {m} {y} {k}");
-    let pdf = designcraft_pdf::export_pdf(d, &s.cache, &designcraft_pdf::PdfOptions { compress: false, ..Default::default() }).unwrap();
+    let pdf = pliego_pdf::export_pdf(d, &s.cache, &pliego_pdf::PdfOptions { compress: false, ..Default::default() }).unwrap();
     let text = String::from_utf8_lossy(&pdf);
     // Operands of every `k` (DeviceCMYK fill), last first: [k, y, m, c]. Inks are written in 1/255 steps (C 1 % is 3/255).
     let fills: Vec<Vec<f32>> =
@@ -207,21 +207,21 @@ fn cmyk_percentages_of_one_or_less_stay_percent() {
     s.execute("selection.set", &json!({"ids": [id]})).unwrap();
     s.execute("object.color", &json!({"color": {"c": 0.5, "m": 0.5, "y": 0, "k": 0}})).unwrap();
     let d = &s.doc().unwrap().doc;
-    let fill = &d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch;
+    let fill = &d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch;
     let Some(Color::Cmyk { c, m, .. }) = d.resolve_color(fill, 1.0) else { panic!("not CMYK") };
     assert!((c - 0.005).abs() < 1e-6 && (m - 0.005).abs() < 1e-6, "got {c} {m}");
 }
 
 #[test]
 fn a_colour_with_a_model_is_read_as_fractions_without_guessing() {
-    use designcraft_color::Color;
+    use pliego_color::Color;
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let id = s.execute("frame.create", &json!({"rect": [0, 0, 50, 50]})).unwrap()["id"].as_u64().unwrap();
     s.execute("selection.set", &json!({"ids": [id]})).unwrap();
     let fill = |s: &Session| {
         let d = &s.doc().unwrap().doc;
-        d.resolve_color(&d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
+        d.resolve_color(&d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
     };
     // M 1 % from the Color panel: not M 100 % (magenta), though every component is within 0..1.
     s.execute("object.color", &json!({"color": {"model": "cmyk", "c": 0, "m": 0.01, "y": 0, "k": 0}})).unwrap();
@@ -270,7 +270,7 @@ fn style_groups_rename_every_use() {
     let r = s.execute("style.group", &json!({"kind": "paragraph", "names": ["Head", "Sub"], "group": "Titles"})).unwrap();
     assert_eq!(r["renamed"]["Head"], "Titles/Head");
     let d = s.doc().unwrap().doc.clone();
-    assert_eq!(d.story(designcraft_doc::StoryId(sid)).unwrap().paras[0].style, "Titles/Head");
+    assert_eq!(d.story(pliego_doc::StoryId(sid)).unwrap().paras[0].style, "Titles/Head");
     assert_eq!(d.styles.para("Titles/Sub").unwrap().based_on.as_deref(), Some("Titles/Head"));
     // Out of the group again.
     s.execute("style.group", &json!({"kind": "paragraph", "names": ["Titles/Head"], "group": ""})).unwrap();
@@ -309,7 +309,7 @@ fn character_style_edit_sets_unsets_rebases_and_renames_every_use() {
     assert_eq!(st.based_on.as_deref(), Some("Base"));
     // Exactly the attributes set: `null` unset the font style, the rest stayed unset.
     assert_eq!(st.chars, CharAttrs { size: Some(14.0), fill: Some("[Paper]".into()), tracking: Some(20.0), ..Default::default() });
-    let story = d.story(designcraft_doc::StoryId(sid)).unwrap();
+    let story = d.story(pliego_doc::StoryId(sid)).unwrap();
     assert!(story.chars.iter().any(|r| r.format.style == "Strong"));
     assert!(story.chars.iter().all(|r| r.format.style != "Emphasis"));
     let lead = d.styles.para("Lead").unwrap();
@@ -357,7 +357,7 @@ fn continue_numbering_in_a_style_overrides_an_inherited_start_at() {
 fn null_kinsoku_sets_the_default_rules_over_a_based_on_set() {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
-    let hard = serde_json::to_value(designcraft_doc::cjk::Kinsoku::named("HardKinsoku").unwrap()).unwrap();
+    let hard = serde_json::to_value(pliego_doc::cjk::Kinsoku::named("HardKinsoku").unwrap()).unwrap();
     s.execute("style.paragraph.create", &json!({"name": "Base", "para": {"kinsoku": hard}})).unwrap();
     s.execute("style.paragraph.create", &json!({"name": "Body", "basedOn": "Base", "para": {"kinsoku": hard}})).unwrap();
     s.execute("style.paragraph.edit", &json!({"name": "Body", "para": {"kinsoku": null}})).unwrap();
@@ -396,7 +396,7 @@ fn swatches_save_and_load_ase() {
 
 #[test]
 fn loading_swatches_matches_the_first_swatch_of_each_name() {
-    use designcraft_color::{Color, ColorType};
+    use pliego_color::{Color, ColorType};
     let ink = |k: f32| SwatchValue::Color { color: Color::cmyk(0.0, 0.0, 0.0, k), color_type: ColorType::Process };
     let sw = |name: &str, k: f32| Swatch { name: name.into(), value: ink(k), locked: false, named: true, hidden: false };
     let mut s = Session::new();
@@ -407,7 +407,7 @@ fn loading_swatches_matches_the_first_swatch_of_each_name() {
         Ok(())
     })
     .unwrap();
-    let file = designcraft_color::ase::write(&[sw("New", 0.4), sw("New", 0.5), sw("Twin", 0.6), sw("Unnamed", 0.7), sw("[Black]", 0.8)]);
+    let file = pliego_color::ase::write(&[sw("New", 0.4), sw("New", 0.5), sw("Twin", 0.6), sw("Unnamed", 0.7), sw("[Black]", 0.8)]);
     let b64 = crate::cmd::base64_encode(&file);
     let named = |s: &Session, name: &str| -> Vec<(SwatchValue, bool)> {
         s.doc().unwrap().doc.swatches.iter().filter(|w| w.name == name).map(|w| (w.value.clone(), w.hidden)).collect()
@@ -430,7 +430,7 @@ fn loading_swatches_matches_the_first_swatch_of_each_name() {
 
 #[test]
 fn loading_swatches_numbers_repeated_names_and_names_unnamed_colors() {
-    use designcraft_color::{Color, ColorType};
+    use pliego_color::{Color, ColorType};
     let ink = |k: f32| SwatchValue::Color { color: Color::cmyk(0.0, 0.0, 0.0, k), color_type: ColorType::Process };
     let sw = |name: &str, k: f32| Swatch { name: name.into(), value: ink(k), locked: false, named: true, hidden: false };
     let mut s = Session::new();
@@ -442,7 +442,7 @@ fn loading_swatches_numbers_repeated_names_and_names_unnamed_colors() {
     .unwrap();
     // "Red 2" comes before the second "Red", which takes "Red 3". Two unnamed colors share a value.
     let file =
-        designcraft_color::ase::write(&[sw("Red", 0.2), sw("Red 2", 0.3), sw("Red", 0.4), sw("", 0.55), sw("", 0.55), sw("", 0.65), sw("Kept", 0.7)]);
+        pliego_color::ase::write(&[sw("Red", 0.2), sw("Red 2", 0.3), sw("Red", 0.4), sw("", 0.55), sw("", 0.55), sw("", 0.65), sw("Kept", 0.7)]);
     let b64 = crate::cmd::base64_encode(&file);
     let named = |s: &Session, name: &str| -> Vec<(SwatchValue, bool)> {
         s.doc().unwrap().doc.swatches.iter().filter(|w| w.name == name).map(|w| (w.value.clone(), w.named)).collect()
@@ -482,16 +482,16 @@ fn unnamed_colors_then_add_to_swatches() {
     s.execute("object.color", &json!({"color": {"c": 10, "m": 20, "y": 30, "k": 0}, "target": "stroke"})).unwrap();
     assert_eq!(s.doc().unwrap().doc.swatches.len(), n);
     let d = &s.doc().unwrap().doc;
-    let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+    let it = d.item(pliego_doc::ItemId(id)).unwrap();
     assert_eq!(it.fill.swatch, it.stroke.swatch);
     // Add to Swatches with a name: listed, and the object follows the rename.
     s.execute("swatch.addToSwatches", &json!({"name": "Sand"})).unwrap();
     assert_eq!(listed(&s), before + 1);
     let d = &s.doc().unwrap().doc;
-    assert_eq!(d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
+    assert_eq!(d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
     // A colour equal to an existing swatch applies that swatch.
     s.execute("object.color", &json!({"color": {"c": 10, "m": 20, "y": 30, "k": 0}})).unwrap();
-    assert_eq!(s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
+    assert_eq!(s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, "Sand");
 }
 
 #[test]
@@ -500,7 +500,7 @@ fn add_to_swatches_renames_the_colour_in_text_cells_and_notes() {
     let mut s = Session::new();
     s.execute("file.new", &json!({})).unwrap();
     let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Hello world"})).unwrap();
-    let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+    let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
     s.execute("text.select", &json!({"story": sid.0, "anchor": 11})).unwrap();
     s.execute("endnote.insert", &json!({"text": "end"})).unwrap();
     s.execute("text.select", &json!({"story": sid.0, "anchor": 11})).unwrap();

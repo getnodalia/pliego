@@ -65,11 +65,11 @@ fn svg_options() -> &'static usvg::Options<'static> {
     static OPTS: OnceLock<usvg::Options<'static>> = OnceLock::new();
     OPTS.get_or_init(|| {
         let mut db = usvg::fontdb::Database::new();
-        for f in designcraft_fonts::bundled() {
+        for f in pliego_fonts::bundled() {
             db.load_font_data(f.to_vec());
         }
         // Japanese text in SVGs: the craft-fonts faces (none without CRAFT_FONTS_DIR).
-        for f in designcraft_fonts::japanese_document_fonts() {
+        for f in pliego_fonts::japanese_document_fonts() {
             db.load_font_data(f.bytes.to_vec());
         }
         db.set_serif_family("Source Serif 4");
@@ -112,7 +112,7 @@ fn svg_options() -> &'static usvg::Options<'static> {
 fn select_font() -> usvg::FontSelectionFn<'static> {
     use usvg::fontdb::{Family, Query, Stretch, Style, Weight};
     Box::new(move |font, db| {
-        let fonts = designcraft_fonts::FontDb::global();
+        let fonts = pliego_fonts::FontDb::global();
         let spelled = |db: &usvg::fontdb::Database, name: &str| {
             db.faces().flat_map(|f| &f.families).find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(n, _)| n.clone())
         };
@@ -222,7 +222,7 @@ fn select_font() -> usvg::FontSelectionFn<'static> {
 }
 
 /// Is `name` (ignoring case) a legacy family name (name ID 1) or full name (ID 4) of `face`?
-fn has_legacy_name(face: &designcraft_fonts::FontFace, name: &str) -> bool {
+fn has_legacy_name(face: &pliego_fonts::FontFace, name: &str) -> bool {
     use skrifa::MetadataProvider;
     use skrifa::string::StringId;
     let Some(f) = face.skrifa() else { return false };
@@ -243,7 +243,7 @@ fn select_fallback() -> usvg::FallbackSelectionFn<'static> {
     let loaded = usvg::FontResolver::default_fallback_selector();
     Box::new(move |c, exclude, db| {
         loaded(c, exclude, db).or_else(|| {
-            let id = add_face(db, designcraft_fonts::FontDb::global().fallback_for(c, 0, None)?)?;
+            let id = add_face(db, pliego_fonts::FontDb::global().fallback_for(c, 0, None)?)?;
             // usvg asks again until we run out: a face it already tried ends the search.
             (!exclude.contains(&id)).then_some(id)
         })
@@ -251,7 +251,7 @@ fn select_fallback() -> usvg::FallbackSelectionFn<'static> {
 }
 
 /// A shared face's bytes, handed to usvg without a copy.
-struct FaceBytes(Arc<designcraft_fonts::FontFace>);
+struct FaceBytes(Arc<pliego_fonts::FontFace>);
 
 impl AsRef<[u8]> for FaceBytes {
     fn as_ref(&self) -> &[u8] {
@@ -260,7 +260,7 @@ impl AsRef<[u8]> for FaceBytes {
 }
 
 /// Add `face` to the SVG's font database (once) and return its id there.
-fn add_face(db: &mut Arc<usvg::fontdb::Database>, face: Arc<designcraft_fonts::FontFace>) -> Option<usvg::fontdb::ID> {
+fn add_face(db: &mut Arc<usvg::fontdb::Database>, face: Arc<pliego_fonts::FontFace>) -> Option<usvg::fontdb::ID> {
     let same = |f: &usvg::fontdb::FaceInfo| {
         f.index == face.index()
             && matches!(&f.source, usvg::fontdb::Source::Binary(b) if std::ptr::eq(b.as_ref().as_ref().as_ptr(), face.data().as_ptr()))

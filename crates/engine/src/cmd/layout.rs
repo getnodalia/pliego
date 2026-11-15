@@ -1,6 +1,6 @@
 //! Layout menu and Pages/Layers panels: pages, spreads, parents, margins & columns, layers.
 
-use designcraft_doc::{LAYER_COLORS, Layer, LayerId, Margins, SpreadId};
+use pliego_doc::{LAYER_COLORS, Layer, LayerId, Margins, SpreadId};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc, ok, str_param};

@@ -1,22 +1,22 @@
 # Hosting Pliego for the web
 
-`designcraft-web-<version>.zip` (from the GitHub release, or `packaging/web/package.sh`) holds a
-static site in `designcraft-web-<version>/`:
+`pliego-web-<version>.zip` (from the GitHub release, or `packaging/web/package.sh`) holds a
+static site in `pliego-web-<version>/`:
 
 | File | What it is |
 |---|---|
 | `index.html` | The page. It loads everything through relative URLs. |
-| `designcraft-web-<hash>.js` | wasm-bindgen glue (generated, ES module) |
-| `designcraft-web-<hash>_bg.wasm` | The app, about 13 MB, or 5 MB with compression |
+| `pliego-web-<hash>.js` | wasm-bindgen glue (generated, ES module) |
+| `pliego-web-<hash>_bg.wasm` | The app, about 13 MB, or 5 MB with compression |
 | `_headers`, `.htaccess` | Sample header rules for Netlify/Cloudflare Pages and Apache |
 
 There is no server-side code. Upload the folder's contents anywhere that serves static files.
 
 ## Any path works
 
-All URLs in `index.html` are relative (`public_url = "./"` in `apps/designcraft-web/Trunk.toml`),
+All URLs in `index.html` are relative (`public_url = "./"` in `apps/pliego-web/Trunk.toml`),
 so the site works at a domain root (`https://example.com/`), under a prefix
-(`https://example.com/tools/designcraft/`) and from a CDN bucket. The asset names carry a content
+(`https://example.com/tools/pliego/`) and from a CDN bucket. The asset names carry a content
 hash, so they can be cached forever. Only `index.html` needs revalidation.
 
 ## Required server settings
@@ -39,7 +39,7 @@ hash, so they can be cached forever. Only `index.html` needs revalidation.
 nginx example:
 
 ```nginx
-location /designcraft/ {
+location /pliego/ {
     types { application/wasm wasm; text/javascript js; text/html html; }
     gzip on;
     gzip_types application/wasm text/javascript text/html;
@@ -54,7 +54,7 @@ Local test: `python3 -m http.server 8765` inside the folder, then open http://lo
 
 ```html
 <iframe
-  src="https://example.com/designcraft/"
+  src="https://example.com/pliego/"
   title="Pliego image editor"
   style="width: 100%; height: 720px; border: 0;"
   allow="fullscreen; clipboard-read; clipboard-write"
@@ -84,6 +84,6 @@ Pliego renders with wgpu. It uses **WebGPU** when the browser has it and falls b
 | `?webgl` | Force the WebGL2 backend (useful when a WebGPU driver misbehaves) |
 | `?cpu` | Force the CPU canvas path (slowest, most compatible) |
 
-For example: `<iframe src="https://example.com/designcraft/?webgl" ...>`.
+For example: `<iframe src="https://example.com/pliego/?webgl" ...>`.
 
 A browser with neither WebGPU nor WebGL2 gets a message in place of the app.

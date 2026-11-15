@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build, sign and (optionally) notarize the macOS release artifacts:
 #
-#   $DIST/designcraft-<version>-macos-<arch>.dmg          DesignCraft.app on a drag-to-Applications DMG
-#   $DIST/designcraft-cli-<version>-macos-<arch>.zip      the headless CLI
+#   $DIST/pliego-<version>-macos-<arch>.dmg          Pliego.app on a drag-to-Applications DMG
+#   $DIST/pliego-cli-<version>-macos-<arch>.zip      the headless CLI
 #
 # Usage: packaging/macos/package.sh [--arch universal|aarch64|x86_64] [--skip-build]
 #
@@ -39,9 +39,9 @@ export MACOSX_DEPLOYMENT_TARGET=11.0
 IDENTITY="${MACOS_SIGN_IDENTITY:--}"
 SHORT_VERSION="${VERSION%%-*}"
 WORK="$CARGO_TARGET_DIR/macos-package"
-APP="$WORK/DesignCraft.app"
-DMG="$DIST/designcraft-$VERSION-macos-$ARCH.dmg"
-CLI_ZIP="$DIST/designcraft-cli-$VERSION-macos-$ARCH.zip"
+APP="$WORK/Pliego.app"
+DMG="$DIST/pliego-$VERSION-macos-$ARCH.dmg"
+CLI_ZIP="$DIST/pliego-cli-$VERSION-macos-$ARCH.zip"
 
 NOTARIZE=0
 if [[ "$IDENTITY" = "-" ]]; then
@@ -52,20 +52,20 @@ else
   warn "macOS: APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID incomplete; signed but not notarized"
 fi
 
-echo "==> DesignCraft $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $NOTARIZE"
+echo "==> Pliego $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $NOTARIZE"
 
 # ---- build -------------------------------------------------------------------------------------
 if [[ "$SKIP_BUILD" = 0 ]]; then
   args=()
   for t in "${TARGETS[@]}"; do args+=(--target "$t"); done
-  (cd "$ROOT" && cargo build --release --locked -p designcraft -p designcraft-cli "${args[@]}")
+  (cd "$ROOT" && cargo build --release --locked -p pliego -p pliego-cli "${args[@]}")
 fi
 
 rm -rf "$WORK"
 mkdir -p "$WORK/bin"
-for bin in designcraft designcraft-cli; do
+for bin in pliego pliego-cli; do
   source_bin="$bin"
-  if [[ "$bin" == designcraft ]]; then source_bin=pliego; fi
+  if [[ "$bin" == pliego ]]; then source_bin=pliego; fi
   inputs=()
   for t in "${TARGETS[@]}"; do inputs+=("$CARGO_TARGET_DIR/$t/release/$source_bin"); done
   lipo -create -output "$WORK/bin/$bin" "${inputs[@]}"
@@ -114,33 +114,33 @@ notarize() {
   fi
 }
 
-# ---- DesignCraft.app ----------------------------------------------------------------------------
+# ---- Pliego.app ----------------------------------------------------------------------------
 echo "==> assembling $APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Executable and icon carry the display name (CFBundleExecutable / CFBundleIconFile).
-cp "$WORK/bin/designcraft" "$APP/Contents/MacOS/DesignCraft"
-cp "$WORK/bin/designcraft-cli" "$APP/Contents/MacOS/designcraft-cli"
-cp "$ROOT/assets/app-icon/designcraft.icns" "$APP/Contents/Resources/DesignCraft.icns"
+cp "$WORK/bin/pliego" "$APP/Contents/MacOS/Pliego"
+cp "$WORK/bin/pliego-cli" "$APP/Contents/MacOS/pliego-cli"
+cp "$ROOT/assets/app-icon/pliego.icns" "$APP/Contents/Resources/Pliego.icns"
 # Required embedded-font notices are independent of optional font inputs.
 cp "$ROOT/NOTICE" "$APP/Contents/Resources/NOTICE"
 # Licences of the embedded craft-fonts fonts (only when built with CRAFT_FONTS_DIR).
 copy_font_licences "$APP/Contents/Resources"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHORT_VERSION@/$SHORT_VERSION/g" \
-  -e "s/@BUILD_SHA@/${DESIGNCRAFT_BUILD_SHA:-unknown}/g" \
+  -e "s/@BUILD_SHA@/${PLIEGO_BUILD_SHA:-unknown}/g" \
   "$HERE/Info.plist.in" >"$APP/Contents/Info.plist"
 plutil -lint "$APP/Contents/Info.plist"
 printf 'APPL????' >"$APP/Contents/PkgInfo"
 
 # Sign inside-out: nested code first, then the bundle itself (no --deep on the final signature).
-sign --options runtime "$APP/Contents/MacOS/designcraft-cli"
-sign --options runtime --entitlements "$HERE/entitlements.plist" "$APP/Contents/MacOS/DesignCraft"
+sign --options runtime "$APP/Contents/MacOS/pliego-cli"
+sign --options runtime --entitlements "$HERE/entitlements.plist" "$APP/Contents/MacOS/Pliego"
 sign --options runtime --entitlements "$HERE/entitlements.plist" "$APP"
 codesign --verify --strict --deep --verbose=2 "$APP"
-"$APP/Contents/MacOS/designcraft-cli" --version
+"$APP/Contents/MacOS/pliego-cli" --version
 
 if [[ "$NOTARIZE" = 1 ]]; then
-  ditto -c -k --keepParent "$APP" "$WORK/DesignCraft-notarize.zip"
-  notarize "$WORK/DesignCraft-notarize.zip"
+  ditto -c -k --keepParent "$APP" "$WORK/Pliego-notarize.zip"
+  notarize "$WORK/Pliego-notarize.zip"
   stapler_retry staple "$APP"
   stapler_retry validate "$APP"
   spctl --assess --type execute -vvv "$APP"
@@ -150,7 +150,7 @@ fi
 echo "==> building $DMG"
 STAGE="$WORK/dmg"
 mkdir -p "$STAGE"
-ditto "$APP" "$STAGE/DesignCraft.app"
+ditto "$APP" "$STAGE/Pliego.app"
 ln -s /Applications "$STAGE/Applications"
 # Finder window layout: background, icon size and positions (packaging/macos/dmg/README.md).
 mkdir -p "$STAGE/.background"
@@ -159,8 +159,8 @@ cp "$HERE/dmg/dmg-layout.DS_Store" "$STAGE/.DS_Store"
 rm -f "$DMG"
 # `hdiutil create -srcfolder` writes the files as they are. `makehybrid -hfs` gave every file a
 # com.apple.FinderInfo, which `codesign --verify --strict` rejects as "Finder information, or
-# similar detritus" on the app in the image and on a copy installed from it (as VectorCraft's
-# storytold/vectorcraft#1085 and PdfCraft's storytold/pdfcraft#823). `create` attaches a device
+# similar detritus" on the app in the image and on a copy installed from it (as Pluma's
+# storytold/vectorcraft#1085 and Papel's storytold/pdfcraft#823). `create` attaches a device
 # while it copies, which fails now and then on CI runners ("Resource busy"), so it gets a few
 # tries. The volume name has no version: .DS_Store finds the background through an alias that
 # includes it.
@@ -177,7 +177,7 @@ hdiutil_retry() {
     sleep $((attempt * 10))
   done
 }
-hdiutil_retry create create -srcfolder "$STAGE" -volname "DesignCraft" -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov "$DMG"
+hdiutil_retry create create -srcfolder "$STAGE" -volname "Pliego" -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov "$DMG"
 sign "$DMG"
 codesign --verify --strict --verbose=2 "$DMG"
 # The app inside the image must still pass --strict, so a makehybrid-style regression can't ship.
@@ -185,7 +185,7 @@ MOUNT="$WORK/dmg-check"
 rm -rf "$MOUNT"
 mkdir -p "$MOUNT"
 hdiutil_retry attach attach -nobrowse -readonly -mountpoint "$MOUNT" "$DMG" >/dev/null
-if ! codesign --verify --strict --deep --verbose=2 "$MOUNT/DesignCraft.app"; then
+if ! codesign --verify --strict --deep --verbose=2 "$MOUNT/Pliego.app"; then
   hdiutil_retry detach detach "$MOUNT" >/dev/null || true
   exit 1
 fi
@@ -199,17 +199,17 @@ fi
 
 # ---- CLI ---------------------------------------------------------------------------------------
 echo "==> building $CLI_ZIP"
-CLI_DIR="$WORK/designcraft-cli-$VERSION-macos-$ARCH"
+CLI_DIR="$WORK/pliego-cli-$VERSION-macos-$ARCH"
 mkdir -p "$CLI_DIR"
-cp "$WORK/bin/designcraft-cli" "$CLI_DIR/"
+cp "$WORK/bin/pliego-cli" "$CLI_DIR/"
 copy_docs "$CLI_DIR"
-sign --options runtime "$CLI_DIR/designcraft-cli"
-codesign --verify --strict --verbose=2 "$CLI_DIR/designcraft-cli"
+sign --options runtime "$CLI_DIR/pliego-cli"
+codesign --verify --strict --verbose=2 "$CLI_DIR/pliego-cli"
 rm -f "$CLI_ZIP"
 ditto -c -k --keepParent "$CLI_DIR" "$CLI_ZIP"
 # A bare Mach-O can't carry a stapled ticket; Gatekeeper looks the notarization up online.
 if [[ "$NOTARIZE" = 1 ]]; then notarize "$CLI_ZIP"; fi
 
-"$CLI_DIR/designcraft-cli" --version
+"$CLI_DIR/pliego-cli" --version
 echo "==> done"
 ls -lh "$DMG" "$CLI_ZIP"

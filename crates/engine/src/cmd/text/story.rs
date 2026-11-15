@@ -28,7 +28,7 @@ pub(super) fn story_options(s: &mut Session, p: &Value) -> Result<Value> {
         None => None,
         Some(v) => Some(
             v.as_f64()
-                .and_then(designcraft_doc::OpticalMargin::clamp_size)
+                .and_then(pliego_doc::OpticalMargin::clamp_size)
                 .ok_or_else(|| bad(CMD, "`opticalMarginSize` must be a finite number of points"))?,
         ),
     };
@@ -62,7 +62,7 @@ pub(super) fn story_options(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.edit(|d, _| {
         for sid in &stories {
-            let st = d.story_mut(*sid).ok_or(designcraft_doc::DocError::NoStory(*sid))?;
+            let st = d.story_mut(*sid).ok_or(pliego_doc::DocError::NoStory(*sid))?;
             let mut om = st.optical_margin;
             om.on = on.unwrap_or(om.on);
             om.size = size.unwrap_or(om.size);
@@ -86,7 +86,7 @@ pub(super) fn story_direction(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// Set the direction of `stories` (all their frames turn together).
-pub(crate) fn set_story_direction(d: &mut designcraft_doc::Document, stories: &[StoryId], vertical: bool) {
+pub(crate) fn set_story_direction(d: &mut pliego_doc::Document, stories: &[StoryId], vertical: bool) {
     for sid in stories {
         if let Some(st) = d.story_mut(*sid)
             && st.vertical != vertical
@@ -102,7 +102,7 @@ pub(super) const SELECTED_TEXT_CHARS: usize = 60;
 
 pub(super) fn selected_text_preview(chars: impl Iterator<Item = char>) -> String {
     chars
-        .map(|c| if c.is_control() || c == designcraft_doc::OBJECT_MARK { ' ' } else { c })
+        .map(|c| if c.is_control() || c == pliego_doc::OBJECT_MARK { ' ' } else { c })
         .skip_while(|c| c.is_whitespace())
         .take(SELECTED_TEXT_CHARS)
         .collect()
@@ -112,7 +112,7 @@ pub(super) fn selection_attrs(s: &mut Session, p: &Value) -> Result<Value> {
     let st = s.doc()?;
     let targets = format_targets(s);
     let Some(Target { story: sid, cell, range: r }) = targets.first().cloned() else { return Ok(Value::Null) };
-    let story = st.doc.text_story(sid, cell).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+    let story = st.doc.text_story(sid, cell).ok_or(pliego_doc::DocError::NoStory(sid))?;
     let pi = story.para_at(r.start);
     let pf = &story.paras[pi];
     let (pp, base) = st.doc.styles.resolve_para(pf);
@@ -147,7 +147,7 @@ pub(super) fn selection_attrs(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// The story options of `stories`, as story.options names them; a value that differs between
 /// the stories is null.
-fn story_options_of(doc: &designcraft_doc::Document, stories: &[StoryId]) -> Value {
+fn story_options_of(doc: &pliego_doc::Document, stories: &[StoryId]) -> Value {
     let mut values = stories.iter().filter_map(|sid| doc.story(*sid)).map(|st| st.optical_margin);
     let Some(first) = values.next() else { return json!({"opticalMargin": null, "opticalMarginSize": null}) };
     let (mut on, mut size) = (Some(first.on), Some(first.size));
@@ -159,7 +159,7 @@ fn story_options_of(doc: &designcraft_doc::Document, stories: &[StoryId]) -> Val
 }
 
 /// The paragraph attributes whose resolved values differ across the paragraphs of `targets`.
-fn mixed_para_attrs(doc: &designcraft_doc::Document, targets: &[Target]) -> Vec<String> {
+fn mixed_para_attrs(doc: &pliego_doc::Document, targets: &[Target]) -> Vec<String> {
     let mut first: Option<serde_json::Map<String, Value>> = None;
     let mut mixed = std::collections::BTreeSet::new();
     for t in targets {
@@ -248,7 +248,7 @@ mod story_options_tests {
         cs.frames[0].lines[0].glyphs[0].x
     }
 
-    fn story(s: &Session, sid: StoryId) -> designcraft_doc::OpticalMargin {
+    fn story(s: &Session, sid: StoryId) -> pliego_doc::OpticalMargin {
         s.doc().unwrap().doc.story(sid).unwrap().optical_margin
     }
 
@@ -261,20 +261,20 @@ mod story_options_tests {
         let flush = first_x(&s, sid);
         // The selected frame's story.
         s.execute("story.options", &json!({"opticalMargin": true})).unwrap();
-        assert_eq!(story(&s, sid), designcraft_doc::OpticalMargin { on: true, size: 12.0 });
+        assert_eq!(story(&s, sid), pliego_doc::OpticalMargin { on: true, size: 12.0 });
         let hung = first_x(&s, sid);
         assert!(hung < flush - 1.0, "{hung} {flush}");
         s.execute("story.options", &json!({"story": sid.0, "opticalMarginSize": 24})).unwrap();
         assert_eq!(story(&s, sid).size, 24.0);
         assert!(first_x(&s, sid) < hung - 1.0);
         s.execute("edit.undo", &json!({})).unwrap();
-        assert_eq!(story(&s, sid), designcraft_doc::OpticalMargin { on: true, size: 12.0 });
+        assert_eq!(story(&s, sid), pliego_doc::OpticalMargin { on: true, size: 12.0 });
         s.execute("edit.undo", &json!({})).unwrap();
         assert!(!story(&s, sid).on);
         assert_eq!(first_x(&s, sid), flush);
         // Hostile sizes.
         s.execute("story.options", &json!({"story": sid.0, "opticalMarginSize": 1e9})).unwrap();
-        assert_eq!(story(&s, sid).size, designcraft_doc::OpticalMargin::MAX_SIZE);
+        assert_eq!(story(&s, sid).size, pliego_doc::OpticalMargin::MAX_SIZE);
         for bad in [json!({"opticalMarginSize": "big"}), json!({"opticalMargin": 1}), json!({}), json!({"story": 999_999, "opticalMargin": true})] {
             assert!(s.execute("story.options", &bad).is_err(), "{bad}");
         }
@@ -325,7 +325,7 @@ mod story_options_tests {
 
 #[cfg(test)]
 mod story_direction_tests {
-    use designcraft_doc::{ItemId, StoryId};
+    use pliego_doc::{ItemId, StoryId};
     use serde_json::json;
 
     use crate::Session;
@@ -398,12 +398,12 @@ mod story_query_contract_tests {
 
     #[test]
     fn kenten_shatai_auto_tcy_and_grid_settings_take_checked_values() {
-        use designcraft_doc::cjk::CharacterAlignment;
-        use designcraft_doc::cjk_settings::{KentenKind, KentenPosition};
+        use pliego_doc::cjk::CharacterAlignment;
+        use pliego_doc::cjk_settings::{KentenKind, KentenPosition};
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 200, 400], "content": "text", "text": "縦書き12年", "vertical": true})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": "縦書き".len()})).unwrap();
         let chars = |s: &crate::Session| s.doc().unwrap().doc.stories[&sid].char_format_at(1).over.clone();
         let para = |s: &crate::Session| s.doc().unwrap().doc.stories[&sid].paras[0].para.clone();
@@ -416,7 +416,7 @@ mod story_query_contract_tests {
         .unwrap();
         let a = chars(&s);
         assert_eq!((a.kenten, a.kenten_kind, a.kenten_position), (Some(true), Some(KentenKind::Custom), Some(KentenPosition::BelowLeft)));
-        assert_eq!(a.kenten_character.as_ref().map(|c| c.chars().count()), Some(designcraft_doc::cjk_settings::KENTEN_MARK_MAX_CHARS));
+        assert_eq!(a.kenten_character.as_ref().map(|c| c.chars().count()), Some(pliego_doc::cjk_settings::KENTEN_MARK_MAX_CHARS));
         assert_eq!(
             (a.kenten_size, a.kenten_distance, a.kenten_x_scale, a.kenten_fill_tint),
             (Some(Some(1296.0)), Some(-1296.0), Some(0.01), Some(Some(1.0)))
@@ -436,15 +436,15 @@ mod story_query_contract_tests {
         assert!(s.execute("type.shatai", &json!({"angle": [45]})).is_err());
         // Paragraph settings.
         s.execute("type.autoTateChuYoko", &json!({"digits": 1e12, "includeRoman": true})).unwrap();
-        assert_eq!((para(&s).auto_tcy, para(&s).auto_tcy_include_roman), (Some(designcraft_compose::shape::AUTO_TCY_MAX), Some(true)));
+        assert_eq!((para(&s).auto_tcy, para(&s).auto_tcy_include_roman), (Some(pliego_compose::shape::AUTO_TCY_MAX), Some(true)));
         s.execute("type.gridSettings", &json!({"alignment": "emCenter", "firstLineOnly": true, "gyoudori": 1e12, "paragraphGyoudori": true}))
             .unwrap();
         let p = para(&s);
-        assert_eq!((p.grid_align, p.grid_reference), (Some(designcraft_doc::GridAlign::FirstLineOnly), Some(CharacterAlignment::EmCenter)));
+        assert_eq!((p.grid_align, p.grid_reference), (Some(pliego_doc::GridAlign::FirstLineOnly), Some(CharacterAlignment::EmCenter)));
         assert_eq!((p.grid_gyoudori, p.paragraph_gyoudori), (Some(100), Some(true)));
         assert!(s.execute("type.gridSettings", &json!({"alignment": "middle"})).is_err());
         s.execute("type.gridSettings", &json!({"alignment": "none"})).unwrap();
-        assert_eq!(para(&s).grid_align, Some(designcraft_doc::GridAlign::None));
+        assert_eq!(para(&s).grid_align, Some(pliego_doc::GridAlign::None));
         s.execute("type.rotateRoman", &json!({})).unwrap();
         assert_eq!(para(&s).rotate_roman, Some(true));
         s.execute("type.rotateRoman", &json!({})).unwrap();
@@ -452,7 +452,7 @@ mod story_query_contract_tests {
         s.execute("type.romanWordBreak", &json!({"on": true})).unwrap();
         assert_eq!(para(&s).roman_word_break, Some(true));
         // The story still composes with every setting at its limit.
-        let cs = designcraft_compose::compose_story(&s.doc().unwrap().doc, sid, &Default::default());
+        let cs = pliego_compose::compose_story(&s.doc().unwrap().doc, sid, &Default::default());
         assert!(!cs.frames.is_empty());
     }
 }

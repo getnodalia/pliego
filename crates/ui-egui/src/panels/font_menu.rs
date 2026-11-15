@@ -5,8 +5,8 @@
 
 use std::collections::HashSet;
 
-use designcraft_fonts::{FaceKind, FamilyInfo, FontClass, FontFormat};
 use egui::{Align2, Color32, FontId, Rect, Sense, Stroke, Ui, pos2, vec2};
+use pliego_fonts::{FaceKind, FamilyInfo, FontClass, FontFormat};
 use serde_json::json;
 
 use crate::DesignApp;
@@ -63,7 +63,7 @@ fn regular(styles: &[String]) -> String {
     styles.iter().find(|s| *s == "Regular").or(styles.first()).cloned().unwrap_or_else(|| "Regular".into())
 }
 
-fn meta(ui: &Ui, fonts: &designcraft_fonts::ScopedFonts<'static>, scope: u32, family: &str) -> FamilyMeta {
+fn meta(ui: &Ui, fonts: &pliego_fonts::ScopedFonts<'static>, scope: u32, family: &str) -> FamilyMeta {
     let key = egui::Id::unique(("font_meta", family, scope));
     if let Some(m) = ui.data(|d| d.get_temp::<FamilyMeta>(key)) {
         return m;
@@ -93,14 +93,14 @@ fn lock(kinds: &SharedKinds) -> std::sync::MutexGuard<'_, Kinds> {
 
 /// A family's kind, and whether its file was added within [`ADDED_WITHIN`]. Read without keeping
 /// the family loaded: the filters look at every installed family.
-fn family_kind(fonts: &designcraft_fonts::ScopedFonts<'static>, family: &str) -> (FaceKind, bool) {
+fn family_kind(fonts: &pliego_fonts::ScopedFonts<'static>, family: &str) -> (FaceKind, bool) {
     fonts
         .family_kind(family)
         .map_or((FaceKind::default(), false), |(kind, added)| (kind, added.and_then(|t| t.elapsed().ok()).is_some_and(|age| age < ADDED_WITHIN)))
 }
 
 /// The families' kinds, starting to read them the first time they're needed for `scope`.
-fn kinds(ctx: &egui::Context, fonts: &designcraft_fonts::ScopedFonts<'static>, scope: u32) -> SharedKinds {
+fn kinds(ctx: &egui::Context, fonts: &pliego_fonts::ScopedFonts<'static>, scope: u32) -> SharedKinds {
     let shared: SharedKinds = ctx.data_mut(|d| d.get_temp_mut_or_default::<SharedKinds>(egui::Id::unique("font_kinds")).clone());
     let start = {
         let mut k = lock(&shared);
@@ -125,7 +125,7 @@ fn kinds(ctx: &egui::Context, fonts: &designcraft_fonts::ScopedFonts<'static>, s
     shared
 }
 
-fn read_kinds(ctx: &egui::Context, shared: &SharedKinds, fonts: &designcraft_fonts::ScopedFonts<'static>, scope: u32) {
+fn read_kinds(ctx: &egui::Context, shared: &SharedKinds, fonts: &pliego_fonts::ScopedFonts<'static>, scope: u32) {
     for chunk in fonts.families().chunks(64) {
         let read: Vec<(String, (FaceKind, bool))> = chunk.iter().map(|f| (f.clone(), family_kind(fonts, f))).collect();
         let mut k = lock(shared);
@@ -215,7 +215,7 @@ fn format_name(format: FontFormat) -> &'static str {
 /// `text` in `family`'s `style`, rendered once per text, size and colour.
 fn preview(
     ui: &Ui,
-    fonts: &designcraft_fonts::ScopedFonts<'static>,
+    fonts: &pliego_fonts::ScopedFonts<'static>,
     scope: u32,
     (family, style): (&str, &str),
     text: &str,
@@ -229,7 +229,7 @@ fn preview(
     if let Some(t) = ui.data_mut(|d| d.get_temp_mut_or_default::<Previews>(cache_id).get(key)) {
         return t;
     }
-    let img = designcraft_render::glyphs::text_line(fonts, family, style, text, px, color.to_array());
+    let img = pliego_render::glyphs::text_line(fonts, family, style, text, px, color.to_array());
     let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let t = crate::widgets::load_texture(ui.ctx(), format!("font_preview_{family}_{style}"), ci, egui::TextureOptions::LINEAR);
     ui.data_mut(|d| d.get_temp_mut_or_default::<Previews>(cache_id).insert(key, t.clone()));
@@ -472,7 +472,7 @@ pub fn font_menu_header<'a>(app: &'a mut DesignApp, ui: &mut Ui, menu: &'a [Fami
                         return Some((0, *f));
                     }
                     let (k, _) = kind(&f.family)?;
-                    (k.class == base.class).then(|| (designcraft_fonts::panose_distance(&base.panose, &k.panose).unwrap_or(u32::MAX / 2) + 1, *f))
+                    (k.class == base.class).then(|| (pliego_fonts::panose_distance(&base.panose, &k.panose).unwrap_or(u32::MAX / 2) + 1, *f))
                 })
                 .collect();
             near.sort_by_key(|(d, _)| *d);

@@ -9,11 +9,11 @@ impl DesignApp {
         // Only user-initiated runs touch the system clipboard, never the control channel's.
         let system_clipboard = !self.in_control && !self.control_input_frame.load(std::sync::atomic::Ordering::Relaxed);
         let mut params = if system_clipboard { self.with_system_clipboard(id, params) } else { params };
-        // Vector art copied in another app (Illustrator, VectorCraft, Figma) is SVG markup on the
+        // Vector art copied in another app (Illustrator, Pluma, Figma) is SVG markup on the
         // system clipboard: with no insertion point it pastes as editable paths where text would go.
         let typing = self.session.active().is_some_and(|d| d.selection.text.is_some());
         let id = match params.as_object_mut() {
-            Some(o) if id == "edit.paste" && !typing && o.get("text").and_then(Value::as_str).is_some_and(designcraft_engine::cmd::is_svg_markup) => {
+            Some(o) if id == "edit.paste" && !typing && o.get("text").and_then(Value::as_str).is_some_and(pliego_engine::cmd::is_svg_markup) => {
                 if let Some(svg) = o.remove("text") {
                     o.insert("svg".into(), svg);
                 }
@@ -40,7 +40,7 @@ impl DesignApp {
                         Some(t.to_string())
                     }
                     None if !self.native_menu => {
-                        self.object_clip_text = Some(designcraft_engine::cmd::copied_objects_text(&self.session));
+                        self.object_clip_text = Some(pliego_engine::cmd::copied_objects_text(&self.session));
                         self.object_clip_text.clone()
                     }
                     None => {
