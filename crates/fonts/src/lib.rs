@@ -1,8 +1,8 @@
-//! DesignCraft fonts: the font database (bundled OFL families + user/system fonts), vertical
+//! Pliego fonts: the font database (bundled OFL families + user/system fonts), vertical
 //! metrics, glyph outlines and OpenType shaping.
 //!
 //! Shaping here is style-agnostic: [`shape`] turns a string in one face into glyph ids, clusters
-//! and advances in font units. `designcraft-compose` applies sizes, tracking, scaling and
+//! and advances in font units. `pliego-compose` applies sizes, tracking, scaling and
 //! justification on top.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
@@ -30,7 +30,7 @@ pub use kurbo::BezPath;
 use skrifa::MetadataProvider;
 use skrifa::instance::Size;
 
-/// A font from the optional craft-fonts build input (https://github.com/storytold/craft-fonts;
+/// A font from the optional craft-fonts build input (https://github.com/getnodalia/foundation/tree/vendor/craft-fonts/main;
 /// empty unless built with `CRAFT_FONTS_DIR`, see `build.rs`).
 pub struct CraftFont {
     pub family: &'static str,

@@ -70,7 +70,7 @@ pub(super) fn select_at(s: &mut Session, p: &Value, unit: &str) -> Result<Value>
 /// with `cell`), as the multiple clicks select it.
 fn unit_at(s: &Session, sid: StoryId, cell: Option<CellAddr>, b: usize, unit: &str, cmd: &str) -> Result<(usize, usize)> {
     let st = s.doc()?;
-    let story = st.doc.text_story(sid, cell).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+    let story = st.doc.text_story(sid, cell).ok_or(pliego_doc::DocError::NoStory(sid))?;
     let text = story.text.as_str();
     let b = floor_char_boundary(text, b);
     Ok(match unit {
@@ -182,8 +182,8 @@ pub(super) fn place(s: &mut Session, p: &Value, extend: bool) -> Result<Value> {
         && a.table == c.table
         && (a.row, a.col) != (c.row, c.col)
     {
-        let range = designcraft_doc::CellRange::new(a.row, a.col, c.row, c.col);
-        st.selection.cells = Some(designcraft_doc::TableSel { story: sid, table: c.table, range });
+        let range = pliego_doc::CellRange::new(a.row, a.col, c.row, c.col);
+        st.selection.cells = Some(pliego_doc::TableSel { story: sid, table: c.table, range });
         st.bump_revision();
         return Ok(json!({"story": sid.0, "cells": range}));
     }
@@ -216,7 +216,7 @@ pub(super) fn release(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.edit(|d, sel| {
         let (piece_len, at, r) = {
-            let st = d.text_story_mut(sid, cell).ok_or(designcraft_doc::DocError::NoStory(sid))?;
+            let st = d.text_story_mut(sid, cell).ok_or(pliego_doc::DocError::NoStory(sid))?;
             let piece = st.extract(r.clone());
             let mut at = b;
             if !copy {
@@ -343,7 +343,7 @@ pub(super) fn move_caret(s: &mut Session, p: &Value) -> Result<Value> {
     let word = bool_or(p, "word", false);
     let st = s.doc()?;
     let t = st.selection.text.ok_or_else(|| bad("text.move", "no caret"))?;
-    let story = st.doc.text_story(t.story, t.cell).ok_or(designcraft_doc::DocError::NoStory(t.story))?;
+    let story = st.doc.text_story(t.story, t.cell).ok_or(pliego_doc::DocError::NoStory(t.story))?;
     let text = story.text.clone();
     // In a cell, lines come from the cell's own composition.
     let cs = text_composition(s.cache.get(&st.doc, t.story, None), t.cell);
@@ -431,7 +431,7 @@ mod multi_click_tests {
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 500, 200], "content": "text", "text": "Hello world"})).unwrap();
         let (fid, sid) = (r["id"].as_u64().unwrap(), r["story"].as_u64().unwrap());
-        let size_at = |s: &Session, b: usize| s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().char_format_at(b).over.size;
+        let size_at = |s: &Session, b: usize| s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().char_format_at(b).over.size;
         let pending = |s: &mut Session| {
             s.execute("text.select", &json!({"story": sid, "anchor": 5})).unwrap();
             s.execute("type.char", &json!({"attrs": {"size": 30}})).unwrap();
@@ -506,7 +506,7 @@ mod multi_click_tests {
         let (fid, sid) = (r["id"].as_u64().unwrap(), r["story"].as_u64().unwrap());
         let at = |s: &Session, b: usize| {
             let d = &s.doc().unwrap().doc;
-            let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+            let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
             let (l, g) = cs.frames[0].lines.iter().find_map(|l| l.glyphs.iter().find(|g| g.byte == b && g.len > 0).map(|g| (l, g))).unwrap();
             json!([g.x + g.adv * 0.75, l.baseline - 3.0])
         };
@@ -550,7 +550,7 @@ mod multi_click_tests {
         // Spread point over the right half of the glyph at byte `b`.
         let at = |s: &Session, b: usize| {
             let d = &s.doc().unwrap().doc;
-            let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+            let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
             let (l, g) = cs.frames[0].lines.iter().find_map(|l| l.glyphs.iter().find(|g| g.byte == b && g.len > 0).map(|g| (l, g))).unwrap();
             json!([g.x + g.adv * 0.75, l.baseline - 3.0])
         };
@@ -601,14 +601,14 @@ mod drag_text_tests {
         // Spread point of the glyph at byte `b`.
         let at = |s: &Session, b: usize| {
             let d = &s.doc().unwrap().doc;
-            let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+            let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
             let l = &cs.frames[0].lines[0];
             let g = l.glyphs.iter().find(|g| g.byte == b).unwrap();
             json!([g.x + g.adv * 0.25, l.baseline - 3.0])
         };
         let end = |s: &Session| {
             let d = &s.doc().unwrap().doc;
-            let cs = designcraft_compose::compose_story(d, designcraft_doc::StoryId(sid), &Default::default());
+            let cs = pliego_compose::compose_story(d, pliego_doc::StoryId(sid), &Default::default());
             let l = &cs.frames[0].lines[0];
             json!([l.end_x + 2.0, l.baseline - 3.0])
         };
@@ -617,7 +617,7 @@ mod drag_text_tests {
         assert_eq!(r["dragging"], true);
         s.execute("text.extendTo", &json!({"frame": fid, "point": end(&s)})).unwrap();
         s.execute("text.release", &json!({"frame": fid, "point": end(&s), "moved": true})).unwrap();
-        let text = |s: &Session| s.doc().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text.clone();
+        let text = |s: &Session| s.doc().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text.clone();
         assert_eq!(text(&s), "Hello worldbrave ");
         // Alt-drag copies (the moved text is still selected).
         s.execute("text.placeCaret", &json!({"frame": fid, "point": at(&s, 12)})).unwrap();
@@ -658,7 +658,7 @@ mod bidi_caret_tests {
 
 #[cfg(test)]
 mod vertical_caret_tests {
-    use designcraft_doc::StoryId;
+    use pliego_doc::StoryId;
     use serde_json::json;
 
     use crate::Session;

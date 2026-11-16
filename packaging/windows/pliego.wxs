@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?ifndef HasCraftFontLicences ?>
+  <?define HasCraftFontLicences=0 ?>
+  <?endif?>
+  <Package Name="Pliego" Manufacturer="Nodalia" Version="$(var.Version)" UpgradeCode="7B0B1431-D5FE-44F0-AE77-9ADB69AF906A" Scope="perUserOrMachine" Compressed="yes" Language="1033">
+    <SummaryInformation Description="Pliego page layout and publishing" Manufacturer="Nodalia" />
+    <?include $(sys.SOURCEFILEDIR)install-policy.wxi?>
+    <!-- Same-version upgrades let successive pre-releases of one X.Y.Z replace each other
+         (MSI versions are numeric, so 1.2.3-rc.1 and 1.2.3-rc.2 are both 1.2.3). -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of Pliego is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="PliegoIcon.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="PliegoIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://getnodalia.com/pliego" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://getnodalia.com/pliego" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/getnodalia/pliego/issues" />
+
+    <!-- Shared native setup UI, including install/uninstall completion. -->
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="CraftSuiteFolder" Name="Nodalia">
+        <Directory Id="INSTALLFOLDER" Name="Pliego" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="Pliego" Level="1">
+      <?if $(var.HasCraftFontLicences) = 1 ?>
+      <ComponentGroupRef Id="CraftFontLicences" />
+      <?endif?>
+      <ComponentGroupRef Id="PliegoFiles" />
+      <ComponentGroupRef Id="CraftInstallerSettings" />
+    </Feature>
+    <!-- Shared full UI; app installation policy remains below. -->
+    <UIRef Id="CraftInstallerUI" />
+  </Package>
+
+  <Fragment>
+    <?if $(var.HasCraftFontLicences) = 1 ?>
+    <ComponentGroup Id="CraftFontLicences" Directory="INSTALLFOLDER">
+      <Files Include="$(var.DocsDir)\**" />
+    </ComponentGroup>
+    <?endif?>
+    <ComponentGroup Id="PliegoFiles" Directory="INSTALLFOLDER">
+      <Component Id="PliegoNotice">
+        <File Id="PliegoNoticeFile" Source="$(var.BinDir)\NOTICE" KeyPath="yes" />
+      </Component>
+      <Component Id="PliegoApp" Guid="26C90AED-413B-482C-A44F-FBA499B926AC">
+        <File Id="PliegoExe" Source="$(var.BinDir)\pliego.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="Pliego" Description="Pliego page layout and publishing" WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="PliegoIcon.ico" IconIndex="0" />
+        </File>
+
+        <!-- .pliego: Pliego's own format; Pliego is its default app. -->
+        <ProgId Id="Pliego.Document" Description="Pliego Document" Icon="PliegoExe" IconIndex="0">
+          <Extension Id="pliego" ContentType="application/x-pliego">
+            <Verb Id="open" Command="Open" TargetFile="PliegoExe" Argument="&quot;%1&quot;" />
+          </Extension>
+        </ProgId>
+        <!-- IDML: offered under "Open with", never forced as the default. -->
+        <ProgId Id="Pliego.Idml" Description="IDML Document" Icon="PliegoExe" IconIndex="0" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Pliego.Idml\shell\open\command" Value="&quot;[#PliegoExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\.idml\OpenWithProgids" Name="Pliego.Idml" Value="" Type="string" />
+
+        <!-- "Open with" app list and the Run dialog (Win+R "pliego"). -->
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\pliego.exe" Name="FriendlyAppName" Value="Pliego" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\pliego.exe\shell\open\command" Value="&quot;[#PliegoExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\pliego.exe\SupportedTypes" Name=".pliego" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\Applications\pliego.exe\SupportedTypes" Name=".idml" Value="" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\pliego.exe" Value="[#PliegoExe]" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Pliego" Name="InstallDir" Value="[INSTALLFOLDER]" Type="string" />
+      </Component>
+
+      <Component Id="PliegoCli">
+        <File Id="PliegoCliExe" Source="$(var.BinDir)\pliego-cli.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

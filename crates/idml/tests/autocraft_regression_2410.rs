@@ -3,8 +3,8 @@
 
 use std::io::Write;
 
-use designcraft_doc::{Document, Table};
-use designcraft_idml::{MIMETYPE, export_idml, import_idml};
+use pliego_doc::{Document, Table};
+use pliego_idml::{MIMETYPE, export_idml, import_idml};
 
 const DESIGNMAP: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Document xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging" DOMVersion="16.0" Self="d" StoryList="s1" Name="Fixture.indd">

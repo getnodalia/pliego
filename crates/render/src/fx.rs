@@ -17,14 +17,14 @@
 //! - Feather: the object is masked by its shape inset by half the width and blurred, so the
 //!   edge fades from ~0 at the path to full strength `width` inside.
 
-use designcraft_doc::Item;
-use designcraft_geom::{Affine, BezPath, Rect, Shape, Vec2};
+use pliego_doc::Item;
+use pliego_geom::{Affine, BezPath, Rect, Shape, Vec2};
 use vello_common::filter_effects::{EdgeMode, Filter, FilterPrimitive};
 use vello_cpu::peniko::{self, BlendMode, Compose, Mix};
 use vello_cpu::{RenderContext, kurbo};
 
 use crate::{Frame, Renderer, color_of};
-use designcraft_compose::ShownOn;
+use pliego_compose::ShownOn;
 
 /// Shadow offset (spread units) for an InDesign angle (degrees, light direction) and distance.
 pub(crate) fn offset(angle: f64, distance: f64) -> Vec2 {
@@ -98,7 +98,7 @@ impl Renderer {
         let reach = xf.transform_rect_bbox(bp.bounding_box()).inflate(sw + 1.0, sw + 1.0);
         // The silhouette is the shape when the object paints its area (fill / image); text frames
         // without a fill cast the shadow of their text only, which can't be grown.
-        let solid = !it.fill.is_none() || matches!(it.content, designcraft_doc::Content::Graphic(_)) || it.has_nested_items();
+        let solid = !it.fill.is_none() || matches!(it.content, pliego_doc::Content::Graphic(_)) || it.has_nested_items();
         let mut below = vec![];
         if e.outer_glow.on {
             let g = &e.outer_glow;
@@ -152,9 +152,9 @@ impl Renderer {
             let fo = &e.feather_options;
             let w = e.feather * (1.0 - fo.choke.clamp(0.0, 100.0) / 100.0).max(0.01);
             let (sigma, join) = match fo.corners {
-                designcraft_doc::FeatherCorners::Diffused => (w / 4.0, kurbo::Join::Round),
-                designcraft_doc::FeatherCorners::Rounded => (w / 3.0, kurbo::Join::Round),
-                designcraft_doc::FeatherCorners::Sharp => (w / 6.0, kurbo::Join::Miter),
+                pliego_doc::FeatherCorners::Diffused => (w / 4.0, kurbo::Join::Round),
+                pliego_doc::FeatherCorners::Rounded => (w / 3.0, kurbo::Join::Round),
+                pliego_doc::FeatherCorners::Sharp => (w / 6.0, kurbo::Join::Miter),
             };
             // The body and its clip stay at device resolution; only the blurred mask may be drawn
             // offscreen at a lower one.
@@ -222,7 +222,7 @@ impl Renderer {
         }
         // An image's edge is where it is opaque, not the frame: inner shadows, glows and bevels
         // follow what is painted when the frame holds a graphic.
-        let painted = matches!(it.content, designcraft_doc::Content::Graphic(_)).then_some((it, page));
+        let painted = matches!(it.content, pliego_doc::Content::Graphic(_)).then_some((it, page));
         // Inner shadow, clipped to the shape.
         if e.inner_shadow.on
             && let Some(c) = doc.resolve_color(&e.inner_shadow.color, 1.0)
@@ -251,7 +251,7 @@ impl Renderer {
             let g = &e.inner_glow;
             let (sigma, choke) = split(g.size, g.choke);
             // Precise keeps the glow close to the edge: a tighter blur.
-            let sigma = if g.technique == designcraft_doc::GlowTechnique::Precise { sigma * 0.4 } else { sigma };
+            let sigma = if g.technique == pliego_doc::GlowTechnique::Precise { sigma * 0.4 } else { sigma };
             let mix = crate::blend_mode(g.mode).mix;
             let paint = color_of(&c, g.opacity.clamp(0.0, 1.0));
             if g.center {
@@ -515,18 +515,18 @@ mod tests {
     /// lines the image's opaque part (its edge in the middle of the frame), not only the frame.
     #[test]
     fn an_inner_shadow_follows_a_transparent_images_edge() {
-        use designcraft_doc::build::NewDocument;
-        use designcraft_doc::{Document, SpreadRef};
+        use pliego_doc::build::NewDocument;
+        use pliego_doc::{Document, SpreadRef};
         let mut d = Document::new(&NewDocument::default());
         let lid = d.default_layer();
         // 20 × 20: transparent left half, opaque white right half.
         let img = image::RgbaImage::from_fn(20, 20, |x, _| if x < 10 { image::Rgba([0, 0, 0, 0]) } else { image::Rgba([255, 255, 255, 255]) });
         let mut png = Vec::new();
         img.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
-        let aid = designcraft_doc::AssetId(d.alloc());
+        let aid = pliego_doc::AssetId(d.alloc());
         d.assets.insert(
             aid,
-            std::sync::Arc::new(designcraft_doc::Asset {
+            std::sync::Arc::new(pliego_doc::Asset {
                 id: aid,
                 name: "half.png".into(),
                 mime: "image/png".into(),
@@ -536,12 +536,12 @@ mod tests {
             }),
         );
         let mut it = Item::new(
-            designcraft_doc::ItemId(d.alloc()),
+            pliego_doc::ItemId(d.alloc()),
             lid,
-            designcraft_doc::Shape::Rectangle,
-            designcraft_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)),
+            pliego_doc::Shape::Rectangle,
+            pliego_geom::shapes::rectangle(Rect::new(100.0, 100.0, 300.0, 300.0)),
         );
-        it.content = designcraft_doc::Content::Graphic(designcraft_doc::Graphic {
+        it.content = pliego_doc::Content::Graphic(pliego_doc::Graphic {
             layer_options: None,
             asset: aid,
             size: (200.0, 200.0),

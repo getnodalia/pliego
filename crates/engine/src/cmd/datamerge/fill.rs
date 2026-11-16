@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use designcraft_doc::{
+use pliego_doc::{
     Asset, AssetId, Content, DataField, Fill, Fitting, Graphic, Hyperlink, HyperlinkDest, HyperlinkSource, Item, ItemId, MergeOptions,
     PlaceholderAnchor, PlaceholderRole, Shape, SpreadRef, Story, StoryId,
 };
-use designcraft_geom::{Affine, Rect, Vec2};
+use pliego_geom::{Affine, Rect, Vec2};
 
 use super::parse::image_candidates;
 use crate::EngineError;
@@ -36,7 +36,7 @@ pub struct FillReport {
 }
 
 /// Document-spread items and their stories, each mapped to itself.
-pub fn identity_map(doc: &designcraft_doc::Document) -> Maps {
+pub fn identity_map(doc: &pliego_doc::Document) -> Maps {
     let mut maps = Maps::default();
     for sp in &doc.spreads {
         for it in &sp.items {
@@ -53,8 +53,8 @@ pub fn identity_map(doc: &designcraft_doc::Document) -> Maps {
 
 /// Deep-copy one top-level item. Children stay in their own space; only this item is translated.
 pub fn copy_item(
-    dst: &mut designcraft_doc::Document,
-    src: &designcraft_doc::Document,
+    dst: &mut pliego_doc::Document,
+    src: &pliego_doc::Document,
     it: &Item,
     to: SpreadRef,
     off: Vec2,
@@ -70,12 +70,12 @@ pub fn copy_item(
     Ok(())
 }
 
-fn renumber(dst: &mut designcraft_doc::Document, src: &designcraft_doc::Document, it: &mut Item, maps: &mut Maps) {
+fn renumber(dst: &mut pliego_doc::Document, src: &pliego_doc::Document, it: &mut Item, maps: &mut Maps) {
     renumber_in(dst, src, it, maps, true);
 }
 
 /// `adopt` is false inside a story copy, whose asset references the copy has already adopted.
-fn renumber_in(dst: &mut designcraft_doc::Document, src: &designcraft_doc::Document, it: &mut Item, maps: &mut Maps, adopt: bool) {
+fn renumber_in(dst: &mut pliego_doc::Document, src: &pliego_doc::Document, it: &mut Item, maps: &mut Maps, adopt: bool) {
     let old = it.id;
     let new_id = ItemId(dst.alloc());
     maps.items.insert(old, new_id);
@@ -95,14 +95,14 @@ fn renumber_in(dst: &mut designcraft_doc::Document, src: &designcraft_doc::Docum
                 let mut st = src.story(tf.story).cloned().unwrap_or_else(|| Story::new(n));
                 st.id = n;
                 let mut assets = HashMap::new();
-                for a in designcraft_doc::story_asset_refs(&st) {
+                for a in pliego_doc::story_asset_refs(&st) {
                     if let Some(na) = dst.adopt_asset(src, a)
                         && na != a
                     {
                         assets.insert(a, na);
                     }
                 }
-                designcraft_doc::remap_story_assets(&mut st, &assets);
+                pliego_doc::remap_story_assets(&mut st, &assets);
                 st.frames.clear();
                 // Mapped first: the map is the seen-set that stops story recursion.
                 maps.stories.insert(tf.story, n);
@@ -130,7 +130,7 @@ fn renumber_in(dst: &mut designcraft_doc::Document, src: &designcraft_doc::Docum
 }
 
 /// Fresh ids for the objects anchored in story copy `st`, its table cells, footnotes and endnotes (#1522).
-fn renumber_anchored(dst: &mut designcraft_doc::Document, src: &designcraft_doc::Document, st: &mut Story, maps: &mut Maps) {
+fn renumber_anchored(dst: &mut pliego_doc::Document, src: &pliego_doc::Document, st: &mut Story, maps: &mut Maps) {
     let mut fresh = |t: &mut Story| {
         for o in &mut t.objects {
             renumber_in(dst, src, &mut Arc::make_mut(o).item, maps, false);
@@ -205,14 +205,7 @@ struct Pending {
 }
 
 /// Fill `row` (0-based) into the items `maps` points at. `record` is the 1-based source row.
-pub fn fill_row(
-    doc: &mut designcraft_doc::Document,
-    fields: &[DataField],
-    row: &[String],
-    record: u32,
-    maps: &Maps,
-    sources: &Sources,
-) -> FillReport {
+pub fn fill_row(doc: &mut pliego_doc::Document, fields: &[DataField], row: &[String], record: u32, maps: &Maps, sources: &Sources) -> FillReport {
     let mut pending = Pending::default();
     let placeholders = doc.data_merge.placeholders.clone();
     for ph in &placeholders {
@@ -247,9 +240,9 @@ pub fn fill_row(
 }
 
 fn plan_text(
-    doc: &designcraft_doc::Document,
+    doc: &pliego_doc::Document,
     maps: &Maps,
-    ph: &designcraft_doc::Placeholder,
+    ph: &pliego_doc::Placeholder,
     (story, start, end): (StoryId, usize, usize),
     cell: String,
     pending: &mut Pending,
@@ -272,9 +265,9 @@ fn plan_text(
 }
 
 fn plan_item(
-    doc: &mut designcraft_doc::Document,
+    doc: &mut pliego_doc::Document,
     maps: &Maps,
-    ph: &designcraft_doc::Placeholder,
+    ph: &pliego_doc::Placeholder,
     cell: &str,
     record: u32,
     sources: &Sources,
@@ -300,11 +293,11 @@ fn plan_item(
 }
 
 fn typed_reps(
-    doc: &designcraft_doc::Document,
+    doc: &pliego_doc::Document,
     fields: &[DataField],
     row: &[String],
     maps: &Maps,
-    placeholders: &[designcraft_doc::Placeholder],
+    placeholders: &[pliego_doc::Placeholder],
     reps: &mut Vec<Rep>,
 ) {
     let mut stories: Vec<(StoryId, StoryId)> = maps.stories.iter().map(|(a, b)| (*a, *b)).collect();
@@ -351,7 +344,7 @@ fn find_markers(text: &str) -> Vec<(usize, usize, String)> {
     out
 }
 
-fn apply_reps(doc: &mut designcraft_doc::Document, reps: &[Rep]) {
+fn apply_reps(doc: &mut pliego_doc::Document, reps: &[Rep]) {
     let mut stories: Vec<StoryId> = reps.iter().map(|r| r.story).collect();
     stories.sort();
     stories.dedup();
@@ -393,7 +386,7 @@ pub fn add_delta(pos: usize, delta: isize) -> usize {
     if delta >= 0 { pos.saturating_add(delta as usize) } else { pos.saturating_sub(delta.unsigned_abs()) }
 }
 
-fn create_link(doc: &mut designcraft_doc::Document, anchor: PlaceholderAnchor, dest: HyperlinkDest) -> bool {
+fn create_link(doc: &mut pliego_doc::Document, anchor: PlaceholderAnchor, dest: HyperlinkDest) -> bool {
     let source = match anchor {
         PlaceholderAnchor::Item { id } => {
             if doc.item(id).is_none() {
@@ -415,7 +408,7 @@ fn create_link(doc: &mut designcraft_doc::Document, anchor: PlaceholderAnchor, d
     true
 }
 
-fn place_image(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, cell: &str, record: u32, sources: &Sources, report: &mut FillReport) {
+fn place_image(doc: &mut pliego_doc::Document, item: ItemId, field: &str, cell: &str, record: u32, sources: &Sources, report: &mut FillReport) {
     let Sources { options, data_dir, doc_dir, images } = *sources;
     let cands = image_candidates(cell, data_dir, doc_dir);
     let found = cands.iter().find_map(|p| {
@@ -439,7 +432,7 @@ fn place_image(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, c
         report.warnings.push(format!("Record {record}, field {field}: missing image {cell}."));
         return;
     };
-    let Some(((pw, ph), (nw, nh))) = designcraft_render::image_size(&bytes).zip(designcraft_render::natural_size(&bytes, 0)) else {
+    let Some(((pw, ph), (nw, nh))) = pliego_render::image_size(&bytes).zip(pliego_render::natural_size(&bytes, 0)) else {
         if let Some(it) = doc.item_mut(item) {
             it.content = Content::Unassigned;
         }
@@ -489,7 +482,7 @@ fn place_image(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, c
     g.asset = doc.add_asset(Asset {
         id: fresh,
         name,
-        mime: designcraft_render::image_mime(&bytes).to_string(),
+        mime: pliego_render::image_mime(&bytes).to_string(),
         link,
         // The cached buffer is shared with every other record naming this file, rather than
         // copied per record (#1595).
@@ -502,7 +495,7 @@ fn place_image(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, c
     }
 }
 
-fn place_qr(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, cell: &str, record: u32, report: &mut FillReport) {
+fn place_qr(doc: &mut pliego_doc::Document, item: ItemId, field: &str, cell: &str, record: u32, report: &mut FillReport) {
     if cell.is_empty() {
         report.warnings.push(format!("Record {record}, field {field}: the QR cell is empty."));
         return;
@@ -511,13 +504,13 @@ fn place_qr(doc: &mut designcraft_doc::Document, item: ItemId, field: &str, cell
         report.warnings.push(format!("Record {record}, field {field}: the QR content does not fit."));
         return;
     };
-    let Some(path) = designcraft_geom::qr::qr_path(cell, it.inner_bounds()) else {
+    let Some(path) = pliego_geom::qr::qr_path(cell, it.inner_bounds()) else {
         report.warnings.push(format!("Record {record}, field {field}: the QR content does not fit."));
         return;
     };
     let id = ItemId(doc.alloc());
     let mut code = Item::new(id, it.layer, Shape::Path, path);
-    code.fill = Fill::swatch(designcraft_color::swatch::BLACK);
+    code.fill = Fill::swatch(pliego_color::swatch::BLACK);
     code.alt_text = format!("QR code: {cell}");
     if let Some(frame) = doc.item_mut(item) {
         frame.content = Content::Group { items: vec![Arc::new(code)] };
@@ -556,7 +549,7 @@ fn classify_link(cell: &str) -> Option<HyperlinkDest> {
     Some(HyperlinkDest::Url(value.to_string()))
 }
 
-fn anchor_is_parent(doc: &designcraft_doc::Document, anchor: &PlaceholderAnchor) -> bool {
+fn anchor_is_parent(doc: &pliego_doc::Document, anchor: &PlaceholderAnchor) -> bool {
     match anchor {
         PlaceholderAnchor::Item { id } => matches!(doc.find(*id).map(|l| l.spread), Some(SpreadRef::Parent(_))),
         PlaceholderAnchor::Text { story, .. } => {

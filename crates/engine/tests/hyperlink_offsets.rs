@@ -1,7 +1,7 @@
 //! Hyperlink text source range adjustments across text editing (#1219).
 
-use designcraft_doc::{HyperlinkSource, StoryId};
-use designcraft_engine::Session;
+use pliego_doc::{HyperlinkSource, StoryId};
+use pliego_engine::Session;
 use serde_json::json;
 
 fn fixture(text: &str) -> (Session, StoryId, u64) {
@@ -301,14 +301,14 @@ fn drag_move_preserves_hyperlink_and_adjusts_intervening_ranges() {
 
     let at = |s: &Session, b: usize| {
         let d = &s.doc().unwrap().doc;
-        let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+        let cs = pliego_compose::compose_story(d, sid, &Default::default());
         let l = &cs.frames[0].lines[0];
         let g = l.glyphs.iter().find(|g| g.byte == b).unwrap();
         json!([g.x + g.adv * 0.25, l.baseline - 3.0])
     };
     let end = |s: &Session| {
         let d = &s.doc().unwrap().doc;
-        let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+        let cs = pliego_compose::compose_story(d, sid, &Default::default());
         let l = &cs.frames[0].lines[0];
         json!([l.end_x + 2.0, l.baseline - 3.0])
     };
@@ -442,19 +442,19 @@ fn inline_markers_shift_subsequent_hyperlinks() {
     // 1. Create a text anchor at offset 5 ("anchor.create")
     s.execute("text.select", &json!({"story": sid.0, "anchor": 5, "focus": 5})).unwrap();
     let aid = s.execute("anchor.create", &json!({"name": "TargetAnchor"})).unwrap()["id"].as_u64().unwrap();
-    let anchor_shift = designcraft_doc::ANCHOR_MARK.len_utf8();
+    let anchor_shift = pliego_doc::ANCHOR_MARK.len_utf8();
     assert_eq!(text_hyperlink_range(&s, hid), (17 + anchor_shift, 23 + anchor_shift));
 
     // 2. Insert a cross-reference at offset 0 ("xref.insert")
     s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 0})).unwrap();
     s.execute("xref.insert", &json!({"anchor": aid})).unwrap();
-    let xref_shift = designcraft_doc::XREF_MARK.len_utf8();
+    let xref_shift = pliego_doc::XREF_MARK.len_utf8();
     assert_eq!(text_hyperlink_range(&s, hid), (17 + anchor_shift + xref_shift, 23 + anchor_shift + xref_shift));
 
     // 3. Insert an editorial note at offset 2 ("note.new")
     s.execute("text.select", &json!({"story": sid.0, "anchor": 2, "focus": 2})).unwrap();
     let nid = s.execute("note.new", &json!({"text": "review this"})).unwrap()["id"].as_u64().unwrap();
-    let note_shift = designcraft_doc::NOTE_MARK.len_utf8();
+    let note_shift = pliego_doc::NOTE_MARK.len_utf8();
     assert_eq!(text_hyperlink_range(&s, hid), (17 + anchor_shift + xref_shift + note_shift, 23 + anchor_shift + xref_shift + note_shift));
 
     // 4. Delete the editorial note ("note.delete")
@@ -473,7 +473,7 @@ fn zero_length_placeholder_at_caret_is_preserved_on_story_edits() {
 
     let doc = &s.doc().unwrap().doc;
     let ph = doc.data_merge.placeholders.iter().find(|p| p.id == ph_id).unwrap();
-    assert_eq!(ph.anchor, designcraft_doc::PlaceholderAnchor::Text { story: sid, start: 6, end: 6 });
+    assert_eq!(ph.anchor, pliego_doc::PlaceholderAnchor::Text { story: sid, start: 6, end: 6 });
 
     // Type text at offset 0
     s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 0})).unwrap();
@@ -482,7 +482,7 @@ fn zero_length_placeholder_at_caret_is_preserved_on_story_edits() {
     // Placeholder must shift forward and NOT be pruned
     let doc = &s.doc().unwrap().doc;
     let ph = doc.data_merge.placeholders.iter().find(|p| p.id == ph_id).expect("placeholder must survive edit");
-    assert_eq!(ph.anchor, designcraft_doc::PlaceholderAnchor::Text { story: sid, start: 14, end: 14 });
+    assert_eq!(ph.anchor, pliego_doc::PlaceholderAnchor::Text { story: sid, start: 14, end: 14 });
 }
 
 #[test]
@@ -533,7 +533,7 @@ fn xref_insert_paragraph_target_shifts_subsequent_hyperlinks() {
 
     // The first paragraph now has an ANCHOR_MARK inserted at offset 0.
     // The hyperlink in the second paragraph is after offset 0, so it must shift by ANCHOR_MARK.len_utf8()!
-    let anchor_shift = designcraft_doc::ANCHOR_MARK.len_utf8();
+    let anchor_shift = pliego_doc::ANCHOR_MARK.len_utf8();
     assert_eq!(text_hyperlink_range(&s, hid), (link_start + anchor_shift, link_end + anchor_shift));
 }
 
@@ -673,7 +673,7 @@ fn regenerating_index_prunes_story_hyperlinks() {
     let sp = s.doc().unwrap().doc.page_loc(0).unwrap().0;
     let r =
         s.execute("frame.create", &json!({"spread": sp, "rect": [72, 72, 400, 300], "content": "text", "text": "Typography topic here."})).unwrap();
-    let sid = s.doc().unwrap().doc.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
+    let sid = s.doc().unwrap().doc.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap().text_frame().unwrap().story;
 
     s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 10})).unwrap();
     s.execute("index.addReference", &json!({})).unwrap();
@@ -698,7 +698,7 @@ fn refreshing_live_caption_prunes_story_hyperlinks() {
     let a = s.execute("frame.create", &json!({"rect": [72, 72, 272, 172]})).unwrap()["id"].as_u64().unwrap();
     s.execute("object.altText", &json!({"text": "Initial photo caption", "ids": [a]})).unwrap();
     let r = s.execute("object.caption", &json!({"ids": [a], "text": "Photo: {altText}", "live": true})).unwrap();
-    let cid = designcraft_doc::ItemId(r["ids"][0].as_u64().unwrap());
+    let cid = pliego_doc::ItemId(r["ids"][0].as_u64().unwrap());
     let sid = s.doc().unwrap().doc.item(cid).unwrap().text_frame().unwrap().story;
 
     s.execute("text.select", &json!({"story": sid.0, "anchor": 0, "focus": 5})).unwrap();

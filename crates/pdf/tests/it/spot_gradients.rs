@@ -1,14 +1,14 @@
 //! Gradients on spot swatches shade in their inks: Separation for one spot, DeviceN for a spot
 //! with process inks or a second spot.
-use designcraft_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
-use designcraft_compose::Cache;
-use designcraft_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
-use designcraft_geom::{Rect, shapes};
-use designcraft_pdf::{PdfOptions, Standard, export_pdf_with_report};
 use hayro_syntax::{
     Pdf,
     object::{Array, Dict, Name},
 };
+use pliego_color::{Color, ColorType, Gradient, GradientKind, GradientStop, Swatch, SwatchValue};
+use pliego_compose::Cache;
+use pliego_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, build::NewDocument};
+use pliego_geom::{Rect, shapes};
+use pliego_pdf::{PdfOptions, Standard, export_pdf_with_report};
 
 const CYAN: &str = "C=100 M=0 Y=0 K=0";
 
@@ -121,14 +121,14 @@ fn a_spot_to_paper_gradient_is_a_separation_shading() {
     assert!(close(&shadings[0].start, &[0.0, 0.3, 0.9, 0.1]), "{:?}", shadings[0].start);
 }
 
-/// Stops follow the Ink Manager as fills do (`designcraft_pdf::inks`): an alias that would close
+/// Stops follow the Ink Manager as fills do (`pliego_pdf::inks`): an alias that would close
 /// a loop is left out, so Gold prints on Silver's plate and Silver on its own.
 #[test]
 fn gradient_stops_follow_ink_aliases_as_fills_do() {
     let mut d = document(&[(Ok("Gold"), 0.0), (Ok("[Paper]"), 1.0)], 0.5);
     d.inks.aliases = vec![("Gold".into(), "Silver".into()), ("Silver".into(), "Gold".into())];
-    let set = designcraft_pdf::inks::ink_set(&d);
-    assert_eq!(designcraft_pdf::inks::spot_output(&d, &set, "Gold"), ("Silver", false));
+    let set = pliego_pdf::inks::ink_set(&d);
+    assert_eq!(pliego_pdf::inks::spot_output(&d, &set, "Gold"), ("Silver", false));
     let (shadings, _) = export(&d, Standard::PdfX4);
     assert_eq!((shadings[0].family.as_str(), shadings[0].colorants.as_slice()), ("Separation", &["Silver".to_string()][..]));
     assert!(close(&shadings[0].start, &[1.0]), "{:?}", shadings[0].start);

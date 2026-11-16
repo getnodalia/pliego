@@ -1,10 +1,10 @@
 [package]
-name = "designcraft-ui-egui"
+name = "pliego-ui-egui"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "DesignCraft egui frontend (InDesign-style UI); swappable — nothing below depends on it"
+description = "Pliego egui frontend (InDesign-style UI); swappable — nothing below depends on it"
 
 [lints]
 workspace = true
@@ -13,15 +13,15 @@ workspace = true
 craft-ui = { workspace = true, features = ["native-windows"] }
 craft-window = { workspace = true }
 craft-keymap = { workspace = true }
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
-designcraft-render = { workspace = true }
-designcraft-tools = { workspace = true }
-designcraft-engine = { workspace = true }
-designcraft-textimport = { workspace = true }
+pliego-geom = { workspace = true }
+pliego-color = { workspace = true }
+pliego-doc = { workspace = true }
+pliego-fonts = { workspace = true }
+pliego-compose = { workspace = true }
+pliego-render = { workspace = true }
+pliego-tools = { workspace = true }
+pliego-engine = { workspace = true }
+pliego-textimport = { workspace = true }
 craft-prepress = { workspace = true }
 # The UI draws monochrome icon glyphs from egui's bundled emoji faces (☰, ⚠, 📋); 0.37 moved
 # them behind this feature. They stay bundled copies of OSI/CC0 faces from `epaint_default_fonts`.
@@ -39,11 +39,11 @@ log = { workspace = true }
 # egui's defaults, and package-scoped UI tests do not build the app binary.
 egui = { workspace = true, features = ["default_fonts", "monochrome_emoji_fonts"] }
 tempfile = { workspace = true }
-designcraft-idml = { workspace = true }
+pliego-idml = { workspace = true }
 zip = { workspace = true }
 # Headless (offscreen wgpu) rendering of the whole window for UI screenshots: `examples/ui_shot.rs`.
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
-designcraft-fonts = { workspace = true, features = ["testing"] }
+pliego-fonts = { workspace = true, features = ["testing"] }
 
 [build-dependencies]
 serde_json = { workspace = true }

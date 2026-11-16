@@ -678,7 +678,7 @@ pub const CLASSIC_GROUPS: &[&[&str]] = &[
 ];
 
 /// The Typography preset's available panels in the order observed in InDesign's workspace.
-/// CC Libraries has no corresponding DesignCraft panel, and where the Story panel sits in it is
+/// CC Libraries has no corresponding Pliego panel, and where the Story panel sits in it is
 /// not recorded, so these groups leave it out.
 pub const TYPOGRAPHY_GROUPS: &[&[&str]] = &[
     &["pages", "layers", "swatches"],

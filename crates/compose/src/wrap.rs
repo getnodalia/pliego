@@ -18,8 +18,8 @@
 //!   is composed at most that many more times (at least [`MIN_PASSES`]), and never more than
 //!   [`MAX_PASSES`].
 
-use designcraft_doc::{AnchorPosition, AnchoredObject, Document, Item, OBJECT_MARK, PageSide, SpreadRef, Story, StoryId, WrapMode};
-use designcraft_geom::Affine;
+use pliego_doc::{AnchorPosition, AnchoredObject, Document, Item, OBJECT_MARK, PageSide, SpreadRef, Story, StoryId, WrapMode};
+use pliego_geom::Affine;
 
 use crate::{ComposeOptions, ComposedStory, Exclusion, FrameSpec};
 

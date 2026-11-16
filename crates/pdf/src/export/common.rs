@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) enum TagEntry {
-    Story(designcraft_doc::StoryId),
+    Story(pliego_doc::StoryId),
     Figure(TagGroup),
 }
 
@@ -41,7 +41,7 @@ pub(crate) fn regular(c: &Color, rgb_only: bool) -> krilla::color::RegularColor 
     match *c {
         Color::Rgb { r, g, b } => R::Rgb(rgb::Color::new(q(r), q(g), q(b))),
         Color::Cmyk { c, m, y, k } => R::Cmyk(cmyk::Color::new(q(c), q(m), q(y), q(k))),
-        // DesignCraft grey is ink coverage (0 = white); PDF DeviceGray is lightness.
+        // Pliego grey is ink coverage (0 = white); PDF DeviceGray is lightness.
         Color::Gray { k } => R::Luma(luma::Color::new(q(1.0 - k))),
     }
 }
@@ -96,13 +96,13 @@ pub(crate) fn solid_fill(c: krilla::color::Color, opacity: f32) -> Fill {
 impl Exporter<'_> {
     /// A print document, or a PDF/X file (whose output intent is CMYK).
     pub(crate) fn for_print(&self) -> bool {
-        self.doc.settings.intent == designcraft_doc::Intent::Print || self.opts.standard.is_pdfx()
+        self.doc.settings.intent == pliego_doc::Intent::Print || self.opts.standard.is_pdfx()
     }
 
     /// Whether a paint overprints: its own attribute, or 100% [Black] when Preferences ›
     /// Appearance of Black overprints it (not in PDF/A, whose RGB output has no overprint).
     pub(crate) fn overprints(&self, swatch: &str, tint: f32, flag: bool) -> bool {
-        flag || (!self.rgb_only && self.doc.settings.overprint_black && swatch == designcraft_color::swatch::BLACK && tint >= 0.999)
+        flag || (!self.rgb_only && self.doc.settings.overprint_black && swatch == pliego_color::swatch::BLACK && tint >= 0.999)
     }
 
     /// Overprint for what is painted until the matching pop: `/op` for fills, `/OP` for strokes,
@@ -153,7 +153,7 @@ impl Exporter<'_> {
                         self.doc.swatch(ink).filter(|w| matches!(w.value, SwatchValue::Color { color_type: ColorType::Spot, .. })).unwrap_or(sw);
                     let SwatchValue::Color { color, .. } = &target.value else { break };
                     if process {
-                        return Some(device(&designcraft_color::swatch::apply_tint(*color, t), self.rgb_only));
+                        return Some(device(&pliego_color::swatch::apply_tint(*color, t), self.rgb_only));
                     }
                     let space = SeparationSpace::new(SeparationColorant::Custom(target.name.clone()), regular(color, self.rgb_only));
                     return Some(SepColor::new(q(t), space).into());

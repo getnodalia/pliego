@@ -100,7 +100,7 @@ fn ruby_num(p: &Value, key: &str, lo: f64, hi: f64, div: f64) -> Result<Option<V
 }
 
 pub(super) fn kenten_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::cjk_settings::{AdornmentOverprint, KENTEN_MARK_MAX_CHARS, KentenAlignment, KentenKind, KentenPosition};
+    use pliego_doc::cjk_settings::{AdornmentOverprint, KENTEN_MARK_MAX_CHARS, KentenAlignment, KentenKind, KentenPosition};
     const CMD: &str = "type.kenten";
     let mut body = serde_json::Map::new();
     let mut set = |k: &str, v: Value| {
@@ -199,7 +199,7 @@ pub(super) fn auto_tcy_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "type.autoTateChuYoko";
     let mut body = serde_json::Map::new();
     if let Some(v) = finite_param(p, "digits", CMD)? {
-        let max = f64::from(designcraft_compose::shape::AUTO_TCY_MAX);
+        let max = f64::from(pliego_compose::shape::AUTO_TCY_MAX);
         body.insert("autoTcy".into(), json!(v.round().clamp(0.0, max) as u32));
     }
     if let Some(v) = bool_param(p, "includeRoman", CMD)? {
@@ -212,7 +212,7 @@ pub(super) fn auto_tcy_cmd(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 pub(super) fn grid_settings_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::cjk::CharacterAlignment as R;
+    use pliego_doc::cjk::CharacterAlignment as R;
     const CMD: &str = "type.gridSettings";
     let mut body = serde_json::Map::new();
     let first_only = bool_param(p, "firstLineOnly", CMD)?;
@@ -255,15 +255,15 @@ pub(super) fn grid_settings_cmd(s: &mut Session, p: &Value) -> Result<Value> {
 fn ruby_text<'a>(p: &'a Value, key: &str) -> Result<Option<&'a str>> {
     let Some(v) = p.get(key) else { return Ok(None) };
     let t = v.as_str().ok_or_else(|| bad("type.ruby", format!("{key}: expected a string")))?;
-    if t.chars().count() > designcraft_doc::ruby::MAX_RUBY_CHARS {
-        return Err(bad("type.ruby", format!("{key}: longer than {} characters", designcraft_doc::ruby::MAX_RUBY_CHARS)));
+    if t.chars().count() > pliego_doc::ruby::MAX_RUBY_CHARS {
+        return Err(bad("type.ruby", format!("{key}: longer than {} characters", pliego_doc::ruby::MAX_RUBY_CHARS)));
     }
     Ok(Some(t))
 }
 
 pub(super) fn ruby_cmd(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::cjk_settings::AdornmentOverprint;
-    use designcraft_doc::ruby::{RubyAlignment, RubyOverhang, RubyParentSpacing, RubyPosition, RubyType};
+    use pliego_doc::cjk_settings::AdornmentOverprint;
+    use pliego_doc::ruby::{RubyAlignment, RubyOverhang, RubyParentSpacing, RubyPosition, RubyType};
     let mut body = serde_json::Map::new();
     let mut put = |attr: &str, v: Option<Value>| {
         if let Some(v) = v {
@@ -307,7 +307,7 @@ pub(super) fn ruby_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     put("rubyFontStyle", ruby_text(p, "fontStyle")?.map(|t| json!(t)));
     for (key, attr) in [("fill", "rubyFill"), ("stroke", "rubyStroke")] {
         if let Some(name) = ruby_text(p, key)? {
-            let known = name.is_empty() || name == designcraft_doc::color::swatch::NONE || s.doc()?.doc.swatch(name).is_some();
+            let known = name.is_empty() || name == pliego_doc::color::swatch::NONE || s.doc()?.doc.swatch(name).is_some();
             if !known {
                 return Err(bad("type.ruby", format!("{key}: no swatch `{name}`")));
             }
@@ -331,7 +331,7 @@ mod tcy_tests {
         let sid = r["story"].as_u64().unwrap();
         let at = "令和".len();
         s.execute("text.select", &json!({"story": sid, "anchor": at, "focus": at + 2})).unwrap();
-        let get = |s: &Session| s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].char_format_at(at + 1).over.tate_chu_yoko;
+        let get = |s: &Session| s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].char_format_at(at + 1).over.tate_chu_yoko;
         s.execute("type.tateChuYoko", &json!({})).unwrap();
         assert_eq!(get(&s), Some(true));
         s.execute("type.tateChuYoko", &json!({})).unwrap();
@@ -349,7 +349,7 @@ mod tcy_tests {
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": "漢字".len()})).unwrap();
         s.execute("type.ruby", &json!({"text": "かんじ"})).unwrap();
         s.execute("type.kenten", &json!({})).unwrap();
-        let f = |s: &Session| s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].char_format_at(1).over.clone();
+        let f = |s: &Session| s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].char_format_at(1).over.clone();
         assert_eq!(f(&s).ruby.as_deref(), Some("かんじ"));
         assert_eq!(f(&s).kenten, Some(true));
         s.execute("type.kenten", &json!({})).unwrap();
@@ -360,13 +360,13 @@ mod tcy_tests {
 
     #[test]
     fn ruby_options_are_checked_and_clamped() {
-        use designcraft_doc::ruby::{RubyAlignment, RubyPosition, RubyType};
+        use pliego_doc::ruby::{RubyAlignment, RubyPosition, RubyType};
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 400, 200], "content": "text", "text": "漢字です"})).unwrap();
         let sid = r["story"].as_u64().unwrap();
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": "漢字".len()})).unwrap();
-        let f = |s: &Session| s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].char_format_at(1).over.clone();
+        let f = |s: &Session| s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].char_format_at(1).over.clone();
         s.execute(
             "type.ruby",
             &json!({"text": "かん\u{3000}じ", "type": "perCharacter", "alignment": "oneAki", "position": "belowLeft", "size": 1e9, "xScale": -50, "scalingPercent": 5, "autoTcyDigits": 99, "fillTint": 250, "yOffset": -1e12, "fill": "[Black]"}),
@@ -387,7 +387,7 @@ mod tcy_tests {
         s.execute("type.ruby", &json!({"alignment": "center"})).unwrap();
         assert_eq!((f(&s).ruby, f(&s).ruby_alignment), (a.ruby.clone(), Some(RubyAlignment::Center)));
         // Refused, and nothing changes: unknown names, non-numbers, overlong text, unknown swatches.
-        let long = "あ".repeat(designcraft_doc::ruby::MAX_RUBY_CHARS + 1);
+        let long = "あ".repeat(pliego_doc::ruby::MAX_RUBY_CHARS + 1);
         for p in [
             json!({"alignment": "sideways"}),
             json!({"size": "big"}),
@@ -412,17 +412,17 @@ mod tcy_tests {
         s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": n})).unwrap();
         s.execute("type.warichu", &json!({"lines": 2, "size": 40, "align": "left", "lineSpacing": 1, "charsBeforeBreak": 2, "charsAfterBreak": 2}))
             .unwrap();
-        let f = |s: &Session| s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].char_format_at(1).over.clone();
+        let f = |s: &Session| s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].char_format_at(1).over.clone();
         let a = f(&s);
         assert_eq!(a.warichu, Some(true));
         assert_eq!(a.warichu_lines, Some(2));
         assert_eq!(a.warichu_size, Some(40.0));
         assert_eq!(a.warichu_line_spacing, Some(1.0));
-        assert_eq!(a.warichu_alignment, Some(designcraft_doc::cjk::WarichuAlignment::Left));
+        assert_eq!(a.warichu_alignment, Some(pliego_doc::cjk::WarichuAlignment::Left));
         assert_eq!(a.warichu_chars_before_break, Some(2));
         assert_eq!(a.warichu_chars_after_break, Some(2));
         // The characters after the selection are not part of the note.
-        assert_eq!(s.doc().unwrap().doc.stories[&designcraft_doc::StoryId(sid)].char_format_at(n + 1).over.warichu, None);
+        assert_eq!(s.doc().unwrap().doc.stories[&pliego_doc::StoryId(sid)].char_format_at(n + 1).over.warichu, None);
         s.execute("edit.undo", &json!({})).unwrap();
         assert_eq!(f(&s).warichu, None);
         s.execute("edit.redo", &json!({})).unwrap();

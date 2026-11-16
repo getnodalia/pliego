@@ -2,7 +2,7 @@
 //! settings, written to a folder of its own) and the file names, see the files it will write,
 //! and keep the setup as a preset.
 
-use designcraft_engine::cmd::export_batch::{ExportFormat, ExportJob, ExportPreset, ExportVersion, builtin_presets, version_templates};
+use pliego_engine::cmd::export_batch::{ExportFormat, ExportJob, ExportPreset, ExportVersion, builtin_presets, version_templates};
 use serde_json::{Value, json};
 
 use crate::DesignApp;
@@ -55,8 +55,8 @@ fn pdf_kind(v: &ExportVersion) -> &'static str {
 }
 
 fn set_pdf_kind(v: &mut ExportVersion, kind: &str) {
-    let marks = designcraft_engine::cmd::export_batch::VersionMarks { crop: true, bleed: true, page_info: true };
-    let none = designcraft_engine::cmd::export_batch::VersionMarks::default();
+    let marks = pliego_engine::cmd::export_batch::VersionMarks { crop: true, bleed: true, page_info: true };
+    let none = pliego_engine::cmd::export_batch::VersionMarks::default();
     (v.bleed, v.marks, v.compress_images, v.standard, v.spreads) = match kind {
         "print" => (true, marks, false, "none".into(), false),
         "bleed" => (true, none, false, "none".into(), false),
@@ -379,7 +379,7 @@ fn export_files(app: &mut DesignApp, d: &Dialog, job: ExportJob, dir: Option<Str
         let download = app.services.download.as_mut().ok_or("no download")?;
         for f in &files {
             let (Some(path), Some(b64)) = (f["path"].as_str(), f["base64"].as_str()) else { continue };
-            download(&path.replace('/', " - "), &designcraft_engine::cmd::base64_decode(b64))?;
+            download(&path.replace('/', " - "), &pliego_engine::cmd::base64_decode(b64))?;
         }
     }
     app.ui.status = crate::i18n::tr(&app.ui.language, "Exported {n} files").replace("{n}", &files.len().to_string());
@@ -396,7 +396,7 @@ mod tests {
     use super::*;
 
     fn app() -> DesignApp {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({"pages": 2, "facingPages": false, "width": 300, "height": 400, "title": "Mag"})).unwrap();
         app.run("layout.createAlternate", json!({"name": "Tablet H", "width": 400, "height": 300, "fromName": "Print"})).unwrap();
         app

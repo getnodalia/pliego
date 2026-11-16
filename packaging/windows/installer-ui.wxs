@@ -2,7 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <!-- Windows Installer populates files-in-use lists at runtime. Keep their table even
-         though these dialogs have no static ListItem rows (the GridCraft UI does the same). -->
+         though these dialogs have no static ListItem rows (the Celdas UI does the same). -->
     <EnsureTable Id="ListBox" />
     <!-- Reuse the existing package icon as a fallback; MSI supplies its standard message icon. -->
     <Binary Id="CraftErrorIcon" SourceFile="$(var.IconPath)" />
@@ -200,12 +200,12 @@
     <?endif?>
     <ComponentGroup Id="CraftInstallerSettings" Directory="INSTALLFOLDER">
       <Component Id="CraftInstallerSettingsEntry" Guid="*">
-        <RegistryKey Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Craft.designcraft" ForceDeleteOnUninstall="yes">
+        <RegistryKey Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Craft.pliego" ForceDeleteOnUninstall="yes">
           <!-- Legacy Launchers match the canonical MSI name exactly; keep this alias distinct. -->
           <RegistryValue Name="DisplayName" Type="string" Value="[ProductName] (Craft Apps)" KeyPath="yes" />
           <RegistryValue Name="DisplayVersion" Type="string" Value="[ProductVersion]" />
           <RegistryValue Name="Publisher" Type="string" Value="[Manufacturer]" />
-          <RegistryValue Name="DisplayIcon" Type="string" Value="&quot;[INSTALLFOLDER]designcraft.exe&quot;,0" />
+          <RegistryValue Name="DisplayIcon" Type="string" Value="&quot;[INSTALLFOLDER]pliego.exe&quot;,0" />
           <RegistryValue Name="InstallLocation" Type="string" Value="[INSTALLFOLDER]" />
           <RegistryValue Name="URLInfoAbout" Type="string" Value="[ARPURLINFOABOUT]" />
           <RegistryValue Name="URLUpdateInfo" Type="string" Value="[ARPURLUPDATEINFO]" />
@@ -218,7 +218,7 @@
       </Component>
       <!-- Preserve the app-owned ARPNOMODIFY policy instead of inventing a new default. -->
       <Component Id="CraftInstallerSettingsNoModify" Guid="*" Condition="ARPNOMODIFY = &quot;1&quot;">
-        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Craft.designcraft" Name="NoModify" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKMU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Craft.pliego" Name="NoModify" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>

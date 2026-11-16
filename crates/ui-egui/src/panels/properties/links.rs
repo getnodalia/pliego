@@ -233,7 +233,7 @@ pub fn info_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     match sel_info(app) {
         Some(i) => {
-            let f = |v: f64| designcraft_geom::format_measure(v, u);
+            let f = |v: f64| pliego_geom::format_measure(v, u);
             crate::rtl::label(ui, format!("X: {}   Y: {}", f(i.page_rect.x0), f(i.page_rect.y0)));
             crate::rtl::label(ui, format!("W: {}   H: {}", f(i.page_rect.width()), f(i.page_rect.height())));
             crate::rtl::label(
@@ -263,7 +263,7 @@ pub fn info_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
 
 pub fn preflight_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
-    let issues = designcraft_engine::cmd::preflight::check(&app.session, 150.0);
+    let issues = pliego_engine::cmd::preflight::check(&app.session, 150.0);
     let errors = issues.iter().filter(|i| i.severity == "error").count();
     ui.horizontal(|ui| {
         let (r, _) = ui.allocate_exact_size(vec2(10.0, 10.0), egui::Sense::hover());

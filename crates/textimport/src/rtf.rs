@@ -2,7 +2,7 @@
 //! Unicode (`\uN`) and hex (`\'hh`) characters. Destinations that aren't body text (font and
 //! colour tables, stylesheet, info, pictures, `\*` groups) are skipped.
 
-use designcraft_doc::{CharAttrs, CharFormat, Story, StoryId};
+use pliego_doc::{CharAttrs, CharFormat, Story, StoryId};
 
 use crate::{ImportError, Imported};
 
@@ -28,7 +28,7 @@ impl State {
             _ => None,
         };
         CharFormat {
-            style: designcraft_doc::story::NO_CHAR_STYLE.into(),
+            style: pliego_doc::story::NO_CHAR_STYLE.into(),
             over: CharAttrs {
                 font_style,
                 underline: self.underline.then_some(true),
@@ -231,10 +231,10 @@ pub fn import(bytes: &[u8]) -> Result<Imported, ImportError> {
                         let len = st.len();
                         st.insert_with(len, "\n", fmt.clone());
                     }
-                    "line" => buf.push(designcraft_doc::FORCED_LINE_BREAK),
+                    "line" => buf.push(pliego_doc::FORCED_LINE_BREAK),
                     "tab" => buf.push('\t'),
-                    "page" => buf.push(designcraft_doc::PAGE_BREAK),
-                    "column" => buf.push(designcraft_doc::COLUMN_BREAK),
+                    "page" => buf.push(pliego_doc::PAGE_BREAK),
+                    "column" => buf.push(pliego_doc::COLUMN_BREAK),
                     "emdash" => buf.push('\u{2014}'),
                     "endash" => buf.push('\u{2013}'),
                     "bullet" => buf.push('\u{2022}'),
@@ -249,7 +249,7 @@ pub fn import(bytes: &[u8]) -> Result<Imported, ImportError> {
                     "strike" => restyle(&|s| s.strike = on),
                     // Half-points; sizes outside the engine's 0.1–1296 pt range fall back to the default.
                     "fs" => restyle(&|s| {
-                        s.size = param.map(|p| p as f64 / 2.0).and_then(designcraft_doc::attrs::imported_type_size);
+                        s.size = param.map(|p| p as f64 / 2.0).and_then(pliego_doc::attrs::imported_type_size);
                     }),
                     "plain" => restyle(&|s| {
                         s.bold = false;
@@ -399,7 +399,7 @@ Caf\'e9 \u8364? price\tab tab\line next\par
         // What the exporter writes comes back.
         let mut st = Story::new(StoryId(1));
         st.insert(0, "x \u{1F600} \u{20BB7}\u{7530} y");
-        let doc = designcraft_doc::Document::new(&designcraft_doc::build::NewDocument::default());
+        let doc = pliego_doc::Document::new(&pliego_doc::build::NewDocument::default());
         assert_eq!(import(crate::export::rtf(&doc, &st).as_bytes()).unwrap().story.text, st.text);
         // Half a pair is not a character: it is still left out.
         assert_eq!(import(br"{\rtf1 A\u-10179?B\u-8704?C}").unwrap().story.text, "ABC");

@@ -1,5 +1,5 @@
-use designcraft_color::cms::{self, Cms, ColorSettings};
 use image::{ImageEncoder, Rgba};
+use pliego_color::cms::{self, Cms, ColorSettings};
 
 use super::*;
 use crate::decode_rgba;

@@ -74,7 +74,7 @@ fn num_in(v: &Value, key: &str, lo: f64, hi: f64, cmd: &str) -> Result<Option<f6
 fn swatch_in(doc: &Document, v: &Value, keys: &[&str], cmd: &str) -> Result<Option<String>> {
     let Some((key, x)) = keys.iter().find_map(|k| v.get(*k).filter(|x| !x.is_null()).map(|x| (*k, x))) else { return Ok(None) };
     let name = x.as_str().ok_or_else(|| bad(cmd, format!("{key} must be a swatch name")))?;
-    if name != designcraft_color::swatch::NONE && doc.swatch(name).is_none() {
+    if name != pliego_color::swatch::NONE && doc.swatch(name).is_none() {
         return Err(bad(cmd, format!("no swatch `{name}`")));
     }
     Ok(Some(name.to_string()))
@@ -87,7 +87,7 @@ const CELL_STROKE_TYPES: &[&str] =
 /// The attributes a stroke edit sets. A plain `"dashed"` gets a pattern scaled to the
 /// resulting weight of each edge.
 pub(super) struct StrokeEdit {
-    attrs: designcraft_doc::CellStrokeAttrs,
+    attrs: pliego_doc::CellStrokeAttrs,
     scaled_dashes: bool,
 }
 
@@ -96,7 +96,7 @@ impl StrokeEdit {
         if !v.is_object() {
             return Err(bad(cmd, "stroke must be an object"));
         }
-        let mut attrs = designcraft_doc::CellStrokeAttrs {
+        let mut attrs = pliego_doc::CellStrokeAttrs {
             weight: num_in(v, "weight", 0.0, 1000.0, cmd)?,
             color: swatch_in(doc, v, &["color"], cmd)?,
             tint: num_in(v, "tint", 0.0, 1.0, cmd)?.map(|t| t as f32),
@@ -154,7 +154,7 @@ fn drawn_side(t: &Table, owners: &[(usize, usize)], (r, c): (usize, usize), side
 }
 
 /// Cell Options › Text › First Baseline: `firstBaseline` (offset method) and `firstBaselineMin` (pt).
-pub(super) fn first_baseline_params(p: &Value, id: &str) -> Result<(Option<designcraft_doc::FirstBaseline>, Option<f64>)> {
+pub(super) fn first_baseline_params(p: &Value, id: &str) -> Result<(Option<pliego_doc::FirstBaseline>, Option<f64>)> {
     let fb = match p.get("firstBaseline").filter(|v| !v.is_null()) {
         Some(v) => Some(serde_json::from_value(v.clone()).map_err(|e| bad(id, format!("firstBaseline: {e}")))?),
         None => None,
@@ -251,7 +251,7 @@ pub(super) fn set_cell(s: &mut Session, p: &Value) -> Result<Value> {
         let owners = t.owners();
         let nc = t.ncols();
         let nr = t.nrows();
-        let rtl = t.options.direction == designcraft_doc::TextDirection::RightToLeft;
+        let rtl = t.options.direction == pliego_doc::TextDirection::RightToLeft;
         // Local edits outrank previously imported edges, including explicit zero/None.
         let priority = if stroke.is_some() { next_cell_stroke_priority(t) } else { 0 };
         let rg = g.range;
@@ -327,7 +327,7 @@ pub(super) fn get_cell_stroke(s: &mut Session, p: &Value) -> Result<Value> {
     let t = st.doc.story(g.story).and_then(|x| x.tables.get(&g.table)).ok_or_else(|| bad(ID, "no table"))?;
     let owners = t.owners();
     let outline = t.expand_range(g.range);
-    let rtl = t.options.direction == designcraft_doc::TextDirection::RightToLeft;
+    let rtl = t.options.direction == pliego_doc::TextDirection::RightToLeft;
     // One value per key, or null once two edges (cells) disagree.
     fn merge(slot: &mut Option<Value>, v: Value) {
         match slot {
@@ -404,7 +404,7 @@ fn mirror_cell_edge(t: &mut Table, owners: &[(usize, usize)], from: (usize, usiz
     // A merged cell's edge may border several separately editable cells. Mirroring
     // a segment onto that whole edge would change unselected neighbors; priorities
     // instead resolve each segment without altering the merged cell's formatting.
-    let merged = |cell: &designcraft_doc::Cell| cell.row_span > 1 || cell.col_span > 1;
+    let merged = |cell: &pliego_doc::Cell| cell.row_span > 1 || cell.col_span > 1;
     if t.cell(from.0, from.1).is_some_and(merged) || t.cell(to.0, to.1).is_some_and(merged) {
         return;
     }
@@ -440,7 +440,7 @@ mod arabic_tests {
         s.execute("edit.undo", &json!({})).unwrap();
         let t = s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap();
         assert_eq!(t.ncols(), 2);
-        assert_eq!(t.options.direction, designcraft_doc::TextDirection::RightToLeft);
+        assert_eq!(t.options.direction, pliego_doc::TextDirection::RightToLeft);
     }
 
     /// A text frame whose paragraphs have a paragraph style with `direction`, with the story's
@@ -456,7 +456,7 @@ mod arabic_tests {
         (s, r["story"].as_u64().unwrap())
     }
 
-    fn only_table(s: &Session) -> std::sync::Arc<designcraft_doc::Table> {
+    fn only_table(s: &Session) -> std::sync::Arc<pliego_doc::Table> {
         s.doc().unwrap().doc.stories.values().flat_map(|st| st.tables.values()).next().unwrap().clone()
     }
 
@@ -464,12 +464,12 @@ mod arabic_tests {
     /// (#100): the first column belongs on the right.
     #[test]
     fn tables_take_the_direction_of_their_paragraph() {
-        use designcraft_doc::TextDirection::{LeftToRight, RightToLeft};
+        use pliego_doc::TextDirection::{LeftToRight, RightToLeft};
         let (mut s, sid) = styled_frame("rightToLeft", "١\t٢\t٣\nأ\tب\tج");
         s.execute("table.convertFromText", &json!({"columnSeparator": "tab"})).unwrap();
         assert_eq!(only_table(&s).options.direction, RightToLeft);
         let st = s.doc().unwrap();
-        let cs = s.cache.get(&st.doc, designcraft_doc::StoryId(sid), None);
+        let cs = s.cache.get(&st.doc, pliego_doc::StoryId(sid), None);
         let placed = &cs.frames[0].tables[0];
         let (first, last) = (placed.cell(0, 0).unwrap().rect, placed.cell(0, 2).unwrap().rect);
         assert!(first.x0 > last.x0, "cell ١ is the rightmost: {first:?} {last:?}");

@@ -95,9 +95,9 @@ impl<'a> Ex<'a> {
                 .attr(
                     "Intent",
                     match s.intent {
-                        designcraft_doc::Intent::Print => "PrintIntent",
-                        designcraft_doc::Intent::Web => "WebIntent",
-                        designcraft_doc::Intent::Mobile => "MobileIntent",
+                        pliego_doc::Intent::Print => "PrintIntent",
+                        pliego_doc::Intent::Web => "WebIntent",
+                        pliego_doc::Intent::Mobile => "MobileIntent",
                     },
                 )
                 .attr("CreatePrimaryTextFrame", bool_s(s.primary_text_frame))
@@ -116,9 +116,9 @@ impl<'a> Ex<'a> {
                 .attr(
                     "RulerOrigin",
                     match s.ruler_origin {
-                        designcraft_doc::RulerOrigin::Spread => "SpreadOrigin",
-                        designcraft_doc::RulerOrigin::Page => "PageOrigin",
-                        designcraft_doc::RulerOrigin::Spine => "SpineOrigin",
+                        pliego_doc::RulerOrigin::Spread => "SpreadOrigin",
+                        pliego_doc::RulerOrigin::Page => "PageOrigin",
+                        pliego_doc::RulerOrigin::Spine => "SpineOrigin",
                     },
                 )
                 .attr("CursorKeyIncrement", num(s.keyboard_increment))
@@ -138,8 +138,8 @@ impl<'a> Ex<'a> {
                 .attr(
                     "BaselineGridRelativeOption",
                     match bg.relative_to {
-                        designcraft_doc::GridRelative::TopOfPage => "TopOfPageOfBaselineGridRelativeOption",
-                        designcraft_doc::GridRelative::TopMargin => "TopOfMarginOfBaselineGridRelativeOption",
+                        pliego_doc::GridRelative::TopOfPage => "TopOfPageOfBaselineGridRelativeOption",
+                        pliego_doc::GridRelative::TopMargin => "TopOfMarginOfBaselineGridRelativeOption",
                     },
                 ),
         );
@@ -148,17 +148,17 @@ impl<'a> Ex<'a> {
         root.push(El::new("TransparencyPreference").attr(
             "BlendingSpace",
             match s.blend_space {
-                designcraft_doc::BlendSpace::Cmyk => "CMYK",
-                designcraft_doc::BlendSpace::Rgb => "RGB",
+                pliego_doc::BlendSpace::Cmyk => "CMYK",
+                pliego_doc::BlendSpace::Rgb => "RGB",
             },
         ));
         // Split Document: the style is a reference, a built-in one by its `$ID/` name; an empty
         // one splits on the styles' export tags.
         let (break_doc, split_style) = match &s.epub_split {
-            designcraft_doc::EpubSplit::Off => (false, names::style_name_out(PARA_BUILTINS, st::BASIC_PARAGRAPH)),
-            designcraft_doc::EpubSplit::ExportTags => (true, String::new()),
-            designcraft_doc::EpubSplit::Style(n) if PARA_BUILTINS.iter().any(|(o, _)| o == n) => (true, names::style_name_out(PARA_BUILTINS, n)),
-            designcraft_doc::EpubSplit::Style(n) => (true, names::style_self("ParagraphStyle", PARA_BUILTINS, n)),
+            pliego_doc::EpubSplit::Off => (false, names::style_name_out(PARA_BUILTINS, st::BASIC_PARAGRAPH)),
+            pliego_doc::EpubSplit::ExportTags => (true, String::new()),
+            pliego_doc::EpubSplit::Style(n) if PARA_BUILTINS.iter().any(|(o, _)| o == n) => (true, names::style_name_out(PARA_BUILTINS, n)),
+            pliego_doc::EpubSplit::Style(n) => (true, names::style_self("ParagraphStyle", PARA_BUILTINS, n)),
         };
         root.push(El::new("EPubExportPreference").attr("BreakDocument", bool_s(break_doc)).attr("ParagraphStyleName", split_style));
         let a = &s.advanced_type;

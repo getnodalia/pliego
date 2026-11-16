@@ -26,7 +26,7 @@ impl DesignApp {
         // Image Import Options: a multi-page PDF asks which page.
         if purpose == "place" && path.to_ascii_lowercase().ends_with(".pdf") {
             let target = self.session.active().map(|d| d.uid);
-            let pages = self.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| designcraft_render::pdf_page_count(&b)).unwrap_or(1);
+            let pages = self.services.read.as_mut().and_then(|r| r(&path).ok()).and_then(|b| pliego_render::pdf_page_count(&b)).unwrap_or(1);
             if pages > 1 {
                 self.ui.dialog = Some(dialogs::Dialog::new("pdfImport", json!({"path": path, "page": "1", "pages": pages, "target": target})));
                 return Ok(Value::Null);
@@ -44,7 +44,7 @@ impl DesignApp {
     /// among the file's styles; in a browser they all load when the file arrives.
     #[track_caller]
     pub fn pick_styles(&mut self, kind: &str) -> Result<Value, String> {
-        designcraft_engine::cmd::has_doc(&self.session)?;
+        pliego_engine::cmd::has_doc(&self.session)?;
         if let Some(open) = self.services.open_async.as_mut() {
             let purpose = if kind.is_empty() { "styles".to_string() } else { format!("styles:{kind}") };
             open(ImportRequest { purpose, target: self.session.active().map(|d| d.uid) });
@@ -83,7 +83,7 @@ impl DesignApp {
     pub(crate) fn confirm_pdf_import(&mut self, page: u64, crop: String) -> Result<Value, String> {
         let file = self.pending_pdf.take().ok_or("PDF import cancelled: no pending file")?;
         self.activate_import_target(&file.request)?;
-        let params = json!({"name": file.name, "base64": designcraft_engine::cmd::base64_encode(&file.bytes), "pdfPage": page, "pdfCrop": crop});
+        let params = json!({"name": file.name, "base64": pliego_engine::cmd::base64_encode(&file.bytes), "pdfPage": page, "pdfCrop": crop});
         if file.request.purpose == "place" { self.place_file(params) } else { self.open_file("file.place", params) }
     }
 
@@ -129,7 +129,7 @@ impl DesignApp {
         let lower = file.name.to_ascii_lowercase();
         if let Some(kind) = file.request.purpose.strip_prefix("styles") {
             self.activate_import_target(&file.request)?;
-            let mut params = json!({"name": file.name, "base64": designcraft_engine::cmd::base64_encode(&file.bytes)});
+            let mut params = json!({"name": file.name, "base64": pliego_engine::cmd::base64_encode(&file.bytes)});
             match kind {
                 ":paragraph" => params["character"] = json!([]),
                 ":character" => params["paragraph"] = json!([]),
@@ -137,15 +137,15 @@ impl DesignApp {
             }
             return self.run("style.load", params);
         }
-        let layout = opens_as_document(&file.name)
-            || (std::path::Path::new(&file.name).extension().is_none() && designcraft_engine::cmd::is_document(&file.bytes));
+        let layout =
+            opens_as_document(&file.name) || (std::path::Path::new(&file.name).extension().is_none() && pliego_engine::cmd::is_document(&file.bytes));
         let place =
             file.request.purpose == "place" || (matches!(file.request.purpose.as_str(), "drop" | "open") && !layout && !lower.ends_with(".ase"));
         if place || lower.ends_with(".ase") || file.request.purpose == "swatches" {
             self.activate_import_target(&file.request)?;
         }
         if place && lower.ends_with(".pdf") {
-            let pages = designcraft_render::pdf_page_count(&file.bytes).unwrap_or(1);
+            let pages = pliego_render::pdf_page_count(&file.bytes).unwrap_or(1);
             if pages > 1 {
                 self.ui.dialog =
                     Some(dialogs::Dialog::new("pdfImport", json!({"async": true, "name": file.name.clone(), "page": "1", "pages": pages})));
@@ -153,7 +153,7 @@ impl DesignApp {
                 return Ok(Value::Null);
             }
         }
-        let b64 = designcraft_engine::cmd::base64_encode(&file.bytes);
+        let b64 = pliego_engine::cmd::base64_encode(&file.bytes);
         if lower.ends_with(".ase") || file.request.purpose == "swatches" {
             self.run("swatch.load", json!({"base64": b64}))
         } else if file.request.purpose == "place" {
@@ -167,7 +167,7 @@ impl DesignApp {
 
     /// A file dropped on the window: documents open, the swatches in a swatch exchange (.ase) file
     /// are loaded, and anything else is placed on the spread in view (a parent spread while parents
-    /// are being edited). A file without an extension opens when its content is a DesignCraft or
+    /// are being edited). A file without an extension opens when its content is a Pliego or
     /// IDML document.
     pub fn open_dropped(&mut self, path: &str) -> Result<Value, String> {
         self.open_dropped_at(path, None)
@@ -203,15 +203,14 @@ impl DesignApp {
         }
         let document = opens_as_document(path)
             || (std::path::Path::new(path).extension().is_none()
-                && designcraft_engine::io::read_capped(path, designcraft_engine::cmd::DOCUMENT_SNIFF_BYTES)
-                    .is_ok_and(|b| designcraft_engine::cmd::is_document(&b)));
+                && pliego_engine::io::read_capped(path, pliego_engine::cmd::DOCUMENT_SNIFF_BYTES).is_ok_and(|b| pliego_engine::cmd::is_document(&b)));
         if document {
             return self.open_file("file.open", json!({"path": path}));
         }
         let mut params = json!({"path": path});
         // A graphic dropped on an empty or graphic frame fills it, as File > Place does. Text keeps
         // getting a frame of its own, so it never replaces the image in a graphic frame.
-        let is_text = designcraft_textimport::is_text_file(path);
+        let is_text = pliego_textimport::is_text_file(path);
         let frame = if *frame_free && !is_text { canvas::drop_frame(self, pointer) } else { None };
         if let (Some(frame), Some(o)) = (frame, params.as_object_mut()) {
             o.insert("frame".into(), json!(frame.0));
@@ -220,7 +219,7 @@ impl DesignApp {
             o.insert("spread".into(), serde_json::to_value(sr).unwrap_or(Value::Null));
             o.insert("x".into(), json!(at.x));
             o.insert("y".into(), json!(at.y));
-            if let (designcraft_doc::SpreadRef::Doc(si), Some(st)) = (sr, self.session.active()) {
+            if let (pliego_doc::SpreadRef::Doc(si), Some(st)) = (sr, self.session.active()) {
                 let pi = st.doc.spreads.get(si).and_then(|s| s.page_at_x(at.x)).unwrap_or(0);
                 o.insert("page".into(), json!(st.doc.first_page_of_spread(si) + pi + 1));
             }
@@ -315,11 +314,11 @@ impl DesignApp {
     }
 }
 
-/// Files that open as documents (when dropped or picked) rather than being placed: DesignCraft,
+/// Files that open as documents (when dropped or picked) rather than being placed: Pliego,
 /// IDML, and InDesign documents and templates (converted to IDML on open).
 pub fn opens_as_document(name: &str) -> bool {
     let n = name.to_ascii_lowercase();
-    [".designcraft", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext))
+    [".pliego", ".idml", ".indd", ".indt"].iter().any(|ext| n.ends_with(ext))
 }
 
 #[cfg(test)]
@@ -335,7 +334,7 @@ mod import_warning_tests {
         let spread = r#"<idPkg:Spread xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging"><Spread Self="s"><Page Self="p" GeometricBounds="0 0 100 100" ItemTransform="1 0 0 1 0 0"/><Rectangle Self="r" ItemTransform="1 0 0 1 0 0"/></Spread></idPkg:Spread>"#;
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
         let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
-        for (name, text) in [("mimetype", designcraft_idml::MIMETYPE), ("designmap.xml", &map), ("Spreads/one.xml", spread)] {
+        for (name, text) in [("mimetype", pliego_idml::MIMETYPE), ("designmap.xml", &map), ("Spreads/one.xml", spread)] {
             zip.start_file(name, options).unwrap();
             zip.write_all(text.as_bytes()).unwrap();
         }
@@ -374,14 +373,14 @@ mod import_warning_tests {
     fn byte_open_reports_partial_import_warnings_without_losing_documents() {
         let mut app = app();
         let result =
-            app.open_file("file.openBytes", json!({"name": "partial.idml", "base64": designcraft_engine::cmd::base64_encode(&idml(true))})).unwrap();
+            app.open_file("file.openBytes", json!({"name": "partial.idml", "base64": pliego_engine::cmd::base64_encode(&idml(true))})).unwrap();
         assert_eq!(result["warnings"].as_array().unwrap().len(), 2);
         assert_partial_import_warning(&mut app, "partial.idml");
     }
 
     #[test]
     fn native_open_reports_partial_import_warnings_without_losing_documents() {
-        let path = std::env::temp_dir().join(format!("designcraft-partial-import-{}", std::process::id())).join("partial.idml");
+        let path = std::env::temp_dir().join(format!("pliego-partial-import-{}", std::process::id())).join("partial.idml");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, idml(true)).unwrap();
         let picked = path.to_string_lossy().to_string();
@@ -410,8 +409,8 @@ mod import_warning_tests {
         let sid = *d.stories.keys().next().unwrap();
         let story = d.story_mut(sid).unwrap();
         story.format_chars(0..6, |f| f.over.font_family = Some("Unavailable Test Family".into()));
-        story.paras[0].para.grep_styles = Some(vec![designcraft_doc::GrepStyle { style: "Keep".into(), pattern: "[a-".into() }]);
-        let path = std::env::temp_dir().join(format!("designcraft-font-warning-{}.designcraft", std::process::id()));
+        story.paras[0].para.grep_styles = Some(vec![pliego_doc::GrepStyle { style: "Keep".into(), pattern: "[a-".into() }]);
+        let path = std::env::temp_dir().join(format!("pliego-font-warning-{}.pliego", std::process::id()));
         app.run("file.save", json!({"path": path})).unwrap();
         let result = app.open_file("file.open", json!({"path": path}));
         std::fs::remove_file(&path).unwrap();
@@ -423,9 +422,8 @@ mod import_warning_tests {
     #[test]
     fn complete_import_does_not_show_a_warning() {
         let mut app = app();
-        let result = app
-            .open_file("file.openBytes", json!({"name": "complete.idml", "base64": designcraft_engine::cmd::base64_encode(&idml(false))}))
-            .unwrap();
+        let result =
+            app.open_file("file.openBytes", json!({"name": "complete.idml", "base64": pliego_engine::cmd::base64_encode(&idml(false))})).unwrap();
         assert_eq!(result["warnings"], json!([]));
         assert!(app.ui.dialog.is_none());
         assert!(app.ui.status.is_empty());
@@ -452,16 +450,16 @@ pub(crate) mod browser_import_tests {
     #[test]
     fn browser_opens_title_a_document_by_its_name_without_one_extension() {
         let mut app = app();
-        let native = designcraft_engine::cmd::base64_decode(app.run("file.serialize", json!({})).unwrap()["base64"].as_str().unwrap());
+        let native = pliego_engine::cmd::base64_decode(app.run("file.serialize", json!({})).unwrap()["base64"].as_str().unwrap());
         for purpose in ["open", "drop"] {
             for (name, title) in [
-                ("Brochure.designcraft", "Brochure"),
-                ("Brochure.designcraft.designcraft", "Brochure.designcraft"),
-                ("Brochure.v2.designcraft", "Brochure.v2"),
+                ("Brochure.pliego", "Brochure"),
+                ("Brochure.pliego.pliego", "Brochure.pliego"),
+                ("Brochure.v2.pliego", "Brochure.v2"),
                 ("Brochure.indd", "Brochure.indd"),
                 ("Brochure.INDT", "Brochure.INDT"),
-                ("日本.DESIGNCRAFT", "日本"),
-                (".designcraft", ".designcraft"),
+                ("日本.PLIEGO", "日本"),
+                (".pliego", ".pliego"),
                 ("Brochure", "Brochure"),
             ] {
                 let before = app.session.documents().len();
@@ -471,7 +469,7 @@ pub(crate) mod browser_import_tests {
                 assert_eq!(app.session.doc().unwrap().doc.title, title, "{purpose}: {name}");
             }
         }
-        let idml = designcraft_idml::export_idml(&app.session.doc().unwrap().doc);
+        let idml = pliego_idml::export_idml(&app.session.doc().unwrap().doc);
         for purpose in ["open", "drop"] {
             for name in ["Brochure.idml", "Brochure.indd", "Brochure.INDT"] {
                 let before = app.session.documents().len();
@@ -572,9 +570,9 @@ pub(crate) mod browser_import_tests {
         let mut source = Session::new();
         source.execute("file.new", &json!({"title": "source"})).unwrap();
         source.execute("frame.create", &json!({"rect": [10, 10, 50, 50], "content": "text", "text": "placed"})).unwrap();
-        let native = designcraft_engine::cmd::to_bytes(&source.doc().unwrap().doc).unwrap();
-        let idml = designcraft_idml::export_idml(&source.doc().unwrap().doc);
-        for (name, bytes) in [("source.designcraft", native), ("source.idml", idml)] {
+        let native = pliego_engine::cmd::to_bytes(&source.doc().unwrap().doc).unwrap();
+        let idml = pliego_idml::export_idml(&source.doc().unwrap().doc);
+        for (name, bytes) in [("source.pliego", native), ("source.idml", idml)] {
             let mut app = app();
             let request = app.import_request("place");
             deliver(&mut app, request, name, bytes.clone());
@@ -610,8 +608,8 @@ pub(crate) mod browser_import_tests {
         assert!(app.session.documents()[1].doc.assets.is_empty());
         app.run("place.drop", json!({"x": 36, "y": 36})).unwrap();
         let exported = app.run("file.exportPdf", json!({})).unwrap();
-        let exported = designcraft_engine::cmd::base64_decode(exported["base64"].as_str().unwrap());
-        let pixels = designcraft_render::render_pdf_page(&exported, 0, 400).unwrap();
+        let exported = pliego_engine::cmd::base64_decode(exported["base64"].as_str().unwrap());
+        let pixels = pliego_render::render_pdf_page(&exported, 0, 400).unwrap();
         assert!(pixels.data().iter().filter(|p| p.g > 240 && p.r < 10 && p.b < 10).count() > 1000);
         assert_eq!(pixels.data().iter().filter(|p| p.r > 240 && p.g < 10 && p.b < 10).count(), 0);
     }
@@ -639,8 +637,8 @@ pub(crate) mod browser_import_tests {
         assert_eq!(app.session.tool_id(), "placeGun");
         assert!(app.session.loaded.is_some());
         assert_eq!(items(&app), 0);
-        let mods = designcraft_tools::Mods::default();
-        app.session.tool_key(designcraft_tools::ToolKey::Escape, mods, designcraft_engine::ViewInfo::at_zoom(1.0)).unwrap();
+        let mods = pliego_tools::Mods::default();
+        app.session.tool_key(pliego_tools::ToolKey::Escape, mods, pliego_engine::ViewInfo::at_zoom(1.0)).unwrap();
         assert_eq!(app.session.tool_id(), "selection");
         assert!(app.session.loaded.is_none());
         // A click with the loaded cursor places the graphic at its natural size.
@@ -648,7 +646,7 @@ pub(crate) mod browser_import_tests {
         deliver(&mut app, request, "red.svg", image());
         app.run("place.drop", json!({"x": 100, "y": 100})).unwrap();
         let it = app.session.doc().unwrap().doc.spreads[0].items.last().unwrap();
-        assert_eq!(it.bounds(), designcraft_geom::Rect::new(100.0, 100.0, 107.5, 107.5), "10 CSS px = 7.5 pt");
+        assert_eq!(it.bounds(), pliego_geom::Rect::new(100.0, 100.0, 107.5, 107.5), "10 CSS px = 7.5 pt");
         // An empty graphic frame selected: the graphic fills it.
         let f = app.run("frame.create", json!({"rect": [200, 200, 300, 300], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
         app.run("selection.set", json!({"ids": [f]})).unwrap();
@@ -657,8 +655,8 @@ pub(crate) mod browser_import_tests {
         assert_eq!(app.session.tool_id(), "selection");
         assert!(app.session.loaded.is_none());
         assert_eq!(items(&app), 2);
-        let frame = app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(f)).unwrap();
-        assert!(matches!(frame.content, designcraft_doc::Content::Graphic(_)));
+        let frame = app.session.doc().unwrap().doc.item(pliego_doc::ItemId(f)).unwrap();
+        assert!(matches!(frame.content, pliego_doc::Content::Graphic(_)));
     }
 
     #[test]
@@ -688,9 +686,9 @@ pub(crate) mod browser_import_tests {
     #[test]
     fn drop_routing_and_nonlayout_open_remain_compatible() {
         let mut app = app();
-        let native = designcraft_engine::cmd::to_bytes(&app.session.doc().unwrap().doc).unwrap();
+        let native = pliego_engine::cmd::to_bytes(&app.session.doc().unwrap().doc).unwrap();
         let request = app.import_request("drop");
-        deliver(&mut app, request, "document.designcraft", native);
+        deliver(&mut app, request, "document.pliego", native);
         assert_eq!(app.session.documents().len(), 2);
         let request = app.import_request("drop");
         app.run("file.activate", json!({"index": 0})).unwrap();
@@ -710,7 +708,7 @@ pub(crate) mod browser_import_tests {
         source.execute("file.new", &json!({})).unwrap();
         source.execute("swatch.create", &json!({"name": "Import Teal", "color": "#108080"})).unwrap();
         let data = source.execute("swatch.save", &json!({"names": ["Import Teal"]})).unwrap();
-        let bytes = designcraft_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
+        let bytes = pliego_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
         for (purpose, name) in [("swatches", "picker-file"), ("drop", "palette.ase")] {
             let mut app = app();
             let request = app.import_request(purpose);
@@ -725,7 +723,7 @@ pub(crate) mod browser_import_tests {
     #[test]
     fn native_pdf_dialog_keeps_path_and_uid_at_confirmation() {
         let mut app = app();
-        let path = std::env::temp_dir().join(format!("designcraft-native-import-{}-{}.pdf", std::process::id(), app.session.doc().unwrap().uid));
+        let path = std::env::temp_dir().join(format!("pliego-native-import-{}-{}.pdf", std::process::id(), app.session.doc().unwrap().uid));
         std::fs::write(&path, pdf()).unwrap();
         let pick_path = path.to_string_lossy().to_string();
         app.answer_dialogs(crate::app::file_dialogs::testing::answer_with(Some(pick_path)));
@@ -778,12 +776,12 @@ mod load_styles_tests {
         s.execute("style.paragraph.create", &json!({"name": "Body", "chars": {"size": 10}})).unwrap();
         s.execute("style.paragraph.create", &json!({"name": "Head", "basedOn": "Body", "chars": {"size": 20}})).unwrap();
         s.execute("style.character.create", &json!({"name": "Lead", "chars": {"size": 9}})).unwrap();
-        designcraft_engine::cmd::base64_decode(s.execute("file.serialize", &json!({})).unwrap()["base64"].as_str().unwrap())
+        pliego_engine::cmd::base64_decode(s.execute("file.serialize", &json!({})).unwrap()["base64"].as_str().unwrap())
     }
 
     /// An app with a document that has its own 8 pt Body, and a picker that answers with the client's file.
     fn app_and_file(test: &str) -> (DesignApp, std::path::PathBuf) {
-        let path = std::env::temp_dir().join(format!("designcraft-load-styles-{}-{test}.designcraft", std::process::id()));
+        let path = std::env::temp_dir().join(format!("pliego-load-styles-{}-{test}.pliego", std::process::id()));
         std::fs::write(&path, client_bytes()).unwrap();
         let picked = path.to_string_lossy().to_string();
         let mut app = DesignApp::new(Session::new(), Services::default());
@@ -899,7 +897,7 @@ mod load_styles_tests {
         assert_eq!(request.purpose, "styles:character");
         // Another document is in front when the file arrives.
         app.run("file.new", json!({"title": "B"})).unwrap();
-        app.services.inbox.as_ref().unwrap().lock().unwrap().push(ImportedFile { request, name: "client.designcraft".into(), bytes: client_bytes() });
+        app.services.inbox.as_ref().unwrap().lock().unwrap().push(ImportedFile { request, name: "client.pliego".into(), bytes: client_bytes() });
         app.drain_inbox();
         assert_eq!(app.session.active_index(), Some(0));
         assert_eq!(names(&app), (vec![], vec!["Lead".to_string()]));

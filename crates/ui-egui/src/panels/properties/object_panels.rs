@@ -143,7 +143,7 @@ pub fn stroke_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
 
 /// Stroke panel while text is selected: the text's outline colour, weight and whether it sits behind the fill.
 fn text_stroke_panel(app: &mut DesignApp, ui: &mut egui::Ui, c: &Value) {
-    let swatch = c["stroke"].as_str().unwrap_or(designcraft_color::swatch::NONE).to_string();
+    let swatch = c["stroke"].as_str().unwrap_or(pliego_color::swatch::NONE).to_string();
     egui::Grid::new("text_stroke_panel").num_columns(2).spacing(vec2(8.0, 6.0)).show(ui, |ui| {
         caption(ui, crate::i18n::tr(&app.ui.language, "Weight:"));
         if let Some(v) = number(ui, "tsw_panel", c["strokeWeight"].as_f64(), " pt", 60.0, 3) {
@@ -164,7 +164,7 @@ fn text_stroke_panel(app: &mut DesignApp, ui: &mut egui::Ui, c: &Value) {
 
 /// A short line ending in arrowhead `a` (pointing left for Start, right for End).
 fn arrow_preview(ui: &mut egui::Ui, a: Arrowhead, start: bool, color: egui::Color32) {
-    use designcraft_geom::kurbo;
+    use pliego_geom::kurbo;
     let (r, _) = ui.allocate_exact_size(vec2(56.0, 14.0), Sense::hover());
     let mut line = kurbo::BezPath::new();
     let (y, x0, x1) = (r.center().y as f64, r.left() as f64 + 6.0, r.right() as f64 - 6.0);
@@ -175,8 +175,8 @@ fn arrow_preview(ui: &mut egui::Ui, a: Arrowhead, start: bool, color: egui::Colo
         line.move_to((x0, y));
         line.line_to((x1, y));
     }
-    let st = designcraft_doc::Stroke { weight: 1.5, end: a, ..Default::default() };
-    let (line, heads) = designcraft_doc::arrow::apply(&line, &st, false).unwrap_or((line, vec![]));
+    let st = pliego_doc::Stroke { weight: 1.5, end: a, ..Default::default() };
+    let (line, heads) = pliego_doc::arrow::apply(&line, &st, false).unwrap_or((line, vec![]));
     let pts = |p: &kurbo::BezPath| {
         let mut v = Vec::new();
         kurbo::flatten(p.iter(), 0.1, |el| match el {
@@ -483,7 +483,7 @@ pub fn effects_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
         crate::rtl::label(ui, crate::i18n::tr(&app.ui.language, "Select an object."));
         return;
     };
-    use designcraft_color::BlendMode as B;
+    use pliego_color::BlendMode as B;
     const MODES: [B; 16] = [
         B::Normal,
         B::Multiply,
@@ -663,7 +663,7 @@ mod effects_panel_tests {
 
     #[test]
     fn the_effects_panel_shows_the_level_and_isolate_blending_and_knockout_group_for_groups() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let a = app.run("frame.create", json!({"rect": [72, 72, 144, 144]})).unwrap()["id"].as_u64().unwrap();
         let b = app.run("frame.create", json!({"rect": [100, 100, 200, 200]})).unwrap()["id"].as_u64().unwrap();
@@ -677,7 +677,7 @@ mod effects_panel_tests {
         for expected in ["Group:", "Color Dodge 100%", "Isolate Blending", "Knockout Group"] {
             assert!(texts.iter().any(|t| t == expected), "{expected} in {texts:?}");
         }
-        let item = |app: &DesignApp, id: u64| app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).cloned().unwrap();
+        let item = |app: &DesignApp, id: u64| app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).cloned().unwrap();
         click(&mut app, &ctx, "Isolate Blending");
         assert!(item(&app, g).isolate);
         click(&mut app, &ctx, "Knockout Group");
@@ -692,7 +692,7 @@ mod effects_panel_tests {
 
     #[test]
     fn pasted_into_frames_keep_object_level_and_disable_group_blending() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let child = app.run("frame.create", json!({"rect": [80, 80, 120, 120]})).unwrap()["id"].clone();
         app.run("selection.set", json!({"ids": [child]})).unwrap();
@@ -710,7 +710,7 @@ mod effects_panel_tests {
         click(&mut app, &ctx, "Isolate Blending");
         click(&mut app, &ctx, "Knockout Group");
         let st = app.session.doc().unwrap();
-        let it = st.doc.item(designcraft_doc::ItemId(container)).unwrap();
+        let it = st.doc.item(pliego_doc::ItemId(container)).unwrap();
         assert!(it.has_nested_items());
         assert!(!it.isolate && !it.knockout, "group-only options stay disabled for a frame holding content");
         assert_eq!(st.history.undo.len(), undo, "disabled controls do not create undo steps");
@@ -736,7 +736,7 @@ mod wrap_panel_tests {
 
     #[test]
     fn the_text_wrap_panel_shows_each_offset_and_invert() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [72, 72, 144, 144]})).unwrap()["id"].as_u64().unwrap();
         app.run("object.textWrap", json!({"mode": "boundingBox", "offset": [1, 2, 3, 4]})).unwrap();
@@ -758,6 +758,6 @@ mod wrap_panel_tests {
                 ],
             );
         }
-        assert!(app.session.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().wrap.invert);
+        assert!(app.session.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().wrap.invert);
     }
 }

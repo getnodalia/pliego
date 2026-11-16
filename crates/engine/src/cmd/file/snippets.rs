@@ -4,7 +4,7 @@ use super::bytes::{base64_encode, from_bytes, to_bytes};
 use super::place::read_source;
 use super::{ItemId, Rect, Result, Selection, Session, Value, bad, json, str_param};
 
-/// The selection as `.designcraft` snippet bytes.
+/// The selection as `.pliego` snippet bytes.
 pub(crate) fn snippet_bytes(s: &mut Session) -> Result<Vec<u8>> {
     to_bytes(&crate::cmd::edit::clip_doc(s)?)
 }
@@ -32,8 +32,8 @@ pub(crate) fn snippet_place(s: &mut Session, p: &Value) -> Result<Value> {
     let sr = crate::cmd::spread_param(p, "snippet.place")?;
     let bounds = ids.iter().filter_map(|i| src.item(*i).map(|it| it.bounds())).reduce(|a, b| a.union(b)).unwrap_or(Rect::ZERO);
     let off = match (p.get("x").and_then(Value::as_f64), p.get("y").and_then(Value::as_f64)) {
-        (Some(x), Some(y)) => designcraft_geom::Vec2::new(x - bounds.x0, y - bounds.y0),
-        _ => designcraft_geom::Vec2::ZERO,
+        (Some(x), Some(y)) => pliego_geom::Vec2::new(x - bounds.x0, y - bounds.y0),
+        _ => pliego_geom::Vec2::ZERO,
     };
     s.edit(|d, sel| {
         // Bring over styles and swatches the snippet uses that this document lacks.

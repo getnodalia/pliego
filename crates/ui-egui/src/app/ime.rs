@@ -18,6 +18,6 @@ impl DesignApp {
 
     /// The second window uses a stable viewport id; forget its IME context when it closes.
     pub(crate) fn end_second_ime_viewport(&mut self) {
-        self.ime_tracker.end_viewport(egui::ViewportId::from_hash_of("designcraft_second_window"));
+        self.ime_tracker.end_viewport(egui::ViewportId::from_hash_of("pliego_second_window"));
     }
 }

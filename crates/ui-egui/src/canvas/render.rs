@@ -21,7 +21,7 @@ pub fn color_at(app: &mut DesignApp, ctx: &egui::Context, pos: Pos2) -> Option<[
     if !on_page {
         return None;
     }
-    let placed: Vec<designcraft_render::Placed> = layout.slots.iter().map(|s| designcraft_render::Placed { spread: s.spread, xf: s.xf }).collect();
+    let placed: Vec<pliego_render::Placed> = layout.slots.iter().map(|s| pliego_render::Placed { spread: s.spread, xf: s.xf }).collect();
     let ppp = ctx.pixels_per_point() as f64;
     let view = Affine::scale(ppp) * Affine::scale(xf.zoom) * Affine::translate((-at.x, -at.y));
     let opts = screen_options(app, &layout, app.ui.screen_mode != ScreenMode::Normal, ppp);
@@ -30,14 +30,14 @@ pub fn color_at(app: &mut DesignApp, ctx: &egui::Context, pos: Pos2) -> Option<[
     screen_post(app, &mut img);
     let [r, g, b, a] = <[u8; 4]>::try_from(img.pixels.get(..4)?).ok()?;
     // Premultiplied over the paper.
-    let paper = doc.resolve_color(designcraft_color::swatch::PAPER, 1.0).unwrap_or(designcraft_color::Color::WHITE).to_rgba8(1.0);
+    let paper = doc.resolve_color(pliego_color::swatch::PAPER, 1.0).unwrap_or(pliego_color::Color::WHITE).to_rgba8(1.0);
     let over = |c: u8, p: u8| (u32::from(c) + u32::from(p) * (255 - u32::from(a)) / 255).min(255) as u8;
     Some([over(r, paper[0]), over(g, paper[1]), over(b, paper[2])])
 }
 
 /// Render options for the canvas texture.
-pub(super) fn screen_options(app: &DesignApp, layout: &CanvasLayout, preview: bool, ppp: f64) -> designcraft_render::RenderOptions {
-    designcraft_render::RenderOptions {
+pub(super) fn screen_options(app: &DesignApp, layout: &CanvasLayout, preview: bool, ppp: f64) -> pliego_render::RenderOptions {
+    pliego_render::RenderOptions {
         printing_only: preview,
         greek_below_px: 3.0 * ppp,
         highlight_missing_fonts: !preview && app.session.prefs.highlight_substituted_fonts,
@@ -60,7 +60,7 @@ pub(super) fn screen_options(app: &DesignApp, layout: &CanvasLayout, preview: bo
 /// The area each spread's document grid covers, in spread coordinates: the full-width band of
 /// the pasteboard nearest that spread, the band in which `CanvasLayout::spread_at` (and so
 /// snapping) picks it.
-fn grid_areas(layout: &CanvasLayout) -> Vec<(designcraft_doc::SpreadRef, DRect)> {
+fn grid_areas(layout: &CanvasLayout) -> Vec<(pliego_doc::SpreadRef, DRect)> {
     let pb = layout.pasteboard;
     let slots = &layout.slots;
     slots
@@ -77,7 +77,7 @@ fn grid_areas(layout: &CanvasLayout) -> Vec<(designcraft_doc::SpreadRef, DRect)>
 /// The display options that change how the canvas texture looks without touching the document.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DisplayKey {
-    quality: designcraft_render::DisplayQuality,
+    quality: pliego_render::DisplayQuality,
     rich_black: bool,
     overprint_preview: bool,
     proof_colors: bool,
@@ -169,8 +169,7 @@ pub(super) fn render_texture(app: &mut DesignApp, ctx: &egui::Context, rect: Rec
     let zoom_same = app.canvas.shown.is_some_and(|s| (s.zoom - xf.zoom).abs() < 1e-9);
     let job = |app: &DesignApp| {
         let st = app.session.active()?;
-        let placed: Vec<designcraft_render::Placed> =
-            layout.slots.iter().map(|s| designcraft_render::Placed { spread: s.spread, xf: s.xf }).collect();
+        let placed: Vec<pliego_render::Placed> = layout.slots.iter().map(|s| pliego_render::Placed { spread: s.spread, xf: s.xf }).collect();
         let w = (target.size.0 as f64 * ppp).round().max(1.0) as u32;
         let h = (target.size.1 as f64 * ppp).round().max(1.0) as u32;
         let view = Affine::scale(ppp) * Affine::scale(xf.zoom) * Affine::translate((-target.origin.x, -target.origin.y));
@@ -243,7 +242,7 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
         return false;
     }
     let new = st.doc.clone();
-    let Some(regions) = designcraft_render::damage::damage_with(&old, &new, Some(&app.session.cache)) else { return false };
+    let Some(regions) = pliego_render::damage::damage_with(&old, &new, Some(&app.session.cache)) else { return false };
     let t0 = crate::now_ms();
     let k = sh.zoom * ppp;
     let mut px: Option<(i64, i64, i64, i64)> = None;
@@ -274,7 +273,7 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
     if ((x1 - x0) * (y1 - y0)) as f64 > 0.5 * (tw * th) as f64 {
         return false;
     }
-    let placed: Vec<designcraft_render::Placed> = layout.slots.iter().map(|s| designcraft_render::Placed { spread: s.spread, xf: s.xf }).collect();
+    let placed: Vec<pliego_render::Placed> = layout.slots.iter().map(|s| pliego_render::Placed { spread: s.spread, xf: s.xf }).collect();
     let view = Affine::translate((-(x0 as f64), -(y0 as f64)))
         * Affine::scale(ppp)
         * Affine::scale(sh.zoom)
@@ -293,7 +292,7 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
 
 #[cfg(not(target_arch = "wasm32"))]
 fn render_worker_spawn(ctx: &egui::Context) -> Option<crate::render_worker::Worker> {
-    if std::env::var_os("DESIGNCRAFT_SYNC_RENDER").is_some() {
+    if std::env::var_os("PLIEGO_SYNC_RENDER").is_some() {
         return None;
     }
     crate::render_worker::Worker::spawn(ctx.clone())
@@ -301,13 +300,13 @@ fn render_worker_spawn(ctx: &egui::Context) -> Option<crate::render_worker::Work
 
 /// What the canvas does to a render before showing it: Proof Colors. The texture and the
 /// eyedropper's sample both go through it.
-fn screen_post(app: &DesignApp, img: &mut designcraft_render::Rendered) {
+fn screen_post(app: &DesignApp, img: &mut pliego_render::Rendered) {
     if app.ui.proof_colors {
-        designcraft_render::proof_view(img, &app.ui.proof_setup);
+        pliego_render::proof_view(img, &app.ui.proof_setup);
     }
 }
 
-fn upload(app: &mut DesignApp, ctx: &egui::Context, mut img: designcraft_render::Rendered) {
+fn upload(app: &mut DesignApp, ctx: &egui::Context, mut img: pliego_render::Rendered) {
     screen_post(app, &mut img);
     let ci = egui::ColorImage::from_rgba_premultiplied([img.width as usize, img.height as usize], &img.pixels);
     let ci = crate::widgets::fit_texture(ci, ctx.input(|i| i.max_texture_side));

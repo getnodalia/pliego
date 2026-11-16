@@ -1,20 +1,20 @@
 [package]
-name = "designcraft-pptx"
+name = "pliego-pptx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft PowerPoint (PPTX) export: pages as slides of editable shapes, pictures and text"
+description = "Pliego PowerPoint (PPTX) export: pages as slides of editable shapes, pictures and text"
 
 [lints]
 workspace = true
 
 [dependencies]
-designcraft-geom = { workspace = true }
-designcraft-color = { workspace = true }
-designcraft-doc = { workspace = true }
-designcraft-fonts = { workspace = true }
-designcraft-compose = { workspace = true }
-designcraft-images = { workspace = true }
+pliego-geom = { workspace = true }
+pliego-color = { workspace = true }
+pliego-doc = { workspace = true }
+pliego-fonts = { workspace = true }
+pliego-compose = { workspace = true }
+pliego-images = { workspace = true }
 skrifa = { workspace = true }
 image = { workspace = true }
 thiserror = { workspace = true }
@@ -22,5 +22,5 @@ zip = { workspace = true }
 chrono = { workspace = true }
 
 [dev-dependencies]
-designcraft-fonts = { workspace = true, features = ["testing"] }
+pliego-fonts = { workspace = true, features = ["testing"] }
 quick-xml = { workspace = true }

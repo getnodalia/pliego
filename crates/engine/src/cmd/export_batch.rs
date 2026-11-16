@@ -228,7 +228,7 @@ fn job_param(cmd: &str, v: &Value) -> Result<ExportJob> {
         }
         v.ppi = v.ppi.clamp(36.0, 1200.0);
         v.quality = v.quality.clamp(1, 100);
-        if designcraft_pdf::Standard::parse(&v.standard).is_none() {
+        if pliego_pdf::Standard::parse(&v.standard).is_none() {
             return Err(bad(cmd, format!("version `{}`: unknown standard `{}` (none, x4, a2b)", v.name, v.standard)));
         }
     }
@@ -236,7 +236,7 @@ fn job_param(cmd: &str, v: &Value) -> Result<ExportJob> {
 }
 
 /// The pages (absolute, 0-based) of each chosen layout, by name; `names` empty: every layout.
-pub(crate) fn layout_pages(cmd: &str, d: &designcraft_doc::Document, names: &[String]) -> Result<Vec<(String, Vec<usize>)>> {
+pub(crate) fn layout_pages(cmd: &str, d: &pliego_doc::Document, names: &[String]) -> Result<Vec<(String, Vec<usize>)>> {
     let layouts = d.layouts();
     if names.is_empty() {
         return Ok(layouts.into_iter().map(|l| (l.name, (l.start..l.end).collect())).collect());
@@ -282,11 +282,11 @@ fn unique(taken: &mut Vec<String>, name: &str, ext: &str) -> String {
     }
 }
 
-/// Today as YYYY-MM-DD (UTC), where there is a clock (chrono, through `designcraft_doc::time`).
+/// Today as YYYY-MM-DD (UTC), where there is a clock (chrono, through `pliego_doc::time`).
 fn today() -> String {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let (y, date) = designcraft_doc::time::date_parts(designcraft_doc::vars::now().div_euclid(86_400));
+        let (y, date) = pliego_doc::time::date_parts(pliego_doc::vars::now().div_euclid(86_400));
         format!("{y:04}-{}", date.format("%m-%d"))
     }
     #[cfg(target_arch = "wasm32")]
@@ -388,8 +388,8 @@ fn render(s: &Session, v: &ExportVersion, f: &Planned) -> Result<(Vec<u8>, Vec<S
             if page.width * scale * page.height * scale > MAX_PIXELS {
                 return Err(bad(ID, format!("page {} at {} ppi is too large for an image; lower the resolution", s.page_label(abs), v.ppi)));
             }
-            let mut r = designcraft_render::Renderer::new();
-            let opts = designcraft_render::RenderOptions { printing_only: true, rich_black: s.prefs.rich_black_output, ..Default::default() };
+            let mut r = pliego_render::Renderer::new();
+            let opts = pliego_render::RenderOptions { printing_only: true, rich_black: s.prefs.rich_black_output, ..Default::default() };
             let img = r.render_page(d, &s.cache, abs, scale, false, &opts).ok_or_else(|| bad(ID, "the page couldn't be rendered"))?;
             Ok((if v.format == ExportFormat::Png { img.to_png() } else { img.to_jpeg(v.quality) }, vec![]))
         }
@@ -538,10 +538,10 @@ mod tests {
         }
         assert!(bytes(4).starts_with(&[0xFF, 0xD8]), "a JPEG");
         // Marks need room around the bleed: the marked PDF's page is larger.
-        let size = |b: &[u8]| designcraft_render::pdf_page_size(b, 0).unwrap();
+        let size = |b: &[u8]| pliego_render::pdf_page_size(b, 0).unwrap();
         let (marked, bled) = (size(&bytes(0)), size(&bytes(2)));
         assert!(marked.0 > bled.0 && marked.1 > bled.1, "{marked:?} {bled:?}");
-        assert_eq!(designcraft_render::pdf_page_count(&bytes(1)), Some(2));
+        assert_eq!(pliego_render::pdf_page_count(&bytes(1)), Some(2));
     }
 
     #[test]

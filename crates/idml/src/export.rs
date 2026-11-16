@@ -3,12 +3,12 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::io::Write;
 
-use designcraft_color::{Color, ColorType, GradientKind, SwatchValue, swatch};
-use designcraft_doc::{
+use pliego_color::{Color, ColorType, GradientKind, SwatchValue, swatch};
+use pliego_doc::{
     CharAttrs, CharFormat, ColumnsKind, Content, Document, Item, ListType, PageSide, ParaAttrs, ParaFormat, Rule, Shape, SpanColumns, Spread, Story,
     TextFrameOptions, story as st,
 };
-use designcraft_geom::{Affine, PathData};
+use pliego_geom::{Affine, PathData};
 
 use crate::names::{self, CHAR_BUILTINS, OBJECT_BUILTINS, PARA_BUILTINS, escape_id, num, pt};
 use crate::xml::{El, Node, document, document_with_pi};

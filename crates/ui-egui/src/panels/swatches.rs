@@ -1,7 +1,7 @@
 //! Swatches and Color panels.
 
-use designcraft_color::{ColorType, SwatchValue};
 use egui::{Sense, vec2};
+use pliego_color::{ColorType, SwatchValue};
 use serde_json::json;
 
 use crate::theme::Tokens;
@@ -176,7 +176,7 @@ const RENAME_DOC: &str = "swatches_rename_doc";
 /// The Swatches panel's top row, as InDesign's: a Fill/Stroke proxy (click: the other in front),
 /// Formatting Affects Container / Text, and the tint of the colour in front. `target` is
 /// [`super::color_target`]: fill and stroke swatches and tints of the text or the first object.
-fn header(app: &mut DesignApp, ui: &mut egui::Ui, doc: &designcraft_doc::Document, target: Option<&(String, f32, String, f32)>) {
+fn header(app: &mut DesignApp, ui: &mut egui::Ui, doc: &pliego_doc::Document, target: Option<&(String, f32, String, f32)>) {
     let t = Tokens::get(ui.ctx());
     let (fill_sw, stroke_sw) = target.map_or(("[None]", "[Black]"), |(f, _, s, _)| (f.as_str(), s.as_str()));
     let text = super::colors_affect_text(app) || app.ui.formatting_affects_text;
@@ -263,7 +263,7 @@ fn folder_button(ui: &mut egui::Ui, tip: &str) -> egui::Response {
 
 /// The name field of a swatch being renamed in place, over `rect`; false when `sw` isn't. Enter or
 /// a click elsewhere renames it (`swatch.options`), Escape leaves it as it was.
-fn rename_field(app: &mut DesignApp, ui: &mut egui::Ui, sw: &designcraft_color::swatch::Swatch, rect: egui::Rect) -> bool {
+fn rename_field(app: &mut DesignApp, ui: &mut egui::Ui, sw: &pliego_color::swatch::Swatch, rect: egui::Rect) -> bool {
     let key = egui::Id::unique(RENAMING);
     let Some((name, mut text)) = ui.data(|d| d.get_temp::<(String, String)>(key)).filter(|(n, _)| *n == sw.name) else { return false };
     let id = egui::Id::unique(("swatch_rename", &sw.name));
@@ -303,7 +303,7 @@ fn rename_field(app: &mut DesignApp, ui: &mut egui::Ui, sw: &designcraft_color::
 }
 
 /// The swatch's chip following the pointer while the row is dragged.
-fn paint_drag_chip(ui: &egui::Ui, doc: &designcraft_doc::Document, name: &str, p: egui::Pos2) {
+fn paint_drag_chip(ui: &egui::Ui, doc: &pliego_doc::Document, name: &str, p: egui::Pos2) {
     let t = Tokens::get(ui.ctx());
     let (c, g) = crate::widgets::swatch_colors(doc, name, 1.0);
     let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Tooltip, egui::Id::unique("swatch_drag")));
@@ -331,8 +331,8 @@ enum RowMode {
     Registration,
 }
 
-fn row_marks(sw: &designcraft_color::swatch::Swatch) -> RowMarks {
-    use designcraft_color::Color;
+fn row_marks(sw: &pliego_color::swatch::Swatch) -> RowMarks {
+    use pliego_color::Color;
     // Paper's colour can be edited, whatever the swatch is called (as the options dialog allows).
     let not_editable = sw.locked && !matches!(sw.value, SwatchValue::Paper { .. });
     match &sw.value {
@@ -468,8 +468,8 @@ fn paint_mode(p: &egui::Painter, r: egui::Rect, mode: RowMode, ink: egui::Color3
 fn swatch_row(
     app: &mut DesignApp,
     ui: &mut egui::Ui,
-    doc: &designcraft_doc::Document,
-    sw: &designcraft_color::swatch::Swatch,
+    doc: &pliego_doc::Document,
+    sw: &pliego_color::swatch::Swatch,
     indent: f32,
     fill_cur: Option<&str>,
 ) {
@@ -608,7 +608,7 @@ pub fn color_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     let Some(doc) = app.session.active().map(|d| d.doc.clone()) else { return };
     let mode_id = egui::Id::unique("color_panel_mode");
     let mut stroke = app.ui.stroke_front;
-    let default_mode = if doc.settings.intent == designcraft_doc::Intent::Print { ColorMode::Cmyk } else { ColorMode::Rgb };
+    let default_mode = if doc.settings.intent == pliego_doc::Intent::Print { ColorMode::Cmyk } else { ColorMode::Rgb };
     let mut mode: ColorMode = ui.data(|d| d.get_temp(mode_id)).unwrap_or(default_mode);
     let target = if stroke { "stroke" } else { "fill" };
     let name = if stroke { stroke_sw.clone() } else { fill.clone() };
@@ -656,7 +656,7 @@ pub fn color_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     app.ui.stroke_front = stroke;
     ui.data_mut(|d| d.insert_temp(mode_id, mode));
     // A gradient: the stop selected in the Gradient panel, as InDesign's Color panel shows it.
-    if !text && let Some(g) = designcraft_color::swatch::resolve_gradient(&doc.swatches, &name).cloned() {
+    if !text && let Some(g) = pliego_color::swatch::resolve_gradient(&doc.swatches, &name).cloned() {
         gradient_stop(app, ui, &g, target, mode);
         return;
     }
@@ -742,19 +742,19 @@ pub fn color_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
 
 /// The Color Picker's fields for `color` (`None`: black): its values in its own model, so OK
 /// keeps a CMYK colour CMYK.
-pub(crate) fn picker_fields(color: Option<designcraft_color::Color>, stroke: bool) -> serde_json::Value {
-    let color = color.unwrap_or(designcraft_color::Color::BLACK);
+pub(crate) fn picker_fields(color: Option<pliego_color::Color>, stroke: bool) -> serde_json::Value {
+    let color = color.unwrap_or(pliego_color::Color::BLACK);
     let mut f = json!({"target": if stroke { "stroke" } else { "fill" }, "hex": color.to_hex()});
     match color {
-        designcraft_color::Color::Cmyk { c, m, y, k } => {
+        pliego_color::Color::Cmyk { c, m, y, k } => {
             f["model"] = json!("cmyk");
             f["cmyk"] = json!([c, m, y, k].map(|v| f64::from(v) * 100.0));
         }
-        designcraft_color::Color::Rgb { r, g, b } => {
+        pliego_color::Color::Rgb { r, g, b } => {
             f["model"] = json!("rgb");
             f["rgb"] = json!([r, g, b].map(|v| f64::from(v) * 255.0));
         }
-        designcraft_color::Color::Gray { .. } => f["model"] = json!("rgb"),
+        pliego_color::Color::Gray { .. } => f["model"] = json!("rgb"),
     }
     f
 }
@@ -808,15 +808,15 @@ fn channel(ui: &mut egui::Ui, label: &str, v: &mut f32, scale: f32, suffix: &str
 fn cmyk_ramp(k: usize, x: f32) -> egui::Color32 {
     let mut v = [0.0f32; 4];
     v[k] = x;
-    let [r, g, b] = designcraft_color::Color::cmyk(v[0], v[1], v[2], v[3]).to_rgb();
+    let [r, g, b] = pliego_color::Color::cmyk(v[0], v[1], v[2], v[3]).to_rgb();
     egui::Color32::from_rgb((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
 }
 
 /// The Color panel on a gradient fill (or stroke): the stop selected in the Gradient panel (the
 /// stop before a selected midpoint), in the panel's colour mode, as InDesign's. Its fields and the
 /// spectrum colour that stop.
-fn gradient_stop(app: &mut DesignApp, ui: &mut egui::Ui, g: &designcraft_color::Gradient, target: &str, mode: ColorMode) {
-    use designcraft_color::Color;
+fn gradient_stop(app: &mut DesignApp, ui: &mut egui::Ui, g: &pliego_color::Gradient, target: &str, mode: ColorMode) {
+    use pliego_color::Color;
     let t = Tokens::get(ui.ctx());
     let sel: RampSel = ui.data(|d| d.get_temp(egui::Id::unique(GRAD_SEL))).unwrap_or(RampSel::Stop(0));
     let i = match sel {
@@ -918,8 +918,8 @@ pub struct SwatchDrag(pub String);
 pub struct GradientDrag(pub String);
 
 /// A colour in `object.gradient` form, keeping its model (CMYK stays CMYK).
-fn color_json(c: &designcraft_color::Color) -> serde_json::Value {
-    use designcraft_color::Color;
+fn color_json(c: &pliego_color::Color) -> serde_json::Value {
+    use pliego_color::Color;
     match *c {
         // The model form takes fractions; bare CMYK would be read as 0..100.
         Color::Cmyk { c, m, y, k } => json!({"model": "cmyk", "c": c, "m": m, "y": y, "k": k}),
@@ -948,10 +948,10 @@ mod color_panel_defaults_tests {
 
     #[test]
     fn color_panel_with_no_selection_edits_future_shapes_without_recoloring_existing_ones() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let old =
-            designcraft_doc::ItemId(app.run("frame.create", json!({"rect":[72,72,200,200],"content":"unassigned"})).unwrap()["id"].as_u64().unwrap());
+            pliego_doc::ItemId(app.run("frame.create", json!({"rect":[72,72,200,200],"content":"unassigned"})).unwrap()["id"].as_u64().unwrap());
         let original = app.session.active().unwrap().doc.item(old).unwrap().stroke.clone();
         app.run("selection.set", json!({"ids":[]})).unwrap();
         app.ui.stroke_front = true;
@@ -966,7 +966,7 @@ mod color_panel_defaults_tests {
         h.state_mut().app.run("selection.set", json!({"ids":[old.0]})).unwrap();
         assert_eq!(crate::panels::color_target(&mut h.state_mut().app).unwrap().2, original.swatch);
         h.state_mut().app.run("selection.set", json!({"ids":[]})).unwrap();
-        let new = designcraft_doc::ItemId(
+        let new = pliego_doc::ItemId(
             h.state_mut().app.run("frame.create", json!({"rect":[240,72,368,200],"content":"unassigned"})).unwrap()["id"].as_u64().unwrap(),
         );
         assert_eq!(h.state().app.session.active().unwrap().doc.item(new).unwrap().stroke.swatch, defaults.stroke);
@@ -992,10 +992,10 @@ mod color_panel_defaults_tests {
     #[test]
     fn swatches_panel_with_no_selection_shows_and_edits_future_shape_colors() {
         use egui::accesskit::Role;
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let old =
-            designcraft_doc::ItemId(app.run("frame.create", json!({"rect":[72,72,200,200],"content":"unassigned"})).unwrap()["id"].as_u64().unwrap());
+            pliego_doc::ItemId(app.run("frame.create", json!({"rect":[72,72,200,200],"content":"unassigned"})).unwrap()["id"].as_u64().unwrap());
         let original = app.session.active().unwrap().doc.item(old).unwrap().fill.clone();
         app.run("selection.set", json!({"ids":[]})).unwrap();
         app.run("object.fill", json!({"swatch": "[Black]", "tint": 0.4})).unwrap();
@@ -1028,7 +1028,7 @@ mod color_panel_defaults_tests {
 }
 
 /// Stops in `object.gradient` form: a stop on a swatch also names it, so it keeps its inks.
-fn stops_json(g: &designcraft_color::Gradient) -> Vec<serde_json::Value> {
+fn stops_json(g: &pliego_color::Gradient) -> Vec<serde_json::Value> {
     g.stops
         .iter()
         .map(|s| {
@@ -1041,15 +1041,15 @@ fn stops_json(g: &designcraft_color::Gradient) -> Vec<serde_json::Value> {
         .collect()
 }
 
-fn color32(c: &designcraft_color::Color, alpha: f32) -> egui::Color32 {
+fn color32(c: &pliego_color::Color, alpha: f32) -> egui::Color32 {
     let [r, g, b] = c.to_rgb();
     egui::Color32::from_rgba_unmultiplied((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, (alpha * 255.0) as u8)
 }
 
 /// The panel's thumbnail: the gradient in a square, linear across or radial from the centre.
-fn thumbnail(p: &egui::Painter, r: egui::Rect, g: &designcraft_color::Gradient, border: egui::Color32) {
+fn thumbnail(p: &egui::Painter, r: egui::Rect, g: &pliego_color::Gradient, border: egui::Color32) {
     let n = 32;
-    if g.kind == designcraft_color::GradientKind::Radial {
+    if g.kind == pliego_color::GradientKind::Radial {
         // Rings from the outside in.
         for i in (0..n).rev() {
             let t = (i as f32 + 0.5) / n as f32;
@@ -1073,7 +1073,7 @@ fn thumbnail(p: &egui::Painter, r: egui::Rect, g: &designcraft_color::Gradient, 
 pub(super) const GRAD_SEL: &str = "grad_sel";
 
 /// The gradient across `ramp`, sampled in bands.
-fn paint_ramp(painter: &egui::Painter, ramp: egui::Rect, g: &designcraft_color::Gradient) {
+fn paint_ramp(painter: &egui::Painter, ramp: egui::Rect, g: &pliego_color::Gradient) {
     let n = 96;
     for i in 0..n {
         let (a, b) = (i as f32 / n as f32, (i + 1) as f32 / n as f32);
@@ -1086,7 +1086,7 @@ fn paint_ramp(painter: &egui::Painter, ramp: egui::Rect, g: &designcraft_color::
 
 /// The stops after dragging marker `h` to `o` (`off`: dropped off the ramp, which removes a stop),
 /// and the selection to move to if the drop changed it.
-fn ramp_release(g: &designcraft_color::Gradient, h: RampSel, o: f32, off: bool) -> (Vec<serde_json::Value>, Option<RampSel>) {
+fn ramp_release(g: &pliego_color::Gradient, h: RampSel, o: f32, off: bool) -> (Vec<serde_json::Value>, Option<RampSel>) {
     let mut stops = stops_json(g);
     let mut sel = None;
     match h {
@@ -1103,7 +1103,7 @@ fn ramp_release(g: &designcraft_color::Gradient, h: RampSel, o: f32, off: bool) 
 }
 
 /// Dragging the gradient's thumbnail: its swatch is the payload, and a thumbnail follows the pointer.
-fn drag_gradient_thumbnail(ui: &egui::Ui, resp: &egui::Response, g: &designcraft_color::Gradient, swatch: &str, t: &Tokens) {
+fn drag_gradient_thumbnail(ui: &egui::Ui, resp: &egui::Response, g: &pliego_color::Gradient, swatch: &str, t: &Tokens) {
     resp.dnd_set_drag_payload(GradientDrag(swatch.to_string()));
     if resp.dragged()
         && let Some(p) = ui.ctx().pointer_interact_pos()
@@ -1114,7 +1114,7 @@ fn drag_gradient_thumbnail(ui: &egui::Ui, resp: &egui::Response, g: &designcraft
 }
 
 /// The Gradient panel's Type menu; the kind chosen, as the command's parameters.
-fn gradient_type_combo(ui: &mut egui::Ui, lang: &str, g: &designcraft_color::Gradient, is_gradient: bool) -> Option<serde_json::Value> {
+fn gradient_type_combo(ui: &mut egui::Ui, lang: &str, g: &pliego_color::Gradient, is_gradient: bool) -> Option<serde_json::Value> {
     let mut send = None;
     let shown = if is_gradient { crate::i18n::tr(lang, g.kind.label()) } else { "" };
     let combo = craft_ui::ComboBox::from_id_salt("grad_type").selected_text(crate::rtl::widget(ui, shown)).width(104.0).show_ui(ui, |ui| {
@@ -1177,10 +1177,10 @@ pub fn gradient_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
     // The fill's gradient, or the stroke's when the toolbox's Stroke box is in front.
     let stroke_front = app.ui.stroke_front;
     let fill = item.map(|it| if stroke_front { it.stroke.as_fill() } else { it.fill.clone() }).unwrap_or_default();
-    let cur = designcraft_color::swatch::resolve_gradient(&st.doc.swatches, &fill.swatch).cloned();
+    let cur = pliego_color::swatch::resolve_gradient(&st.doc.swatches, &fill.swatch).cloned();
     let is_gradient = cur.is_some();
     let g = cur.unwrap_or_default();
-    let radial = g.kind == designcraft_color::GradientKind::Radial;
+    let radial = g.kind == pliego_color::GradientKind::Radial;
     let sel_id = egui::Id::unique(GRAD_SEL);
     let drag_id = egui::Id::unique("grad_drag");
     let mut sel: RampSel = ui.data(|d| d.get_temp(sel_id)).unwrap_or(RampSel::Stop(0));
@@ -1441,23 +1441,23 @@ pub fn gradient_panel(app: &mut DesignApp, ui: &mut egui::Ui) {
 
 #[cfg(test)]
 mod gradient_panel_tests {
-    use designcraft_color::Color;
     use egui_kittest::{Harness, kittest::Queryable};
+    use pliego_color::Color;
     use serde_json::json;
 
     use super::*;
 
     fn app_with_frame() -> DesignApp {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("frame.create", json!({"rect": [100, 100, 300, 300], "content": "unassigned"})).unwrap();
         app
     }
 
-    fn gradient(app: &DesignApp) -> Option<designcraft_color::Gradient> {
+    fn gradient(app: &DesignApp) -> Option<pliego_color::Gradient> {
         let d = &app.session.doc().unwrap().doc;
         let id = app.session.doc().unwrap().selection.items[0];
-        designcraft_color::swatch::resolve_gradient(&d.swatches, &d.item(id).unwrap().fill.swatch).cloned()
+        pliego_color::swatch::resolve_gradient(&d.swatches, &d.item(id).unwrap().fill.swatch).cloned()
     }
 
     #[test]
@@ -1594,16 +1594,16 @@ mod color_panel_tests {
 
     use crate::DesignApp;
 
-    fn fill(app: &DesignApp, id: u64) -> designcraft_color::Color {
+    fn fill(app: &DesignApp, id: u64) -> pliego_color::Color {
         let d = &app.session.active().unwrap().doc;
-        d.resolve_color(&d.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
+        d.resolve_color(&d.item(pliego_doc::ItemId(id)).unwrap().fill.swatch, 1.0).unwrap()
     }
 
     /// A number typed into the M field stays while typing and applies as a percent on Enter:
     /// M 1 is 1 %, not 100 %.
     #[test]
     fn a_typed_channel_value_is_kept_and_applied_as_a_percent() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let id = app.run("frame.create", json!({"rect": [36, 36, 200, 200]})).unwrap()["id"].as_u64().unwrap();
         app.run("selection.set", json!({"ids": [id]})).unwrap();
@@ -1622,11 +1622,11 @@ mod color_panel_tests {
         h.run_steps(4);
         let typed = h.query_by(|n| n.role() == egui::accesskit::Role::SpinButton && n.is_focused()).and_then(|n| n.value());
         assert_eq!(typed.as_deref(), Some("1"), "the typed text stays while the field has focus");
-        let designcraft_color::Color::Cmyk { m, .. } = fill(h.state(), id) else { panic!("not CMYK") };
+        let pliego_color::Color::Cmyk { m, .. } = fill(h.state(), id) else { panic!("not CMYK") };
         assert!((m - 0.5).abs() < 1e-6, "nothing is applied while typing: {m}");
         h.key_press(egui::Key::Enter);
         h.run_steps(2);
-        let designcraft_color::Color::Cmyk { c, m, y, k } = fill(h.state(), id) else { panic!("not CMYK") };
+        let pliego_color::Color::Cmyk { c, m, y, k } = fill(h.state(), id) else { panic!("not CMYK") };
         assert!(c == 0.0 && (m - 0.01).abs() < 1e-6 && (y - 1.0).abs() < 1e-6 && k == 0.0, "{c} {m} {y} {k}");
     }
 }
@@ -1653,14 +1653,14 @@ mod swatches_header_tests {
         )
     }
 
-    fn items(app: &DesignApp) -> Vec<designcraft_doc::Item> {
+    fn items(app: &DesignApp) -> Vec<pliego_doc::Item> {
         let st = app.session.doc().unwrap();
         st.selection.items.iter().map(|id| st.doc.item(*id).unwrap().clone()).collect()
     }
 
     #[test]
     fn swatches_go_to_the_fill_or_stroke_in_front_and_the_bottom_row_deletes_the_one_clicked() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "unassigned"})).unwrap();
         app.run("swatch.create", json!({"name": "Brand", "color": "#108080"})).unwrap();
@@ -1697,7 +1697,7 @@ mod swatches_header_tests {
     /// name there gets no field, and nothing is renamed.
     #[test]
     fn a_rename_in_place_ends_with_its_document() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let color = json!({"color": {"c": 14, "m": 8, "y": 95, "k": 0}});
         let name = app.run("swatch.create", color.clone()).unwrap()["name"].as_str().unwrap().to_string();
@@ -1735,7 +1735,7 @@ mod swatches_header_tests {
     #[test]
     fn a_second_click_on_the_picked_swatch_renames_it_in_place() {
         use egui::accesskit::Role;
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         app.run("frame.create", json!({"rect": [36, 36, 200, 200], "content": "unassigned"})).unwrap();
         let added = app.run("swatch.create", json!({"color": {"c": 14, "m": 8, "y": 95, "k": 0}})).unwrap()["name"].as_str().unwrap().to_string();
@@ -1839,7 +1839,7 @@ mod swatches_header_tests {
 
     #[test]
     fn the_tint_field_keeps_each_objects_own_swatch() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.run("file.new", json!({})).unwrap();
         let a = app.run("frame.create", json!({"rect": [36, 36, 100, 100], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
         let b = app.run("frame.create", json!({"rect": [136, 36, 200, 100], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
@@ -1866,8 +1866,8 @@ mod swatches_header_tests {
 
 #[cfg(test)]
 mod row_mark_tests {
-    use designcraft_color::swatch::{Swatch, default_swatches};
-    use designcraft_color::{Color, ColorType, SwatchValue};
+    use pliego_color::swatch::{Swatch, default_swatches};
+    use pliego_color::{Color, ColorType, SwatchValue};
 
     use super::{RowMarks, RowMode, row_label, row_marks};
 
@@ -1909,8 +1909,8 @@ mod row_mark_tests {
         };
         assert_eq!(row_marks(&spot), RowMarks { not_editable: false, kind: Some(ColorType::Spot), mode: Some(RowMode::Rgb) });
         // A locked Paper swatch under another name (a document from elsewhere) is still editable.
-        let paper = all.iter().find(|s| s.name == designcraft_color::swatch::PAPER).unwrap();
-        let renamed = designcraft_color::swatch::Swatch { name: "Papier".into(), ..paper.clone() };
+        let paper = all.iter().find(|s| s.name == pliego_color::swatch::PAPER).unwrap();
+        let renamed = pliego_color::swatch::Swatch { name: "Papier".into(), ..paper.clone() };
         assert!(!row_marks(&renamed).not_editable);
     }
 }

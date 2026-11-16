@@ -45,26 +45,26 @@ impl<'a> Ex<'a> {
             let mut el =
                 El::new("ParagraphStyle").attr("Self", &id).attr("Name", names::style_name_out(PARA_BUILTINS, &ps.name)).attr("Imported", "false");
             let mut props = Vec::new();
-            let (pa, ca) = if ps.name == designcraft_doc::NO_PARA_STYLE {
+            let (pa, ca) = if ps.name == pliego_doc::NO_PARA_STYLE {
                 // The root style carries the complete attribute set.
-                let mut pa = designcraft_doc::ParaProps::common([&designcraft_doc::ParaProps::default()]);
+                let mut pa = pliego_doc::ParaProps::common([&pliego_doc::ParaProps::default()]);
                 pa.merge(&ps.para);
-                let mut ca = designcraft_doc::CharProps::common([&designcraft_doc::CharProps::default()]);
+                let mut ca = pliego_doc::CharProps::common([&pliego_doc::CharProps::default()]);
                 ca.merge(&ps.chars);
                 (pa, ca)
             } else {
                 let next = ps.next_style.as_deref().unwrap_or(&ps.name);
                 el.set("NextStyle", names::style_self("ParagraphStyle", PARA_BUILTINS, next));
-                match ps.based_on.as_deref().filter(|b| *b != designcraft_doc::NO_PARA_STYLE) {
+                match ps.based_on.as_deref().filter(|b| *b != pliego_doc::NO_PARA_STYLE) {
                     Some(b) => props.push(p("BasedOn", "object", names::style_self("ParagraphStyle", PARA_BUILTINS, b))),
                     None => props.push(p("BasedOn", "string", "$ID/[No paragraph style]")),
                 }
                 (ps.para.clone(), ps.chars.clone())
             };
-            let parent = (ps.name != designcraft_doc::NO_PARA_STYLE).then(|| ps.based_on.as_deref().unwrap_or(designcraft_doc::NO_PARA_STYLE));
+            let parent = (ps.name != pliego_doc::NO_PARA_STYLE).then(|| ps.based_on.as_deref().unwrap_or(pliego_doc::NO_PARA_STYLE));
             let parent_props = match ps.based_on.as_deref() {
-                Some(b) if ps.name != designcraft_doc::NO_PARA_STYLE => styles.resolve_para_style(b).0,
-                _ => designcraft_doc::ParaProps::default(),
+                Some(b) if ps.name != pliego_doc::NO_PARA_STYLE => styles.resolve_para_style(b).0,
+                _ => pliego_doc::ParaProps::default(),
             };
             let pa = with_list_tab(pa, || (styles.resolve_para_style(&ps.name).0, parent_props));
             self.para_attrs(&mut el, &mut props, &pa, parent);
@@ -99,8 +99,8 @@ impl<'a> Ex<'a> {
         // Object styles.
         let mut og = Group::default();
         let mut have: Vec<&str> = styles.object.iter().map(|o| o.name.as_str()).collect();
-        let defaults = designcraft_doc::Styles::default();
-        let mut all: Vec<designcraft_doc::ObjectStyle> = styles.object.clone();
+        let defaults = pliego_doc::Styles::default();
+        let mut all: Vec<pliego_doc::ObjectStyle> = styles.object.clone();
         for b in &defaults.object {
             if !have.contains(&b.name.as_str()) {
                 all.push(b.clone());
@@ -111,8 +111,8 @@ impl<'a> Ex<'a> {
             let id = names::style_self("ObjectStyle", OBJECT_BUILTINS, &os.name);
             let mut el = El::new("ObjectStyle").attr("Self", &id).attr("Name", names::style_name_out(OBJECT_BUILTINS, &os.name));
             let mut props = Vec::new();
-            if os.name != designcraft_doc::NO_OBJECT_STYLE {
-                match os.based_on.as_deref().filter(|b| *b != designcraft_doc::NO_OBJECT_STYLE) {
+            if os.name != pliego_doc::NO_OBJECT_STYLE {
+                match os.based_on.as_deref().filter(|b| *b != pliego_doc::NO_OBJECT_STYLE) {
                     Some(b) => props.push(p("BasedOn", "object", names::style_self("ObjectStyle", OBJECT_BUILTINS, b))),
                     None => props.push(p("BasedOn", "string", "$ID/[None]")),
                 }
@@ -169,7 +169,7 @@ impl<'a> Ex<'a> {
     }
 
     /// A style's Export Tagging as its EPUB export tag map.
-    fn export_tag_map(&mut self, t: &designcraft_doc::ExportTag) -> El {
+    fn export_tag_map(&mut self, t: &pliego_doc::ExportTag) -> El {
         El::new("StyleExportTagMap")
             .attr("Self", self.fresh())
             .attr("ExportType", "EPUB")
@@ -180,11 +180,11 @@ impl<'a> Ex<'a> {
             .attr("EmitCss", "true")
     }
 
-    fn append_cell_styles(&mut self, root: &mut El, styles: &designcraft_doc::Styles) {
+    fn append_cell_styles(&mut self, root: &mut El, styles: &pliego_doc::Styles) {
         let mut cells = El::new("RootCellStyleGroup")
             .attr("Self", self.fresh())
             .child(El::new("CellStyle").attr("Self", "CellStyle/$ID/[None]").attr("AppliedParagraphStyle", NO_PARA_ID).attr("Name", "$ID/[None]"));
-        for cs in styles.cell.iter().filter(|c| c.name != designcraft_doc::NO_CELL_STYLE) {
+        for cs in styles.cell.iter().filter(|c| c.name != pliego_doc::NO_CELL_STYLE) {
             let mut el = El::new("CellStyle")
                 .attr("Self", names::style_self("CellStyle", names::CELL_BUILTINS, &cs.name))
                 .attr("Name", names::style_name_out(names::CELL_BUILTINS, &cs.name));
@@ -228,8 +228,8 @@ impl<'a> Ex<'a> {
             if let Some(ps) = &cs.paragraph_style {
                 el.set("AppliedParagraphStyle", names::style_self("ParagraphStyle", PARA_BUILTINS, ps));
             }
-            let base = cs.based_on.as_deref().unwrap_or(designcraft_doc::NO_CELL_STYLE);
-            let based_on = if base == designcraft_doc::NO_CELL_STYLE {
+            let base = cs.based_on.as_deref().unwrap_or(pliego_doc::NO_CELL_STYLE);
+            let based_on = if base == pliego_doc::NO_CELL_STYLE {
                 p("BasedOn", "string", "$ID/[None]")
             } else {
                 p("BasedOn", "object", names::style_self("CellStyle", names::CELL_BUILTINS, base))
@@ -239,12 +239,12 @@ impl<'a> Ex<'a> {
         root.push(cells);
     }
 
-    fn append_table_styles(&mut self, root: &mut El, styles: &designcraft_doc::Styles) {
+    fn append_table_styles(&mut self, root: &mut El, styles: &pliego_doc::Styles) {
         let mut tables = El::new("RootTableStyleGroup").attr("Self", self.fresh());
-        if !styles.table.iter().any(|s| s.name == designcraft_doc::NO_TABLE_STYLE) {
+        if !styles.table.iter().any(|s| s.name == pliego_doc::NO_TABLE_STYLE) {
             tables.push(El::new("TableStyle").attr("Self", "TableStyle/$ID/[No table style]").attr("Name", "$ID/[No table style]"));
         }
-        if !styles.table.iter().any(|s| s.name == designcraft_doc::BASIC_TABLE) {
+        if !styles.table.iter().any(|s| s.name == pliego_doc::BASIC_TABLE) {
             tables.push(with_props(
                 El::new("TableStyle").attr("Self", "TableStyle/$ID/[Basic Table]").attr("Name", "$ID/[Basic Table]"),
                 vec![p("BasedOn", "string", "$ID/[No table style]")],
@@ -302,9 +302,9 @@ impl<'a> Ex<'a> {
                 el.set("SpaceAfter", num(v));
             }
             let mut props = Vec::new();
-            if ts.name != designcraft_doc::NO_TABLE_STYLE {
-                let base = ts.based_on.as_deref().unwrap_or(designcraft_doc::NO_TABLE_STYLE);
-                props.push(if base == designcraft_doc::NO_TABLE_STYLE {
+            if ts.name != pliego_doc::NO_TABLE_STYLE {
+                let base = ts.based_on.as_deref().unwrap_or(pliego_doc::NO_TABLE_STYLE);
+                props.push(if base == pliego_doc::NO_TABLE_STYLE {
                     p("BasedOn", "string", "$ID/[No table style]")
                 } else {
                     p("BasedOn", "object", names::style_self("TableStyle", names::TABLE_BUILTINS, base))
@@ -316,9 +316,9 @@ impl<'a> Ex<'a> {
     }
 
     /// The document's table of contents as a TOC style; its story names it in `AppliedTOCStyle`.
-    fn toc_style_el(&mut self, toc: &designcraft_doc::Toc) -> El {
+    fn toc_style_el(&mut self, toc: &pliego_doc::Toc) -> El {
         let para = |n: &str| names::style_self("ParagraphStyle", PARA_BUILTINS, n);
-        let chars = |n: Option<&str>| names::style_self("CharacterStyle", CHAR_BUILTINS, n.unwrap_or(designcraft_doc::NO_CHAR_STYLE));
+        let chars = |n: Option<&str>| names::style_self("CharacterStyle", CHAR_BUILTINS, n.unwrap_or(pliego_doc::NO_CHAR_STYLE));
         let mut el = El::new("TOCStyle")
             .attr("Self", TOC_STYLE_ID)
             .attr("Name", TOC_STYLE_NAME)
@@ -332,9 +332,9 @@ impl<'a> Ex<'a> {
             let format = e.entry_style.clone().unwrap_or_else(|| format!("TOC Level {}", e.level));
             let position = match e.page_number {
                 _ if !toc.page_numbers => "NoPageNumber",
-                designcraft_doc::TocPageNumber::After => "AfterEntry",
-                designcraft_doc::TocPageNumber::Before => "BeforeEntry",
-                designcraft_doc::TocPageNumber::None => "NoPageNumber",
+                pliego_doc::TocPageNumber::After => "AfterEntry",
+                pliego_doc::TocPageNumber::Before => "BeforeEntry",
+                pliego_doc::TocPageNumber::None => "NoPageNumber",
             };
             el.push(
                 El::new("TOCStyleEntry")
@@ -362,8 +362,8 @@ impl<'a> Ex<'a> {
         el.set(&format!("{k}RightIndent"), num(r.right_indent));
         el.set(&format!("{k}Type"), names::stroke_type_out(&r.kind));
         // A gap in Text Color is a string property, as the rule's own colour is.
-        if r.gap_color == designcraft_doc::TEXT_COLOR {
-            props.push(p(&format!("{k}GapColor"), "string", designcraft_doc::TEXT_COLOR));
+        if r.gap_color == pliego_doc::TEXT_COLOR {
+            props.push(p(&format!("{k}GapColor"), "string", pliego_doc::TEXT_COLOR));
         } else {
             el.set(&format!("{k}GapColor"), self.sw(&r.gap_color));
         }
@@ -371,14 +371,14 @@ impl<'a> Ex<'a> {
         if k == "RuleAbove" {
             el.set("KeepRuleAboveInFrame", bool_s(r.keep_in_frame));
         }
-        props.push(if r.color == designcraft_doc::TEXT_COLOR {
-            p(&format!("{k}Color"), "string", designcraft_doc::TEXT_COLOR)
+        props.push(if r.color == pliego_doc::TEXT_COLOR {
+            p(&format!("{k}Color"), "string", pliego_doc::TEXT_COLOR)
         } else {
             p(&format!("{k}Color"), "object", self.sw(&r.color))
         });
     }
 
-    pub(super) fn stroke_attrs(&self, el: &mut El, s: &designcraft_doc::Stroke) {
+    pub(super) fn stroke_attrs(&self, el: &mut El, s: &pliego_doc::Stroke) {
         el.set("StrokeColor", self.sw(&s.swatch));
         el.set("StrokeWeight", num(if s.is_none() { 0.0 } else { s.weight }));
         el.set("StrokeTint", pct(s.tint as f64));

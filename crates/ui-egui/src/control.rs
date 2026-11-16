@@ -23,7 +23,7 @@
 
 use std::sync::mpsc::Sender;
 
-use designcraft_tools::{Mods, PointerEvent, PointerKind};
+use pliego_tools::{Mods, PointerEvent, PointerKind};
 use serde_json::{Value, json};
 
 use crate::DesignApp;
@@ -173,7 +173,7 @@ fn control_pointer(app: &mut DesignApp, ctx: &egui::Context, p: &Value) -> Outco
                 None => return err("no canvas yet"),
             }
         } else {
-            designcraft_geom::Point::new(x, y)
+            pliego_geom::Point::new(x, y)
         };
         let mods = e.get("mods").and_then(|m| serde_json::from_value(m.clone()).ok()).unwrap_or(base_mods);
         let clicks = e.get("clicks").and_then(Value::as_u64).map_or(1, |n| n.clamp(1, 255) as u8);
@@ -241,7 +241,7 @@ fn handle_request(app: &mut DesignApp, ctx: &egui::Context, req: &ControlRequest
             let params = p.get("params").cloned().unwrap_or(json!({}));
             let params = if params.is_null() { json!({}) } else { params };
             // A key the command's description doesn't name is an error, not a default (#776).
-            if let Err(e) = designcraft_engine::check_params(id, &params) {
+            if let Err(e) = pliego_engine::check_params(id, &params) {
                 return err(e.to_string());
             }
             wrap(app.run(id, params))
@@ -252,7 +252,7 @@ fn handle_request(app: &mut DesignApp, ctx: &egui::Context, req: &ControlRequest
         "ui.docking" => ok(crate::panel_docking::inspect(app, ctx)),
         "ui.menu.list" => ok(serde_json::to_value(menus::MENUS).unwrap_or_default()),
         "ui.tool.select" => wrap(app.run("tool.select", json!({"tool": s("tool").unwrap_or("")}))),
-        "ui.tool.list" => ok(serde_json::to_value(designcraft_tools::TOOL_GROUPS).unwrap_or_default()),
+        "ui.tool.list" => ok(serde_json::to_value(pliego_tools::TOOL_GROUPS).unwrap_or_default()),
         "ui.pointer" => control_pointer(app, ctx, p),
         "ui.key" => {
             let Some(k) = s("key").and_then(key_from) else { return err("unknown or missing `key`") };
@@ -435,7 +435,7 @@ fn handle_request(app: &mut DesignApp, ctx: &egui::Context, req: &ControlRequest
                 page,
                 scale,
                 p.get("bleed").and_then(Value::as_bool).unwrap_or(false),
-                &designcraft_render::RenderOptions { printing_only: true, ..Default::default() },
+                &pliego_render::RenderOptions { printing_only: true, ..Default::default() },
             ) else {
                 return err("no such page");
             };
@@ -445,7 +445,7 @@ fn handle_request(app: &mut DesignApp, ctx: &egui::Context, req: &ControlRequest
                     Some(w) => wrap(w(path, &png).map(|_| json!({"path": path, "width": img.width, "height": img.height}))),
                     None => err("no writer"),
                 },
-                None => ok(json!({"width": img.width, "height": img.height, "pngBase64": designcraft_engine::cmd::base64_encode(&png)})),
+                None => ok(json!({"width": img.width, "height": img.height, "pngBase64": pliego_engine::cmd::base64_encode(&png)})),
             }
         }
         "app.open" => wrap(app.run("file.open", json!({"path": s("path")}))),
@@ -467,7 +467,7 @@ pub fn save_screenshot(app: &mut DesignApp, image: &egui::ColorImage, path: Opti
         return json!({"ok": true, "result": {"width": w, "height": h}});
     };
     let rgba: Vec<u8> = image.pixels.iter().flat_map(|c| c.to_array()).collect();
-    let img = designcraft_render::Rendered { width: w as u32, height: h as u32, pixels: rgba };
+    let img = pliego_render::Rendered { width: w as u32, height: h as u32, pixels: rgba };
     let png = img.to_png();
     match app.services.write.as_mut() {
         Some(wr) => match wr(path, &png) {
@@ -501,11 +501,11 @@ mod automation_contract_tests {
         let before = app.session.doc().unwrap().doc.clone();
         let history = app.session.doc().unwrap().history.undo.len();
         app.session.begin_interaction("Style Options").unwrap();
-        app.session.preview("style.paragraph.edit", json!({"name":designcraft_doc::BASIC_PARAGRAPH,"chars":{"size":24}})).unwrap();
+        app.session.preview("style.paragraph.edit", json!({"name":pliego_doc::BASIC_PARAGRAPH,"chars":{"size":24}})).unwrap();
         app.ui.dialog = Some(crate::dialogs::Dialog::new(
             "paragraphStyleOptions",
             json!({
-                "name":designcraft_doc::BASIC_PARAGRAPH,"preview":true,"_previewed":{"chars":{"size":24}}
+                "name":pliego_doc::BASIC_PARAGRAPH,"preview":true,"_previewed":{"chars":{"size":24}}
             }),
         ));
         assert_ne!(app.session.doc().unwrap().doc, before);
@@ -514,11 +514,11 @@ mod automation_contract_tests {
         assert_eq!(app.session.doc().unwrap().doc, before);
         assert!(app.session.doc().unwrap().interaction.is_none());
         assert_eq!(app.session.doc().unwrap().history.undo.len(), history);
-        app.run("style.paragraph.edit", json!({"name":designcraft_doc::BASIC_PARAGRAPH,"chars":{"size":18}})).unwrap();
+        app.run("style.paragraph.edit", json!({"name":pliego_doc::BASIC_PARAGRAPH,"chars":{"size":18}})).unwrap();
         assert_eq!(app.session.doc().unwrap().history.undo.len(), history + 1);
     }
     fn app() -> DesignApp {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", &json!({"pages":2})).unwrap();
         app
     }
@@ -823,12 +823,12 @@ mod tests {
             })),
             ..Default::default()
         };
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), services);
+        let mut app = DesignApp::new(pliego_engine::Session::new(), services);
         app.run("file.new", json!({})).unwrap();
         let r = app.run("frame.create", json!({"rect": [72, 72, 300, 200], "content": "text", "text": "words"})).unwrap();
         let sid = r["story"].as_u64().unwrap();
         assert!(app.session.active().unwrap().selection.text.is_some(), "the new frame is being typed in");
-        let text = |app: &DesignApp| app.session.active().unwrap().doc.story(designcraft_doc::StoryId(sid)).unwrap().text.clone();
+        let text = |app: &DesignApp| app.session.active().unwrap().doc.story(pliego_doc::StoryId(sid)).unwrap().text.clone();
         let ctx = egui::Context::default();
         let (req, _rx) = ControlRequest::new("engine.execute", json!({"command": "edit.paste"}));
         let _ = handle(&mut app, &ctx, &req);
@@ -855,7 +855,7 @@ mod deferred_clipboard_tests {
         let reads = Arc::new(AtomicUsize::new(0));
         let observed = reads.clone();
         let mut app = DesignApp::new(
-            designcraft_engine::Session::new(),
+            pliego_engine::Session::new(),
             crate::Services {
                 clipboard_text: Some(Box::new(move || {
                     observed.fetch_add(1, Ordering::SeqCst);
@@ -888,7 +888,7 @@ mod deferred_clipboard_tests {
     }
     #[test]
     fn deferred_control_widget_copy_leaves_native_clipboard_output_alone() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         let (req, _) = ControlRequest::new("ui.move", json!({"x":10,"y":10}));
         let _ = handle(&mut app, &ctx, &req);
@@ -906,7 +906,7 @@ mod deferred_clipboard_tests {
 
     #[test]
     fn control_click_rejects_unbounded_counts_before_queuing_input() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         for count in [json!(u64::MAX), json!(256), json!(0), json!(-1), json!(1.5)] {
             let (req, _) = ControlRequest::new("ui.click", json!({"x":10,"y":10,"count":count}));
@@ -919,7 +919,7 @@ mod deferred_clipboard_tests {
 
     #[test]
     fn control_ime_and_paste_keep_their_order_with_control_keys() {
-        let mut app = DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
         for (method, params) in [("ui.ime", json!({"preedit":"ni"})), ("ui.key", json!({"key":"A"})), ("ui.paste", json!({"text":"p"}))] {
             let (req, _) = ControlRequest::new(method, params);

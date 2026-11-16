@@ -278,7 +278,7 @@ impl Document {
             VarKind::ChapterNumber => self.chapter_label(),
             VarKind::FileName { extension } => {
                 if *extension {
-                    format!("{}.designcraft", self.title)
+                    format!("{}.pliego", self.title)
                 } else {
                     self.title.clone()
                 }

@@ -1,11 +1,11 @@
 //! A gradient between process colours shows the inks' blend, as InDesign shows it.
-use designcraft_color::swatch::Swatch;
-use designcraft_color::{Color, Gradient, GradientKind, GradientStop, SwatchValue};
-use designcraft_compose::Cache;
-use designcraft_doc::build::NewDocument;
-use designcraft_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, Stroke};
-use designcraft_geom::{Affine, Rect, shapes};
-use designcraft_render::{Placed, RenderOptions, Renderer};
+use pliego_color::swatch::Swatch;
+use pliego_color::{Color, Gradient, GradientKind, GradientStop, SwatchValue};
+use pliego_compose::Cache;
+use pliego_doc::build::NewDocument;
+use pliego_doc::{Document, Fill, Item, ItemId, Shape, SpreadRef, Stroke};
+use pliego_geom::{Affine, Rect, shapes};
+use pliego_render::{Placed, RenderOptions, Renderer};
 
 #[test]
 fn a_cmyk_gradient_is_c50_m50_halfway() {

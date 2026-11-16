@@ -2,7 +2,7 @@
 use super::FAIL_TO_BYTES;
 use super::{Document, EngineError, Result};
 
-/// The document as `.designcraft` bytes, or an error when it can't be written; never an empty file.
+/// The document as `.pliego` bytes, or an error when it can't be written; never an empty file.
 pub fn to_bytes(d: &Document) -> Result<Vec<u8>> {
     save_bytes(d, None)
 }
@@ -13,35 +13,35 @@ fn save_bytes(d: &Document, preview: Option<&[u8]>) -> Result<Vec<u8>> {
     if FAIL_TO_BYTES.with(std::cell::Cell::get) {
         return Err(EngineError::Other("could not write the document: injected failure".into()));
     }
-    designcraft_format::save_with_preview(d, preview).map_err(|e| EngineError::Other(format!("could not write the document: {e}")))
+    pliego_format::save_with_preview(d, preview).map_err(|e| EngineError::Other(format!("could not write the document: {e}")))
 }
 
-/// `path` ending in `.designcraft`: the extension is added when it is missing or another one, so
+/// `path` ending in `.pliego`: the extension is added when it is missing or another one, so
 /// the file opens from the file manager. A path without a file name is left for the write to fail.
 pub fn with_document_extension(path: &str) -> String {
     let p = std::path::Path::new(path);
     let ext = p.extension().and_then(std::ffi::OsStr::to_str);
-    if p.file_name().is_none() || ext.is_some_and(|e| e.eq_ignore_ascii_case(designcraft_format::EXTENSION)) {
+    if p.file_name().is_none() || ext.is_some_and(pliego_format::is_extension) {
         return path.to_string();
     }
-    format!("{path}.{}", designcraft_format::EXTENSION)
+    format!("{path}.{}", pliego_format::EXTENSION)
 }
 
-/// `name` without a trailing `.designcraft` (any case): the title of a document opened from bytes
+/// `name` without a trailing `.pliego` (any case): the title of a document opened from bytes
 /// under its file name. Save, Save As and the File Name variable add the extension back, so a title
-/// that kept it would name the file `Brochure.designcraft.designcraft`. A bare `.designcraft` stays.
+/// that kept it would name the file `Brochure.pliego.pliego`. A bare `.pliego` stays.
 pub(super) fn without_native_extension(name: &str) -> &str {
     match name.rsplit_once('.') {
-        Some((stem, ext)) if !stem.is_empty() && ext.eq_ignore_ascii_case(designcraft_format::EXTENSION) => stem,
+        Some((stem, ext)) if !stem.is_empty() && pliego_format::is_extension(ext) => stem,
         _ => name,
     }
 }
 
-/// Whether `bytes` are a document `file.open` reads: a DesignCraft package or an IDML package.
+/// Whether `bytes` are a document `file.open` reads: a Pliego package or an IDML package.
 /// The first [`DOCUMENT_SNIFF_BYTES`] of a file are enough for packages that start with their
 /// `mimetype` entry, as both formats write them.
 pub fn is_document(bytes: &[u8]) -> bool {
-    designcraft_idml::is_idml(bytes) || designcraft_format::starts_designcraft(bytes) || designcraft_format::is_designcraft(bytes)
+    pliego_idml::is_idml(bytes) || pliego_format::starts_pliego(bytes) || pliego_format::is_pliego(bytes)
 }
 
 /// How much of a file [`is_document`] needs to recognise a package by its `mimetype` entry.
@@ -59,7 +59,7 @@ pub(super) fn to_bytes_with_preview(d: &Document, cache: &crate::Cache) -> Resul
         (side.is_finite() && side > 0.0).then_some(PREVIEW_PX / side)
     });
     let png =
-        preview.and_then(|scale| designcraft_render::Renderer::new().render_page(d, cache, 0, scale, false, &Default::default())).map(|r| r.to_png());
+        preview.and_then(|scale| pliego_render::Renderer::new().render_page(d, cache, 0, scale, false, &Default::default())).map(|r| r.to_png());
     save_bytes(d, png.as_deref())
 }
 
@@ -67,10 +67,10 @@ pub fn from_bytes(b: &[u8]) -> Result<Document> {
     load_bytes(b).map(|(d, _)| d)
 }
 
-/// Read `.designcraft` bytes and repair what a hand-edited file can get wrong without failing the
+/// Read `.pliego` bytes and repair what a hand-edited file can get wrong without failing the
 /// open, with a warning for each repair.
 pub(super) fn load_bytes(b: &[u8]) -> Result<(Document, Vec<String>)> {
-    let mut d = designcraft_format::load(b).map_err(|e| EngineError::Other(e.to_string()))?;
+    let mut d = pliego_format::load(b).map_err(|e| EngineError::Other(e.to_string()))?;
     let warnings = d.fix_parent_bases();
     Ok((d, warnings))
 }
@@ -121,10 +121,12 @@ mod extension_tests {
 
     #[test]
     fn the_document_extension_is_added_when_missing_or_different() {
-        assert_eq!(with_document_extension("/a/Brochure"), "/a/Brochure.designcraft");
-        assert_eq!(with_document_extension("/a/Brochure.idml"), "/a/Brochure.idml.designcraft");
-        assert_eq!(with_document_extension("/a/v1.2 Brochure"), "/a/v1.2 Brochure.designcraft");
-        assert_eq!(with_document_extension("/a/Brochure.DesignCraft"), "/a/Brochure.DesignCraft");
+        assert_eq!(with_document_extension("/a/Brochure"), "/a/Brochure.pliego");
+        assert_eq!(with_document_extension("/a/Brochure.idml"), "/a/Brochure.idml.pliego");
+        assert_eq!(with_document_extension("/a/v1.2 Brochure"), "/a/v1.2 Brochure.pliego");
+        assert_eq!(with_document_extension("/a/Brochure.Pliego"), "/a/Brochure.Pliego");
+        // Files saved before Pliego had its own extension save back under theirs.
+        assert_eq!(with_document_extension("/a/Brochure.designcraft"), "/a/Brochure.designcraft"); // rebrand: keep
         assert_eq!(with_document_extension("/a/.."), "/a/..");
     }
 
@@ -137,13 +139,13 @@ mod extension_tests {
         s.execute("file.new", &json!({})).unwrap();
 
         let bare = dir.join("Brochure");
-        let written = dir.join("Brochure.designcraft");
+        let written = dir.join("Brochure.pliego");
         let r = s.execute("file.saveAs", &json!({"path": bare.to_string_lossy()})).unwrap();
         assert_eq!(r["path"], json!(written.to_string_lossy()), "{r}");
         assert!(written.is_file() && !bare.exists());
         assert_eq!(s.doc().unwrap().path.as_deref(), written.to_str());
         let r = s.execute("file.saveACopy", &json!({"path": dir.join("Copy").to_string_lossy()})).unwrap();
-        assert_eq!(r["path"], json!(dir.join("Copy.designcraft").to_string_lossy()), "{r}");
+        assert_eq!(r["path"], json!(dir.join("Copy.pliego").to_string_lossy()), "{r}");
 
         // A native file without the extension opens, and Save writes back to that same file.
         std::fs::rename(&written, &bare).unwrap();
@@ -155,7 +157,7 @@ mod extension_tests {
 
         // An IDML package without the extension opens as IDML, unsaved.
         let idml = dir.join("Package");
-        std::fs::write(&idml, designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        std::fs::write(&idml, pliego_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
         assert!(is_document(&std::fs::read(&idml).unwrap()) && is_document(&std::fs::read(&bare).unwrap()));
         // The start of the file is enough.
         for path in [&idml, &bare] {
@@ -169,7 +171,7 @@ mod extension_tests {
         std::fs::write(&notes, b"plain text").unwrap();
         assert!(!is_document(b"plain text"));
         let e = t.execute("file.open", &json!({"path": notes.to_string_lossy()})).unwrap_err();
-        assert!(e.to_string().contains("not a DesignCraft or IDML file"), "{e}");
+        assert!(e.to_string().contains("not a Pliego or IDML file"), "{e}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -7,11 +7,11 @@
 //! zero components would knock out the plates beneath.
 
 use craft_pdf::write::backend as krilla;
-use designcraft_color::swatch::{ColorType, SwatchValue, apply_tint};
-use designcraft_color::{Color, Gradient};
 use krilla::color::device_n::{self, Colorant, DeviceNSpace, Process};
 use krilla::color::separation::{self, SeparationColorant, SeparationSpace};
 use krilla::paint::Stop;
+use pliego_color::swatch::{ColorType, SwatchValue, apply_tint};
+use pliego_color::{Color, Gradient};
 
 use crate::export::{Exporter, norm, q, regular};
 
@@ -45,7 +45,7 @@ enum Space {
 impl Exporter<'_> {
     /// The inks a stop prints with, following tints and the Ink Manager as solid fills do.
     /// `None` when they can't go into an ink shading (RGB, `[Registration]`).
-    fn stop_ink(&self, stop: &designcraft_color::GradientStop) -> Option<Ink> {
+    fn stop_ink(&self, stop: &pliego_color::GradientStop) -> Option<Ink> {
         let Some(mut n) = stop.swatch.as_deref() else { return process_inks(stop.color).map(Ink::Process) };
         let mut t = 1.0f32;
         for _ in 0..8 {
@@ -86,7 +86,7 @@ impl Exporter<'_> {
         }
         let inks: Vec<Option<Ink>> = g.stops.iter().map(|s| self.stop_ink(s)).collect();
         let has_spot = inks.iter().any(|i| matches!(i, Some(Ink::Spot { .. })));
-        let on_paper = g.stops.iter().any(|s| s.swatch.as_deref() == Some(designcraft_color::swatch::PAPER));
+        let on_paper = g.stops.iter().any(|s| s.swatch.as_deref() == Some(pliego_color::swatch::PAPER));
         if !(has_spot || overprint || on_paper && self.for_print() && !self.rgb_only) {
             return None;
         }

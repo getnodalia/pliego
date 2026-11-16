@@ -37,9 +37,9 @@ pub fn specs() -> Vec<CommandSpec> {
             ok()
         }),
         cmd!(noundo "file.open", "Open…", ["File"], Some("Cmd+O"),
-            "{path} — a DesignCraft or IDML file (recognised by its content, so the extension may be missing), or an InDesign .indd/.indt (recognised by its signature or extension, converted to IDML; its conversion warnings join `warnings`); the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped, GREP styles whose pattern can't compile, Based on Parent links cleared and, for IDML and InDesign files, package parts missing; warningItems (IDML and InDesign files): per warning, the id of the frame it is about, or null}",
+            "{path} — a Pliego or IDML file (recognised by its content, so the extension may be missing), or an InDesign .indd/.indt (recognised by its signature or extension, converted to IDML; its conversion warnings join `warnings`); the fonts in a `Document Fonts` folder beside it load first → {index, documentFonts: faces loaded, warnings: font files skipped, GREP styles whose pattern can't compile, Based on Parent links cleared and, for IDML and InDesign files, package parts missing; warningItems (IDML and InDesign files): per warning, the id of the frame it is about, or null}",
             always, file_open),
-        cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — DesignCraft JSON, an IDML package or an InDesign .indd/.indt → {index, warnings}", always, file_open_bytes),
+        cmd!(noundo "file.openBytes", "Open Bytes", [], None, "{name, base64} — Pliego JSON, an IDML package or an InDesign .indd/.indt → {index, warnings}", always, file_open_bytes),
         cmd!(noundo "file.openRecent", "Open Recent File", [], None,
             "{index} — reopen entry `index` of File › Open Recent (as file.open); a file that is gone is an error and stays listed",
             has_recent, file_open_recent),
@@ -50,9 +50,9 @@ pub fn specs() -> Vec<CommandSpec> {
             s.prefs.recent_files.clear();
             ok()
         }),
-        cmd!(noundo "file.save", "Save", ["File"], Some("Cmd+S"), "{path?} — a `path` without the .designcraft extension gets it → {path: the file written, bytes}", has_doc, file_save),
-        cmd!(noundo "file.saveAs", "Save As…", ["File"], Some("Cmd+Shift+S"), "{path} — a path without the .designcraft extension gets it → {path: the file written, bytes}", has_doc, file_save),
-        cmd!(noundo "file.saveACopy", "Save a Copy…", ["File"], None, "{path} — writes the document without changing which file it is or its unsaved state; a path without the .designcraft extension gets it → {path: the file written, bytes}", has_doc, |s, p| {
+        cmd!(noundo "file.save", "Save", ["File"], Some("Cmd+S"), "{path?} — a `path` without the .pliego extension gets it → {path: the file written, bytes}", has_doc, file_save),
+        cmd!(noundo "file.saveAs", "Save As…", ["File"], Some("Cmd+Shift+S"), "{path} — a path without the .pliego extension gets it → {path: the file written, bytes}", has_doc, file_save),
+        cmd!(noundo "file.saveACopy", "Save a Copy…", ["File"], None, "{path} — writes the document without changing which file it is or its unsaved state; a path without the .pliego extension gets it → {path: the file written, bytes}", has_doc, |s, p| {
             let path = str_param(p, "path").ok_or_else(|| bad("file.saveACopy", "missing `path`"))?;
             let path = with_document_extension(path);
             let mut copy = (*s.doc()?.doc).clone();
@@ -76,7 +76,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let dir = recovery_dir(s, p, FolderAccess::ReadWrite)?;
             Ok(json!({"opened": crate::recovery::open(s, &dir)?}))
         }),
-        cmd!(query "file.serialize", "Serialize", [], None, "{} → {base64, bytes} the .designcraft file", has_doc, |s, _| {
+        cmd!(query "file.serialize", "Serialize", [], None, "{} → {base64, bytes} the .pliego file", has_doc, |s, _| {
             let st = s.doc()?;
             // Preview fill is session state. Serialize the unfilled template.
             let doc = st.preview_stash.as_deref().unwrap_or(st.doc.as_ref());
@@ -93,12 +93,12 @@ pub fn specs() -> Vec<CommandSpec> {
             ok()
         }),
         cmd!(query "snippet.export", "Export Selection as Snippet", ["File", "Export"], None,
-            "{path?} — the selected items (with their stories, styles and images) as a .designcraft snippet; no path: {base64}", crate::cmd::has_selection, snippet_export),
+            "{path?} — the selected items (with their stories, styles and images) as a .pliego snippet; no path: {base64}", crate::cmd::has_selection, snippet_export),
         cmd!(query "place.styles", "Import Options: Styles", [], None,
         "{path | base64, name} → {paragraph: [name], character: [name], conflicts: [name]} — the styles a Word/RTF file brings (for styleMap / styleConflicts)",
         has_doc, |s, p| {
             let (bytes, name, _) = read_source(p)?;
-            let imp = designcraft_textimport::import(&name, &bytes).map_err(|e| bad("place.styles", e.to_string()))?;
+            let imp = pliego_textimport::import(&name, &bytes).map_err(|e| bad("place.styles", e.to_string()))?;
             let st = &s.doc()?.doc.styles;
             let conflicts: Vec<&str> = imp
                 .para_styles
@@ -133,7 +133,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Place…",
             ["File"],
             Some("Cmd+D"),
-            "{path?|base64?, name?, frame?: id (place into), spread?, x?, y?, width?: finite number > 0 (null: absent), height? (video/audio), pdfPage?: n (1-based, Image Import Options), pdfCrop?: crop|art|trim|bleed|media|contentVisible|contentAll (the box the graphic shows; `width` is the whole page's), loadCursor? (with no frame to fill and no x/y, an image loads into the place cursor, as File › Place), layoutPage?: n (IDML / .designcraft: that page's objects as a group), page?, rect?: [x0,y0,x1,y1] (text: a new frame there), autoflow? (threads one frame per page column from the first frame on, adding pages until the text fits), removeStyles?, styleMap?: {imported name: document style}, styleConflicts?: useExisting|redefine|autoRename, link? (keep the file linked in the Links panel; default: the linkTextFiles preference)} — places an image into `frame` when given; otherwise any explicit x/y/spread/width creates a new frame; otherwise uses the selected empty or graphic frame, or creates a new frame; text files (.txt, .docx, .rtf, .md) and Excel workbooks (.xlsx, as a table) go into the insertion point, the selected frame or a new frame on `page`/`rect`",
+            "{path?|base64?, name?, frame?: id (place into), spread?, x?, y?, width?: finite number > 0 (null: absent), height? (video/audio), pdfPage?: n (1-based, Image Import Options), pdfCrop?: crop|art|trim|bleed|media|contentVisible|contentAll (the box the graphic shows; `width` is the whole page's), loadCursor? (with no frame to fill and no x/y, an image loads into the place cursor, as File › Place), layoutPage?: n (IDML / .pliego: that page's objects as a group), page?, rect?: [x0,y0,x1,y1] (text: a new frame there), autoflow? (threads one frame per page column from the first frame on, adding pages until the text fits), removeStyles?, styleMap?: {imported name: document style}, styleConflicts?: useExisting|redefine|autoRename, link? (keep the file linked in the Links panel; default: the linkTextFiles preference)} — places an image into `frame` when given; otherwise any explicit x/y/spread/width creates a new frame; otherwise uses the selected empty or graphic frame, or creates a new frame; text files (.txt, .docx, .rtf, .md) and Excel workbooks (.xlsx, as a table) go into the insertion point, the selected frame or a new frame on `page`/`rect`",
             has_doc,
             file_place
         ),

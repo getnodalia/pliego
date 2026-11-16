@@ -7,8 +7,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use designcraft_doc::{Document, Item, ItemId, SpreadRef, StoryId};
-use designcraft_geom::Affine;
+use pliego_doc::{Document, Item, ItemId, SpreadRef, StoryId};
+use pliego_geom::Affine;
 
 use crate::{ComposedStory, FrameText};
 

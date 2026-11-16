@@ -38,8 +38,8 @@ pub(super) fn file_info_metadata(doc: &Document, title: Option<&str>, author: Op
     let info = &doc.file_info;
     let description = info.description.trim();
     Metadata {
-        creator: "DesignCraft".into(),
-        producer: "DesignCraft".into(),
+        creator: "Pliego".into(),
+        producer: "Pliego".into(),
         title: Some(title.unwrap_or_else(|| doc.metadata_title()).to_string()),
         authors: author.or_else(|| doc.metadata_author()).map(str::to_string).into_iter().collect(),
         description: (!description.is_empty()).then(|| description.to_string()),
@@ -67,7 +67,7 @@ pub(super) fn date_time(t: i64) -> krilla::metadata::DateTime {
 /// `civil`), rather than resetting to the epoch. `date_time` applies the PDF `0..=9999` year clamp.
 pub(crate) fn civil(t: i64) -> (i64, u8, u8, u8, u8, u8) {
     use chrono::{Datelike, Timelike};
-    let (y, t) = designcraft_doc::time::utc_parts(t, 0);
+    let (y, t) = pliego_doc::time::utc_parts(t, 0);
     (y, t.month() as u8, t.day() as u8, t.hour() as u8, t.minute() as u8, t.second() as u8)
 }
 

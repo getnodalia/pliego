@@ -2,10 +2,10 @@
 //! corners, and a page-information line. All marks use `[Registration]` (every plate).
 
 use craft_pdf::write::backend as krilla;
-use designcraft_geom::{BezPath, Point};
 use krilla::num::NormalizedF32;
 use krilla::paint::{LineCap, LineJoin, Stroke};
 use krilla::surface::Surface;
+use pliego_geom::{BezPath, Point};
 
 use crate::export::{Exporter, MARK_LEN, Sheet, civil, mark_start, registration, to_path};
 

@@ -13,10 +13,7 @@ pub(super) fn create_swatch(s: &mut Session, p: &Value) -> Result<Value> {
         let name = Styles::unique_name(|n| d.swatch(n).is_some(), &name);
         d.swatches.push(Swatch {
             name: name.clone(),
-            value: SwatchValue::Color {
-                color,
-                color_type: if spot { designcraft_color::ColorType::Spot } else { designcraft_color::ColorType::Process },
-            },
+            value: SwatchValue::Color { color, color_type: if spot { pliego_color::ColorType::Spot } else { pliego_color::ColorType::Process } },
             locked: false,
             named: true,
             hidden: false,
@@ -28,7 +25,7 @@ pub(super) fn create_swatch(s: &mut Session, p: &Value) -> Result<Value> {
 /// `swatch.create {gradient}`: a named gradient swatch. Stops take a colour swatch by name (as a
 /// swatch dragged onto the Gradient panel's stop) or a colour.
 fn create_gradient_swatch(s: &mut Session, p: &Value, g: &Value) -> Result<Value> {
-    use designcraft_color::{Gradient, GradientKind, GradientStop};
+    use pliego_color::{Gradient, GradientKind, GradientStop};
     const ID: &str = "swatch.create";
     let kind = match g.get("kind").and_then(Value::as_str) {
         None | Some("linear") => GradientKind::Linear,
@@ -106,8 +103,8 @@ pub(super) fn new_swatch(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
-pub fn parse_color(v: &Value) -> Option<designcraft_color::Color> {
-    use designcraft_color::Color;
+pub fn parse_color(v: &Value) -> Option<pliego_color::Color> {
+    use pliego_color::Color;
     match v {
         Value::String(s) => Color::from_hex(s),
         // `{model, …}` is the colour's own form (as `color.convert` takes it): fractions, never guessed.
@@ -134,8 +131,8 @@ pub fn parse_color(v: &Value) -> Option<designcraft_color::Color> {
 }
 
 /// `{model: rgb|cmyk|gray, …}` with every component in 0..=1; anything else is not a colour.
-fn model_color(v: &Value) -> Option<designcraft_color::Color> {
-    use designcraft_color::Color;
+fn model_color(v: &Value) -> Option<pliego_color::Color> {
+    use pliego_color::Color;
     let color: Color = serde_json::from_value(v.clone()).ok()?;
     // A float's last bit (100.0 / 100.0 ≠ 1.0 after an f32 round trip) is not out of range.
     let unit = |x: f32| x.is_finite() && (-1e-4..=1.0 + 1e-4).contains(&x);
@@ -148,8 +145,8 @@ fn model_color(v: &Value) -> Option<designcraft_color::Color> {
 }
 
 /// The swatch name of a colour value ("C=… M=… Y=… K=…" / "R=… G=… B=…").
-pub(super) fn value_name(color: designcraft_color::Color) -> String {
-    designcraft_color::swatch::value_name(color)
+pub(super) fn value_name(color: pliego_color::Color) -> String {
+    pliego_color::swatch::value_name(color)
 }
 
 pub(super) fn load_swatches(s: &mut Session, p: &Value) -> Result<Value> {
@@ -158,7 +155,7 @@ pub(super) fn load_swatches(s: &mut Session, p: &Value) -> Result<Value> {
         (Some(path), None) => crate::io::read_file(path).map_err(|e| bad("swatch.load", e))?,
         _ => return Err(bad("swatch.load", "give `path` or `base64`")),
     };
-    let incoming = designcraft_color::ase::read(&bytes).map_err(|e| bad("swatch.load", e.to_string()))?;
+    let incoming = pliego_color::ase::read(&bytes).map_err(|e| bad("swatch.load", e.to_string()))?;
     let replace = p.get("replace").and_then(Value::as_bool).unwrap_or(false);
     s.edit(|d, _| {
         // The position of the first swatch with each name, kept up to date as the file's colors are added.
@@ -228,7 +225,7 @@ pub(super) fn save_swatches(s: &mut Session, p: &Value) -> Result<Value> {
     let names: Option<Vec<String>> =
         p.get("names").and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect());
     let chosen: Vec<Swatch> = d.swatches.iter().filter(|w| names.as_ref().is_none_or(|n| n.contains(&w.name))).cloned().collect();
-    let bytes = designcraft_color::ase::write(&chosen);
+    let bytes = pliego_color::ase::write(&chosen);
     match str_param(p, "path") {
         Some(path) => {
             crate::io::write_file(path, &bytes).map_err(|e| bad("swatch.save", e))?;
@@ -311,7 +308,7 @@ pub(super) fn swatch_options(s: &mut Session, p: &Value) -> Result<Value> {
                         *c = new;
                     }
                     if let Some(sp) = spot {
-                        *color_type = if sp { designcraft_color::ColorType::Spot } else { designcraft_color::ColorType::Process };
+                        *color_type = if sp { pliego_color::ColorType::Spot } else { pliego_color::ColorType::Process };
                     }
                     if tint.is_some() || base.is_some() {
                         return Err(bad(ID, "only tint swatches have a tint"));
@@ -422,8 +419,8 @@ mod color_group_tests {
         s.execute("swatch.moveToGroup", &json!({"swatches": [b], "group": "Brand"})).unwrap();
         let groups = |s: &Session| s.doc().unwrap().doc.color_groups.clone();
         assert_eq!(groups(&s)[0].swatches, [a.clone(), b.clone()]);
-        let bytes = designcraft_idml::export_idml(&s.doc().unwrap().doc);
-        let back = designcraft_idml::import_idml(&bytes).unwrap();
+        let bytes = pliego_idml::export_idml(&s.doc().unwrap().doc);
+        let back = pliego_idml::import_idml(&bytes).unwrap();
         assert_eq!(back.color_groups, groups(&s), "IDML ColorGroup");
         s.execute("swatch.delete", &json!({"name": b})).unwrap();
         assert_eq!(groups(&s)[0].swatches, [a.as_str()]);
@@ -462,8 +459,8 @@ mod ink_tests {
         assert!(!pdf(&mut s).contains("Pantone"), "all spots to process");
         let l = s.execute("ink.list", &json!({})).unwrap();
         assert_eq!(l["inks"][0]["alias"], "Pantone B");
-        let back = designcraft_idml::import_idml(&designcraft_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
-        assert!(designcraft_pdf::inks::spot_output(&back, &designcraft_pdf::inks::ink_set(&back), "Pantone A").1, "IDML ConvertToProcess");
+        let back = pliego_idml::import_idml(&pliego_idml::export_idml(&s.doc().unwrap().doc)).unwrap();
+        assert!(pliego_pdf::inks::spot_output(&back, &pliego_pdf::inks::ink_set(&back), "Pantone A").1, "IDML ConvertToProcess");
         assert!(back.inks.aliases.iter().any(|(a, b)| a == "Pantone A" && b == "Pantone B"), "IDML AliasInkName");
         assert!(s.execute("ink.options", &json!({"ink": "[Black]", "toProcess": true})).is_err());
         assert!(s.execute("ink.options", &json!({"ink": "Pantone B", "alias": "Pantone A"})).is_err(), "an alias loop is refused");
@@ -472,8 +469,8 @@ mod ink_tests {
 
 #[cfg(test)]
 mod swatch_options_tests {
-    use designcraft_color::SwatchValue;
-    use designcraft_doc::{ItemId, StoryId};
+    use pliego_color::SwatchValue;
+    use pliego_doc::{ItemId, StoryId};
     use serde_json::json;
 
     use crate::Session;
@@ -500,22 +497,22 @@ mod swatch_options_tests {
         let image = s.execute("frame.create", &json!({"rect": [72, 300, 200, 400], "content": "graphic"})).unwrap()["id"].as_u64().unwrap();
         s.edit(|d, _| {
             // A greyscale image coloured with the swatch, framed and in a table cell (#2306).
-            let graphic = designcraft_doc::Graphic {
+            let graphic = pliego_doc::Graphic {
                 layer_options: None,
-                asset: designcraft_doc::AssetId(1),
+                asset: pliego_doc::AssetId(1),
                 size: (40.0, 30.0),
-                xf: designcraft_geom::Affine::IDENTITY,
+                xf: pliego_geom::Affine::IDENTITY,
                 clip: None,
-                auto_fit: designcraft_doc::Fitting::None,
+                auto_fit: pliego_doc::Fitting::None,
                 fit_align: 4,
                 crop: [0.0; 4],
                 wrap: Default::default(),
-                fill: designcraft_doc::Fill::swatch("Brand"),
+                fill: pliego_doc::Fill::swatch("Brand"),
             };
-            d.item_mut(ItemId(image)).unwrap().content = designcraft_doc::Content::Graphic(graphic.clone());
+            d.item_mut(ItemId(image)).unwrap().content = pliego_doc::Content::Graphic(graphic.clone());
             let story = d.story_mut(StoryId(sid)).unwrap();
             std::sync::Arc::make_mut(story.tables.values_mut().next().unwrap()).cells[0].graphic = Some(graphic);
-            d.swatches.push(designcraft_color::Swatch {
+            d.swatches.push(pliego_color::Swatch {
                 name: "Brand 50%".into(),
                 value: SwatchValue::Tint { base: "Brand".into(), tint: 0.5 },
                 locked: false,
@@ -523,7 +520,7 @@ mod swatch_options_tests {
                 hidden: false,
             });
             let st = d.styles_mut();
-            if let Some(p) = st.para_mut(designcraft_doc::BASIC_PARAGRAPH) {
+            if let Some(p) = st.para_mut(pliego_doc::BASIC_PARAGRAPH) {
                 p.chars.underline_color = Some("Brand".into());
                 p.para.shading_color = Some("Brand".into());
                 p.para.border_gap_color = Some("Brand".into());
@@ -543,7 +540,7 @@ mod swatch_options_tests {
         let d = &s.doc().unwrap().doc;
         let it = d.item(ItemId(id)).unwrap();
         let story = d.story(StoryId(sid)).unwrap();
-        let basic = d.styles.para(designcraft_doc::BASIC_PARAGRAPH).unwrap();
+        let basic = d.styles.para(pliego_doc::BASIC_PARAGRAPH).unwrap();
         vec![
             it.fill.swatch == name,
             it.stroke.swatch == name,
@@ -570,7 +567,7 @@ mod swatch_options_tests {
         assert_eq!(r["name"], "Signal Orange");
         let d = &s.doc().unwrap().doc;
         assert!(d.swatch("Brand").is_none());
-        assert!(matches!(d.swatch("Signal Orange").unwrap().value, SwatchValue::Color { color_type: designcraft_color::ColorType::Spot, .. }));
+        assert!(matches!(d.swatch("Signal Orange").unwrap().value, SwatchValue::Color { color_type: pliego_color::ColorType::Spot, .. }));
         assert_eq!(uses(&s, id, sid, "Signal Orange"), vec![true; 14]);
         s.execute("edit.undo", &json!({})).unwrap();
         assert!(s.doc().unwrap().doc.swatch("Brand").is_some());
@@ -617,15 +614,15 @@ mod swatch_options_tests {
 
 #[cfg(test)]
 mod sample_color_tests {
-    use designcraft_color::{Color, SwatchValue};
-    use designcraft_doc::ItemId;
+    use pliego_color::{Color, SwatchValue};
+    use pliego_doc::ItemId;
     use serde_json::json;
 
     use crate::Session;
 
     /// A 2×1 image, red then blue, placed 144 pt wide at (72, 72): each pixel is 72 pt.
     fn session_with_image() -> (Session, u64) {
-        let png = designcraft_render::Rendered { width: 2, height: 1, pixels: vec![255, 0, 0, 255, 0, 0, 255, 255] }.to_png();
+        let png = pliego_render::Rendered { width: 2, height: 1, pixels: vec![255, 0, 0, 255, 0, 0, 255, 255] }.to_png();
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let b64 = crate::cmd::file::base64_encode(&png);
@@ -711,10 +708,10 @@ mod sample_color_tests {
         s.edit(|d, _| {
             let it = d.item_mut(ItemId(image)).ok_or(crate::EngineError::NoDocument)?;
             let b = it.inner_bounds();
-            it.path = designcraft_geom::shapes::rectangle(designcraft_geom::Rect::new(b.x0, b.y0, b.x1, b.y1 + 72.0));
-            let designcraft_doc::Content::Graphic(g) = &mut it.content else { return Err(crate::EngineError::NoDocument) };
-            let left = designcraft_geom::shapes::rectangle(designcraft_geom::Rect::new(0.0, 0.0, g.size.0 / 2.0, g.size.1));
-            g.clip = Some(std::sync::Arc::new(designcraft_doc::ClippingPath::new(designcraft_doc::ClippingKind::PhotoshopPath, left)));
+            it.path = pliego_geom::shapes::rectangle(pliego_geom::Rect::new(b.x0, b.y0, b.x1, b.y1 + 72.0));
+            let pliego_doc::Content::Graphic(g) = &mut it.content else { return Err(crate::EngineError::NoDocument) };
+            let left = pliego_geom::shapes::rectangle(pliego_geom::Rect::new(0.0, 0.0, g.size.0 / 2.0, g.size.1));
+            g.clip = Some(std::sync::Arc::new(pliego_doc::ClippingPath::new(pliego_doc::ClippingKind::PhotoshopPath, left)));
             Ok(())
         })
         .unwrap();
@@ -744,7 +741,7 @@ mod sample_color_tests {
             };
             let (mut s, _) = session_with_image();
             let f = s.execute("frame.create", &json!({"rect": [300, 300, 500, 360], "content": "text"})).unwrap();
-            let story = designcraft_doc::StoryId(f["story"].as_u64().unwrap());
+            let story = pliego_doc::StoryId(f["story"].as_u64().unwrap());
             s.execute("text.select", &json!({"story": story.0, "anchor": 0})).unwrap();
             let undo = s.doc().unwrap().history.undo.len();
             let r = s.execute(command, &params([100.0, 100.0], "#ff0000", json!({}))).unwrap();
@@ -783,7 +780,7 @@ mod radial_gradient_tests {
 
     /// White at the side and the top of a 100×200 radial (black → white) rectangle at (50, 20) on
     /// a 200×240 page, rendered at 1 px/pt.
-    fn sides(img: &designcraft_render::Rendered) -> (u8, u8, u8) {
+    fn sides(img: &pliego_render::Rendered) -> (u8, u8, u8) {
         (img.pixel(100, 120)[0], img.pixel(52, 120)[0], img.pixel(100, 22)[0])
     }
 
@@ -799,11 +796,11 @@ mod radial_gradient_tests {
         )
         .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let mut r = designcraft_render::Renderer::new();
+        let mut r = pliego_render::Renderer::new();
         let (c, side, top) = sides(&r.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap());
         assert!(c < 30 && side > 220 && top > 220, "screen: centre {c}, side {side}, top {top}");
         // The PDF, placed back and drawn: the same ellipse.
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = pliego_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 240, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "radial.pdf", "x": 0, "y": 0, "width": 200}))
@@ -815,24 +812,24 @@ mod radial_gradient_tests {
 
     #[test]
     fn a_box_with_no_height_or_width_has_a_circle_across_its_length() {
-        let f = designcraft_doc::Fill::swatch("g");
-        let line = designcraft_geom::Rect::new(20.0, 60.0, 180.0, 60.0);
+        let f = pliego_doc::Fill::swatch("g");
+        let line = pliego_geom::Rect::new(20.0, 60.0, 180.0, 60.0);
         let (c, rx, ry) = f.radial_ellipse(line);
         assert_eq!((c.x, c.y, rx, ry), (100.0, 60.0, 80.0, 80.0));
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(10.0, 0.0, 10.0, 50.0));
+        let (_, rx, ry) = f.radial_ellipse(pliego_geom::Rect::new(10.0, 0.0, 10.0, 50.0));
         assert_eq!((rx, ry), (25.0, 25.0));
         // A point: a tiny circle, never a zero radius.
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(5.0, 5.0, 5.0, 5.0));
+        let (_, rx, ry) = f.radial_ellipse(pliego_geom::Rect::new(5.0, 5.0, 5.0, 5.0));
         assert!(rx > 0.0 && rx == ry);
         // A box keeps its ellipse.
-        let (_, rx, ry) = f.radial_ellipse(designcraft_geom::Rect::new(0.0, 0.0, 100.0, 200.0));
+        let (_, rx, ry) = f.radial_ellipse(pliego_geom::Rect::new(0.0, 0.0, 100.0, 200.0));
         assert_eq!((rx, ry), (50.0, 100.0));
     }
 }
 
 #[cfg(test)]
 mod gradient_swatch_tests {
-    use designcraft_color::SwatchValue;
+    use pliego_color::SwatchValue;
     use serde_json::json;
 
     fn doc() -> crate::Session {
@@ -894,11 +891,11 @@ mod gradient_swatch_tests {
         // Renamed and edited: the stop names the new name and shows the new color.
         s.execute("swatch.options", &json!({"name": "Gold", "to": "Gold 871", "color": {"c": 0, "m": 20, "y": 80, "k": 20}})).unwrap();
         assert_eq!(stops(&s)[0].swatch.as_deref(), Some("Gold 871"));
-        assert_eq!(stops(&s)[0].color, designcraft_color::Color::cmyk(0.0, 0.2, 0.8, 0.2));
+        assert_eq!(stops(&s)[0].color, pliego_color::Color::cmyk(0.0, 0.2, 0.8, 0.2));
         // Deleted: the stop keeps its color as a plain one.
         s.execute("swatch.delete", &json!({"name": "Gold 871"})).unwrap();
         assert_eq!(stops(&s)[0].swatch, None);
-        assert_eq!(stops(&s)[0].color, designcraft_color::Color::cmyk(0.0, 0.2, 0.8, 0.2));
+        assert_eq!(stops(&s)[0].color, pliego_color::Color::cmyk(0.0, 0.2, 0.8, 0.2));
     }
 
     #[test]
@@ -907,7 +904,7 @@ mod gradient_swatch_tests {
         let id = s.execute("frame.create", &json!({"rect": [0, 0, 100, 100], "content": "unassigned"})).unwrap()["id"].as_u64().unwrap();
         // A gradient made in the Gradient panel is unnamed (and not listed) …
         s.execute("object.gradient", &json!({"ids": [id], "stops": [{"location": 0, "color": {"c": 0, "m": 100, "y": 0, "k": 0}}, {"location": 100, "color": {"c": 100, "m": 0, "y": 0, "k": 0}}]})).unwrap();
-        let fill = |s: &crate::Session| s.doc().unwrap().doc.item(designcraft_doc::ItemId(id)).unwrap().fill.swatch.clone();
+        let fill = |s: &crate::Session| s.doc().unwrap().doc.item(pliego_doc::ItemId(id)).unwrap().fill.swatch.clone();
         assert!(s.doc().unwrap().doc.swatch(&fill(&s)).unwrap().hidden);
         // … until New Swatch: "New Gradient Swatch", listed, still the object's fill.
         s.execute("selection.set", &json!({"ids": [id]})).unwrap();
@@ -935,7 +932,7 @@ mod gradient_stroke_tests {
     use serde_json::json;
 
     /// Grey along a 20 pt line from (20, 60) to (180, 60): near its start, middle and end.
-    fn along(img: &designcraft_render::Rendered) -> (u8, u8, u8) {
+    fn along(img: &pliego_render::Rendered) -> (u8, u8, u8) {
         (img.pixel(26, 60)[0], img.pixel(100, 60)[0], img.pixel(174, 60)[0])
     }
 
@@ -952,14 +949,14 @@ mod gradient_stroke_tests {
             )
             .unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let it = d.item(designcraft_doc::ItemId(id)).unwrap();
+        let it = d.item(pliego_doc::ItemId(id)).unwrap();
         assert_eq!(it.stroke.swatch, r["swatch"].as_str().unwrap());
-        assert_eq!(it.fill.swatch, designcraft_color::swatch::NONE, "the fill is left alone");
-        let mut rr = designcraft_render::Renderer::new();
+        assert_eq!(it.fill.swatch, pliego_color::swatch::NONE, "the fill is left alone");
+        let mut rr = pliego_render::Renderer::new();
         let (a, m, b) = along(&rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap());
         assert!(a < 40 && (90..170).contains(&m) && b > 215, "screen: {a} {m} {b}");
         // The PDF, placed back and drawn: the same.
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = pliego_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "stroke.pdf", "x": 0, "y": 0, "width": 200}))
@@ -976,7 +973,7 @@ mod gradient_stroke_tests {
     }
 
     /// A 20 pt horizontal line with a gradient on its stroke, drawn on screen and from its PDF.
-    fn line_with_stroke_gradient(g: serde_json::Value) -> (designcraft_render::Rendered, designcraft_render::Rendered) {
+    fn line_with_stroke_gradient(g: serde_json::Value) -> (pliego_render::Rendered, pliego_render::Rendered) {
         let mut s = crate::Session::new();
         s.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         let id = s.execute("line.create", &json!({"a": [20, 60], "b": [180, 60]})).unwrap()["id"].as_u64().unwrap();
@@ -986,9 +983,9 @@ mod gradient_stroke_tests {
         g["target"] = json!("stroke");
         s.execute("object.gradient", &g).unwrap();
         let d = s.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         let screen = rr.render_page(&d, &s.cache, 0, 1.0, false, &Default::default()).unwrap();
-        let pdf = designcraft_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
+        let pdf = pliego_pdf::export_pdf(&d, &s.cache, &Default::default()).unwrap();
         let mut p = crate::Session::new();
         p.execute("file.new", &json!({"width": 200, "height": 120, "facingPages": false})).unwrap();
         p.execute("file.place", &json!({"base64": crate::cmd::file::base64_encode(&pdf), "name": "line.pdf", "x": 0, "y": 0, "width": 200})).unwrap();

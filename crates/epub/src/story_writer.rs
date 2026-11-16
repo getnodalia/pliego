@@ -128,7 +128,7 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
                 // Export Tagging: the style's element and class.
                 let (tag, class) = export_mapping(&doc.styles, &pf.style, false, &self.pc);
                 let props = doc.styles.resolve_para(pf).0;
-                let rtl = props.direction == designcraft_doc::TextDirection::RightToLeft;
+                let rtl = props.direction == pliego_doc::TextDirection::RightToLeft;
                 // Chapter files start only at top-level paragraphs, after any open list or
                 // preformatted block is closed, so each file stays balanced.
                 if depth == 0 && self.heading_ids.is_some() && starts_chapter(&self.split, &doc.styles, &pf.style) {
@@ -140,9 +140,9 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
                     out.push_str("</pre>\n");
                 }
                 let list_tag = (tag == "li").then_some(match props.list_type {
-                    designcraft_doc::ListType::Numbers => "ol",
-                    designcraft_doc::ListType::Bullets => "ul",
-                    designcraft_doc::ListType::None => "ul style=\"list-style:none\"",
+                    pliego_doc::ListType::Numbers => "ol",
+                    pliego_doc::ListType::Bullets => "ul",
+                    pliego_doc::ListType::None => "ul style=\"list-style:none\"",
                 });
                 if list != list_tag {
                     close_list(&mut list, out);
@@ -234,7 +234,7 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
                 continue;
             }
             // Hidden conditional text isn't exported.
-            if f.over.conditions.as_deref().is_some_and(|c| doc.conditions_hide(c)) || f.over.change == Some(designcraft_doc::ChangeMark::Deleted) {
+            if f.over.conditions.as_deref().is_some_and(|c| doc.conditions_hide(c)) || f.over.change == Some(pliego_doc::ChangeMark::Deleted) {
                 continue;
             }
             let Some(raw) = st.text.get(a..b) else { continue };
@@ -267,9 +267,9 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
         match &o.position {
             AnchorPosition::AboveLine { align, .. } if !out.is_empty() => {
                 let align = match align {
-                    designcraft_doc::anchored::AnchorAlign::Left => "left",
-                    designcraft_doc::anchored::AnchorAlign::Center => "center",
-                    designcraft_doc::anchored::AnchorAlign::Right => "right",
+                    pliego_doc::anchored::AnchorAlign::Left => "left",
+                    pliego_doc::anchored::AnchorAlign::Center => "center",
+                    pliego_doc::anchored::AnchorAlign::Right => "right",
                 };
                 format!("<span class=\"anchored\" style=\"display:block;text-align:{align}\">{out}</span>")
             }
@@ -290,7 +290,7 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
         }
         let mime = safe_mime(&a.mime);
         // Video and sound: an HTML5 player (with the poster, when there is one).
-        if let Some(kind) = designcraft_doc::media_kind(mime) {
+        if let Some(kind) = pliego_doc::media_kind(mime) {
             let name = asset_path("media", a, mime);
             self.images.insert(name.clone(), (mime, a.data.as_slice()));
             let m = it.media.clone().unwrap_or_default();
@@ -443,10 +443,10 @@ impl<'a, 'f> StoryWriter<'a, 'f> {
 /// Run text with variables replaced by their values; `left` is what the export may still write
 /// of them (a value that doesn't fit is left out).
 fn run_text(doc: &Document, raw: &str, left: &mut usize) -> String {
-    if raw.chars().any(|c| designcraft_doc::vars::var_index(c).is_some()) {
+    if raw.chars().any(|c| pliego_doc::vars::var_index(c).is_some()) {
         let sub: String = raw
             .chars()
-            .map(|c| match designcraft_doc::vars::var_index(c) {
+            .map(|c| match pliego_doc::vars::var_index(c) {
                 Some(i) => {
                     let v = doc.variable_value(i, None).unwrap_or_default();
                     if v.len() > *left {

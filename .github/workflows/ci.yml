@@ -20,10 +20,21 @@ jobs:
   gate:
     uses: getnodalia/foundation/.github/workflows/rust-gate.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
     with:
-      # Same craft-fonts commit as release.yml.
+      # Same craft-fonts commit as the release-*.yml workflows.
       fonts-repository: getnodalia/foundation
       fonts-ref: b076417b5880bd4154bd22f00695b1d28c6bea83
       timeout-minutes: 90
       packages: >-
         pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev
         libxrandr-dev libxi-dev libfontconfig1-dev libfreetype-dev mesa-vulkan-drivers
+
+  # Pliego's own names everywhere; upstream's arrive renamed by the weekly sync.
+  names:
+    name: No upstream names
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/rebrand.py check

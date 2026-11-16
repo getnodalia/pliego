@@ -116,7 +116,7 @@ pub(super) fn toggle_selection(s: &mut Session) -> Result<Value> {
 }
 
 /// The table cell under spread point `pt` in text frame `frame`: (story, table, row, col).
-pub(super) fn cell_at(s: &Session, frame: designcraft_doc::ItemId, pt: designcraft_geom::Point) -> Option<(StoryId, u64, usize, usize)> {
+pub(super) fn cell_at(s: &Session, frame: pliego_doc::ItemId, pt: pliego_geom::Point) -> Option<(StoryId, u64, usize, usize)> {
     let st = s.active()?;
     let loc = st.doc.find(frame)?;
     let it = st.doc.item_at(&loc)?;
@@ -124,7 +124,7 @@ pub(super) fn cell_at(s: &Session, frame: designcraft_doc::ItemId, pt: designcra
     let inner = (st.doc.parent_xf(&loc) * st.doc.text_xf(it)).inverse() * pt;
     let cs = s.cache.get(&st.doc, sid, None);
     let fi = cs.frames.iter().position(|f| f.frame == frame)?;
-    let (table, row, col, _) = designcraft_compose::hit_cell(&cs, fi, inner)?;
+    let (table, row, col, _) = pliego_compose::hit_cell(&cs, fi, inner)?;
     Some((sid, table, row, col))
 }
 

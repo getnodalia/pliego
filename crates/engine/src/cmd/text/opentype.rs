@@ -5,7 +5,7 @@ use super::story::{SELECTED_TEXT_CHARS, selected_text_preview};
 use super::{Result, Session, Value, bad, json, ok};
 
 pub(super) fn open_type(s: &mut Session, p: &Value) -> Result<Value> {
-    use designcraft_doc::otf;
+    use pliego_doc::otf;
     let cur = selection_attrs(s, &json!({}))?;
     let mut list: Vec<String> =
         cur["chars"]["otfFeatures"].as_array().map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect()).unwrap_or_default();
@@ -45,7 +45,7 @@ pub(super) fn open_type_features(s: &mut Session, _p: &Value) -> Result<Value> {
     let mut segments: Vec<FeatureSegment> = Vec::new();
     for Target { story: sid, cell, range: r } in format_targets(s) {
         let Some(story) = st.doc.text_story(sid, cell) else { continue };
-        let covered: Vec<(usize, usize, designcraft_doc::story::CharFormat)> = if r.is_empty() {
+        let covered: Vec<(usize, usize, pliego_doc::story::CharFormat)> = if r.is_empty() {
             vec![(r.start, 1, story.format_after(r.start).clone())]
         } else {
             story
@@ -62,14 +62,14 @@ pub(super) fn open_type_features(s: &mut Session, _p: &Value) -> Result<Value> {
         }
     }
     if segments.is_empty() {
-        let (_, base) = st.doc.styles.resolve_para_style(designcraft_doc::story::BASIC_PARAGRAPH);
-        let cp = st.doc.styles.resolve_char(&base, &designcraft_doc::story::CharFormat::default());
+        let (_, base) = st.doc.styles.resolve_para_style(pliego_doc::story::BASIC_PARAGRAPH);
+        let cp = st.doc.styles.resolve_char(&base, &pliego_doc::story::CharFormat::default());
         segments.push(FeatureSegment { len: 1, font: (cp.font_family, cp.font_style), applied: cp.otf_features, ligatures: cp.ligatures });
     }
-    let db = designcraft_fonts::FontDb::global();
-    let mut fonts: std::collections::BTreeMap<(String, String), designcraft_fonts::FontFeatures> = std::collections::BTreeMap::new();
+    let db = pliego_fonts::FontDb::global();
+    let mut fonts: std::collections::BTreeMap<(String, String), pliego_fonts::FontFeatures> = std::collections::BTreeMap::new();
     for seg in &segments {
-        fonts.entry(seg.font.clone()).or_insert_with(|| designcraft_fonts::font_features(&db.face(&seg.font.0, &seg.font.1)));
+        fonts.entry(seg.font.clone()).or_insert_with(|| pliego_fonts::font_features(&db.face(&seg.font.0, &seg.font.1)));
     }
     let total: usize = segments.iter().map(|seg| seg.len).sum::<usize>().max(1);
     let state = |covered: usize| match covered {
@@ -83,7 +83,7 @@ pub(super) fn open_type_features(s: &mut Session, _p: &Value) -> Result<Value> {
         for seg in &segments {
             // Standard ligatures are the `ligatures` attribute, which shaping reads, unless the
             // feature list turns `liga` off.
-            let on = designcraft_doc::otf::is_on(&seg.applied, tag) && (tag != "liga" || seg.ligatures);
+            let on = pliego_doc::otf::is_on(&seg.applied, tag) && (tag != "liga" || seg.ligatures);
             if on {
                 applied += seg.len;
             }
@@ -135,14 +135,14 @@ pub(super) fn set_features(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit(|d, _| {
         for t in &targets {
             let Some(st) = d.text_story_mut(t.story, t.cell) else { continue };
-            let runs: Vec<(std::ops::Range<usize>, designcraft_doc::story::CharFormat)> =
+            let runs: Vec<(std::ops::Range<usize>, pliego_doc::story::CharFormat)> =
                 st.runs().filter(|(run, _)| run.start < t.range.end && run.end > t.range.start).map(|(run, f)| (run.clone(), f.clone())).collect();
             for (run, format) in runs {
                 let Some(para) = st.paras.get(st.para_at(run.start)).cloned() else { continue };
                 let (_, base) = styles.resolve_para(&para);
                 let mut list = styles.resolve_char(&base, &format).otf_features;
                 for (tag, on) in &changes {
-                    designcraft_doc::otf::set(&mut list, tag, *on);
+                    pliego_doc::otf::set(&mut list, tag, *on);
                 }
                 let range = run.start.max(t.range.start)..run.end.min(t.range.end);
                 st.format_chars(range, |f| f.over.otf_features = Some(list.clone()));
@@ -184,7 +184,7 @@ mod open_type_tests {
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [0, 0, 200, 100], "content": "text", "text": "é漢🙂x"})).unwrap();
         let sid = r["story"].clone();
-        let story = designcraft_doc::StoryId(sid.as_u64().unwrap());
+        let story = pliego_doc::StoryId(sid.as_u64().unwrap());
         // Offsets inside 漢 (2..5) and 🙂 (5..9), past the end, or reversed are refused and change nothing.
         for (start, end) in [(3, 6), (2, 4), (0, 99), (5, 2)] {
             let r = s.execute("story.replaceRange", &json!({"story": sid, "start": start, "end": end, "text": "字"}));
@@ -207,7 +207,7 @@ mod open_type_tests {
     #[test]
     fn selected_text_preview_stops_at_its_character_budget() {
         let read = std::cell::Cell::new(0usize);
-        let prefix = ['\t', '\u{2003}', designcraft_doc::OBJECT_MARK];
+        let prefix = ['\t', '\u{2003}', pliego_doc::OBJECT_MARK];
         let chars = prefix.into_iter().chain(std::iter::repeat_n('字', 100_000)).inspect(|_| read.set(read.get() + 1));
         let preview = super::selected_text_preview(chars);
         assert_eq!(preview, "字".repeat(super::SELECTED_TEXT_CHARS));
@@ -283,10 +283,10 @@ What's new in typography this season, and why it matters to every designer"}),
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": "2024"})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let gids = |s: &Session| {
             let d = &s.doc().unwrap().doc;
-            let cs = designcraft_compose::compose_story(d, sid, &Default::default());
+            let cs = pliego_compose::compose_story(d, sid, &Default::default());
             cs.frames[0].lines[0].glyphs.iter().map(|g| g.gid).collect::<Vec<_>>()
         };
         let lining = gids(&s);
@@ -304,7 +304,7 @@ What's new in typography this season, and why it matters to every designer"}),
         s.execute("file.new", &json!({})).unwrap();
         let text = "Para one\n\nPara two";
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": text})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         // The blank line between the two paragraphs: a collapsed caret, since it has no text.
         let blank = text.find("\n\n").unwrap() + 1;
         s.execute("text.select", &json!({"story": sid.0, "anchor": blank})).unwrap();
@@ -312,9 +312,9 @@ What's new in typography this season, and why it matters to every designer"}),
         let st = s.doc().unwrap().doc.story(sid).unwrap();
         // `char_format_at` resolves a boundary to the *preceding* run (new typing's format), so
         // check just past the mark's own one-byte run, which the mark alone occupies.
-        assert_eq!(st.char_format_at(blank + 1).over.leading, Some(designcraft_doc::Leading::Points(40.0)));
+        assert_eq!(st.char_format_at(blank + 1).over.leading, Some(pliego_doc::Leading::Points(40.0)));
         let d = s.doc().unwrap().doc.clone();
-        let cs = designcraft_compose::compose_story(&d, sid, &Default::default());
+        let cs = pliego_compose::compose_story(&d, sid, &Default::default());
         let blank_line = cs.frames[0].lines.iter().find(|l| l.range == (blank..blank)).unwrap();
         assert_eq!(blank_line.leading, 40.0, "the blank line's own height changed");
     }
@@ -327,7 +327,7 @@ What's new in typography this season, and why it matters to every designer"}),
         s.execute("file.new", &json!({})).unwrap();
         let text = "Para one\n\nPara two";
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": text})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let blank = text.find("\n\n").unwrap() + 1;
         s.execute("text.select", &json!({"story": sid.0, "anchor": blank})).unwrap();
         s.execute("type.char", &json!({"attrs": {"size": 30}})).unwrap();
@@ -348,7 +348,7 @@ What's new in typography this season, and why it matters to every designer"}),
         s.execute("file.new", &json!({})).unwrap();
         let text = "Para one\n\nPara two";
         let r = s.execute("frame.create", &json!({"rect": [72, 72, 300, 200], "content": "text", "text": text})).unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         let blank = text.find("\n\n").unwrap() + 1;
         s.execute("text.select", &json!({"story": sid.0, "anchor": blank})).unwrap();
         s.execute("type.char", &json!({"attrs": {"size": 30}})).unwrap();

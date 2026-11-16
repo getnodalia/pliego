@@ -28,7 +28,7 @@ fn rerun_with_path(app: &mut DesignApp, purpose: &str, id: &str, p: &Value, key:
 /// File › Save As: asks where, saves there, then runs `after`.
 #[track_caller]
 fn save_as_dialog(app: &mut DesignApp, after: impl FnOnce(&mut DesignApp) -> Result<Value, String> + 'static) -> Result<Value, String> {
-    let name = app.session.active().map(|d| format!("{}.designcraft", d.doc.title)).unwrap_or_default();
+    let name = app.session.active().map(|d| format!("{}.pliego", d.doc.title)).unwrap_or_default();
     app.ask_save(&name, Bound::Document, move |app, path| {
         app.run("file.saveAs", json!({"path": path}))?;
         after(app)
@@ -174,7 +174,7 @@ fn run_ui_part1(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
         "app.saveCopyDialog" => match p.get("path").and_then(Value::as_str) {
             Some(path) => app.run("file.saveACopy", json!({"path": path})),
             None => {
-                let name = app.session.active().map(|d| format!("{} copy.designcraft", d.doc.title)).unwrap_or_default();
+                let name = app.session.active().map(|d| format!("{} copy.pliego", d.doc.title)).unwrap_or_default();
                 app.ask_save(&name, Bound::Document, |app, path| app.run("file.saveACopy", json!({"path": path})))
             }
         },
@@ -229,10 +229,10 @@ fn run_ui_part1(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             let g = app.session.active().and_then(|d| d.selection.items.first().and_then(|id| d.doc.item(*id)).and_then(|it| it.graphic().cloned()));
             let Some(g) = g else { return Some(Err("select a frame with a placed graphic".into())) };
             let fitting = serde_json::to_value(g.auto_fit).unwrap_or(json!("none"));
-            let c = |v: f64| json!(designcraft_geom::format_measure(v, designcraft_geom::Unit::Points));
+            let c = |v: f64| json!(pliego_geom::format_measure(v, pliego_geom::Unit::Points));
             app.ui.dialog = Some(crate::dialogs::Dialog::new(
                 "fittingOptions",
-                json!({"autoFit": g.auto_fit != designcraft_doc::Fitting::None, "fitting": fitting, "align": g.fit_align,
+                json!({"autoFit": g.auto_fit != pliego_doc::Fitting::None, "fitting": fitting, "align": g.fit_align,
                     "cropTop": c(g.crop[0]), "cropLeft": c(g.crop[1]), "cropBottom": c(g.crop[2]), "cropRight": c(g.crop[3])}),
             ));
             Ok(Value::Null)
@@ -344,7 +344,7 @@ fn run_ui_part2(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
                 Ok(r) => r,
                 Err(e) => return Some(Err(e)),
             };
-            let bytes = designcraft_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
+            let bytes = pliego_engine::cmd::base64_decode(r["base64"].as_str().unwrap_or_default());
             match app.services.write.as_mut() {
                 Some(w) => w(&path, &bytes).map(|_| json!({"path": path, "bytes": bytes.len()})),
                 None => Err("no writer".into()),
@@ -352,7 +352,7 @@ fn run_ui_part2(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
         }
         "app.storyEditor" => {
             let target = app.session.active().and_then(|st| {
-                let story = p.get("story").and_then(Value::as_u64).map(designcraft_doc::StoryId).or_else(|| {
+                let story = p.get("story").and_then(Value::as_u64).map(pliego_doc::StoryId).or_else(|| {
                     st.selection
                         .text
                         .map(|t| t.story)
@@ -536,10 +536,10 @@ fn run_ui_part2(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
                 f["userWords"] =
                     json!(words.as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join("\n")).unwrap_or_default());
                 let inc = doc["keyboardIncrement"].as_f64().unwrap_or(1.0);
-                f["keyboardIncrement"] = json!(designcraft_geom::format_measure(inc, designcraft_geom::Unit::Points));
+                f["keyboardIncrement"] = json!(pliego_geom::format_measure(inc, pliego_geom::Unit::Points));
                 f["kerningIncrement"] = json!(format!("{}", doc["kerningIncrement"].as_f64().unwrap_or(20.0)));
                 let units = app.session.active().map(|d| d.doc.settings.horizontal_units).unwrap_or_default();
-                let m = |v: &Value| json!(designcraft_geom::format_measure(v.as_f64().unwrap_or(0.0), units));
+                let m = |v: &Value| json!(pliego_geom::format_measure(v.as_f64().unwrap_or(0.0), units));
                 let (bg, g) = (&doc["baselineGrid"], &doc["grid"]);
                 f["bg.start"] = m(&bg["start"]);
                 f["bg.increment"] = m(&bg["increment"]);
@@ -563,7 +563,7 @@ fn run_ui_part2(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
                 f["horizontalUnits"] = json!(du.horizontal_units);
                 f["verticalUnits"] = json!(du.vertical_units);
                 f["rulerOrigin"] = json!(du.ruler_origin);
-                f["keyboardIncrement"] = json!(designcraft_geom::format_measure(du.keyboard_increment, designcraft_geom::Unit::Points));
+                f["keyboardIncrement"] = json!(pliego_geom::format_measure(du.keyboard_increment, pliego_geom::Unit::Points));
                 f["kerningIncrement"] = json!(format!("{}", du.kerning_increment));
             }
             f["snap.alignEdges"] = json!(app.ui.align_edges);
@@ -572,9 +572,9 @@ fn run_ui_part2(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             f["snap.spacing"] = json!(app.ui.smart_spacing);
             f["snap.zone"] = json!(app.ui.snap_zone);
             f["displayQuality"] = json!(match app.ui.display_quality {
-                designcraft_render::DisplayQuality::Fast => "fast",
-                designcraft_render::DisplayQuality::Typical => "typical",
-                designcraft_render::DisplayQuality::High => "high",
+                pliego_render::DisplayQuality::Fast => "fast",
+                pliego_render::DisplayQuality::Typical => "typical",
+                pliego_render::DisplayQuality::High => "high",
             });
             f["uiScale"] = json!((app.ui.ui_scale * 100.0).round());
             f["autoCollapseIconicPanels"] = json!(app.ui.dock_auto_collapse);
@@ -687,7 +687,7 @@ fn run_ui_part3(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             flag(&mut app.ui.overprint_preview)
         }
         "view.fastDisplay" | "view.typicalDisplay" | "view.highQualityDisplay" => {
-            use designcraft_render::DisplayQuality as Q;
+            use pliego_render::DisplayQuality as Q;
             app.ui.display_quality = match id {
                 "view.fastDisplay" => Q::Fast,
                 "view.typicalDisplay" => Q::Typical,
@@ -752,11 +752,11 @@ fn run_ui_part3(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             // Turns the spread in the middle of the view (InDesign's Rotate Spread).
             let angle = p.get("angle").and_then(Value::as_i64).unwrap_or(90);
             let Some(st) = app.session.active() else { return Some(Err("no document".into())) };
-            let layout = designcraft_tools::CanvasLayout::new(&st.doc, st.editing_parents);
+            let layout = pliego_tools::CanvasLayout::new(&st.doc, st.editing_parents);
             let Some(slot) = crate::canvas::current_slot(app, &layout).and_then(|i| layout.slots.get(i).copied()) else {
                 return Some(Err("no spread".into()));
             };
-            let designcraft_doc::SpreadRef::Doc(si) = slot.spread else { return Some(Err("parent spreads don't turn".into())) };
+            let pliego_doc::SpreadRef::Doc(si) = slot.spread else { return Some(Err("parent spreads don't turn".into())) };
             let r = app.run("layout.rotateSpreadView", json!({"spread": si, "angle": angle}));
             if let Some(rect) = app.canvas_rect {
                 crate::canvas::fit(app, rect, "spread");
@@ -778,12 +778,12 @@ fn run_ui_part4(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
         }
         "view.proofSetup" => {
             if let Some(t) = p.get("target").and_then(Value::as_str) {
-                let Some(t) = designcraft_color::cms::ProofTarget::parse(t) else { return Some(Err(format!("unknown proof target `{t}`"))) };
+                let Some(t) = pliego_color::cms::ProofTarget::parse(t) else { return Some(Err(format!("unknown proof target `{t}`"))) };
                 app.ui.proof_setup.target = t;
                 app.ui.proof_colors = true;
             }
             if let Some(i) = p.get("intent").and_then(Value::as_str) {
-                let Some(i) = designcraft_color::cms::Intent::parse(i) else { return Some(Err(format!("unknown intent `{i}`"))) };
+                let Some(i) = pliego_color::cms::Intent::parse(i) else { return Some(Err(format!("unknown intent `{i}`"))) };
                 app.ui.proof_setup.intent = i;
             }
             match p.get("simulatePaper") {
@@ -893,7 +893,7 @@ fn run_ui_part4(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
             let Some(id) = p.get("id").and_then(Value::as_str) else { return Some(Err("missing id".into())) };
             let mut cmd = crate::keys::command_ref(id, p.get("params").unwrap_or(&Value::Null));
             // A bare tool id ("pen") names its tool.
-            if app.keymap.bindable(&cmd).is_none() && designcraft_tools::tool_info(id).is_some() {
+            if app.keymap.bindable(&cmd).is_none() && pliego_tools::tool_info(id).is_some() {
                 cmd = crate::keys::tool(id);
             }
             let shortcut = match p.get("shortcut") {
@@ -1039,14 +1039,14 @@ fn run_ui_part5(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
         "help.checkForUpdates" => crate::updates_ui::check(app),
         "help.app" => match p.get("app").and_then(Value::as_str) {
             Some(slug) if !slug.is_empty() && slug.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') => {
-                let url = format!("{}/apps/{slug}", designcraft_engine::links::WEBSITE);
+                let url = format!("{}/apps/{slug}", pliego_engine::links::WEBSITE);
                 app.ui.pending_urls.push(url.clone());
                 Ok(json!({"url": url}))
             }
-            _ => Err("help.app: give `app` (e.g. \"photocraft\")".into()),
+            _ => Err("help.app: give `app` (e.g. \"lienzo\")".into()),
         },
-        h if h.starts_with("help.") && designcraft_engine::links::get(&h[5..]).is_some() => {
-            let url = designcraft_engine::links::get(&h[5..]).unwrap_or_default().to_string();
+        h if h.starts_with("help.") && pliego_engine::links::get(&h[5..]).is_some() => {
+            let url = pliego_engine::links::get(&h[5..]).unwrap_or_default().to_string();
             app.ui.pending_urls.push(url.clone());
             Ok(json!({"url": url}))
         }

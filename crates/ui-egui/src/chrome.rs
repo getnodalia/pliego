@@ -1,8 +1,8 @@
 //! Window chrome: application bar (with menus), Control panel, document tabs, status bar, start screen.
 
-use designcraft_doc::{Align, Content};
-use designcraft_geom::Unit;
 use egui::{Color32, Sense, Stroke, vec2};
+use pliego_doc::{Align, Content};
+use pliego_geom::Unit;
 use serde_json::json;
 
 use crate::panels;

@@ -36,11 +36,11 @@ impl<'r> Importer<'r> {
                 let at = g.num("Location").filter(|v| v.is_finite() && v.abs() < 1e7)?;
                 let orientation = if g.get("Orientation") == Some("Horizontal") { Orientation::Horizontal } else { Orientation::Vertical };
                 let position = match (orientation, self.settings.ruler_origin) {
-                    (Orientation::Horizontal, designcraft_doc::RulerOrigin::Page) => page.y0 + at,
+                    (Orientation::Horizontal, pliego_doc::RulerOrigin::Page) => page.y0 + at,
                     (Orientation::Horizontal, _) => at,
-                    (Orientation::Vertical, designcraft_doc::RulerOrigin::Page) => page.x0 + at,
-                    (Orientation::Vertical, designcraft_doc::RulerOrigin::Spine) => spine + at,
-                    (Orientation::Vertical, designcraft_doc::RulerOrigin::Spread) => at,
+                    (Orientation::Vertical, pliego_doc::RulerOrigin::Page) => page.x0 + at,
+                    (Orientation::Vertical, pliego_doc::RulerOrigin::Spine) => spine + at,
+                    (Orientation::Vertical, pliego_doc::RulerOrigin::Spread) => at,
                 };
                 Some(Guide {
                     orientation,

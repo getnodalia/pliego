@@ -12,10 +12,10 @@ pub const MAX_CONVERTED_CELLS: u64 = MAX_BODY_ROWS * MAX_COLUMNS;
 
 /// A command's `tableStyle`: none for an absent one or [Basic Table] (a new table's look), else the
 /// resolved style and the cell styles it names. Anything but an existing style's name is an error.
-fn table_style_param(s: &Session, p: &Value, cmd: &str) -> Result<Option<(designcraft_doc::TableStyle, Vec<designcraft_doc::CellStyle>)>> {
+fn table_style_param(s: &Session, p: &Value, cmd: &str) -> Result<Option<(pliego_doc::TableStyle, Vec<pliego_doc::CellStyle>)>> {
     let name = match p.get("tableStyle") {
         None | Some(Value::Null) => return Ok(None),
-        Some(Value::String(n)) if n == designcraft_doc::BASIC_TABLE => return Ok(None),
+        Some(Value::String(n)) if n == pliego_doc::BASIC_TABLE => return Ok(None),
         Some(Value::String(n)) => n,
         Some(_) => return Err(bad(cmd, "`tableStyle` must be a table style's name")),
     };
@@ -60,7 +60,7 @@ pub(super) fn insert(s: &mut Session, p: &Value) -> Result<Value> {
         let pf = st.paras[st.para_at(t.range().start)].clone();
         let cf = st.char_format_at(t.range().start).clone();
         for c in &mut table.cells {
-            c.text.paras[0] = designcraft_doc::ParaFormat { table: None, ..pf.clone() };
+            c.text.paras[0] = pliego_doc::ParaFormat { table: None, ..pf.clone() };
             c.text.chars[0].format = cf.clone();
         }
         if let Some((ts, cells)) = &style {
@@ -139,7 +139,7 @@ pub(super) fn convert_from_text(s: &mut Session, p: &Value) -> Result<Value> {
             return Err(bad(ID, format!("the text makes more than {MAX_CONVERTED_CELLS} cells")));
         }
         // `Table::new` would clamp the shape and drop the rows past it, with their text.
-        let (rows, _) = designcraft_doc::clamped_size(data.len(), cols as usize);
+        let (rows, _) = pliego_doc::clamped_size(data.len(), cols as usize);
         if rows < data.len() {
             return Err(bad(ID, format!("the text makes {} rows; a table of {cols} columns has at most {rows}", data.len())));
         }
@@ -168,7 +168,7 @@ pub(super) fn convert_to_text(s: &mut Session, p: &Value) -> Result<Value> {
         let st = d.story_mut(g.story).ok_or_else(|| bad("table.convertToText", "no story"))?;
         let text = st.tables.get(&g.table).map(|t| t.text_with(&col_sep, &row_sep)).unwrap_or_default();
         let a = st.table_anchor(g.table).ok_or_else(|| bad("table.convertToText", "no anchor"))?;
-        let len0 = designcraft_doc::TABLE_ANCHOR.len_utf8();
+        let len0 = pliego_doc::TABLE_ANCHOR.len_utf8();
         st.replace(a..a + len0, &text);
         d.adjust_text_ranges(g.story, a..a + len0, text.len());
         *sel = Selection::text(TextSel::caret(g.story, a + text.len()));
@@ -183,7 +183,7 @@ pub(super) fn delete_table(s: &mut Session, p: &Value) -> Result<Value> {
             let st = d.story_mut(g.story).ok_or_else(|| bad("table.delete", "no story"))?;
             let a = st.table_anchor(g.table).ok_or_else(|| bad("table.delete", "no anchor"))?;
             // Remove the anchor paragraph (with one separator) so no empty paragraph is left behind.
-            let end = a + designcraft_doc::TABLE_ANCHOR.len_utf8();
+            let end = a + pliego_doc::TABLE_ANCHOR.len_utf8();
             let r = if &st.text[end..] == "\n" && a > 0 && st.text[..a].ends_with('\n') {
                 // Inserted at the end of the story: remove the empty paragraph after it too.
                 a - 1..end + 1
@@ -251,7 +251,7 @@ pub(super) fn insert_col(s: &mut Session, p: &Value, left: Option<bool>) -> Resu
         .doc
         .story(g.story)
         .and_then(|st| st.tables.get(&g.table))
-        .is_some_and(|t| t.options.direction == designcraft_doc::TextDirection::RightToLeft);
+        .is_some_and(|t| t.options.direction == pliego_doc::TextDirection::RightToLeft);
     let n = count(p);
     let at = if left != rtl { g.range.c0 } else { g.range.c1 + 1 };
     let width = p.get("width").and_then(Value::as_f64);

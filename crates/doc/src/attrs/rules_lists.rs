@@ -35,7 +35,7 @@ fn rule_solid(k: &crate::item::StrokeType) -> bool {
     *k == crate::item::StrokeType::Solid
 }
 fn rule_no_gap(c: &str) -> bool {
-    c == designcraft_color::swatch::NONE
+    c == pliego_color::swatch::NONE
 }
 fn rule_full_tint(t: &f32) -> bool {
     *t == 1.0
@@ -53,7 +53,7 @@ impl Default for Rule {
             left_indent: 0.0,
             right_indent: 0.0,
             kind: crate::item::StrokeType::Solid,
-            gap_color: designcraft_color::swatch::NONE.into(),
+            gap_color: pliego_color::swatch::NONE.into(),
             gap_tint: 1.0,
             keep_in_frame: false,
         }

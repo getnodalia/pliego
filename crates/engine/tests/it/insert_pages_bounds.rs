@@ -1,6 +1,6 @@
 //! `layout.pages.insert` clamps an out-of-range `after` to the end instead of overflowing; a
 //! `before` must name a page, and one that doesn't is refused without a change.
-use designcraft_engine::Session;
+use pliego_engine::Session;
 use serde_json::json;
 
 #[test]

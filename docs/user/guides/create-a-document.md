@@ -40,4 +40,4 @@ Click **Open sample magazine** on the start screen. It opens a magazine with a c
 
 ## Next
 
-Save your work with **File**, then **Save** (Ctrl+S). The first save asks where to put the file and suggests a name ending in `.designcraft`.
+Save your work with **File**, then **Save** (Ctrl+S). The first save asks where to put the file and suggests a name ending in `.pliego`.

@@ -109,7 +109,7 @@ pub(super) fn create_object(s: &mut Session, p: &Value) -> Result<Value> {
         os.effects = Some(it.effects.clone());
     }
     if let Some(sw) = str_param(p, "fill") {
-        os.fill = Some(designcraft_doc::Fill::swatch(sw));
+        os.fill = Some(pliego_doc::Fill::swatch(sw));
     }
     if let Some(ps) = str_param(p, "paragraphStyle") {
         os.paragraph_style = Some(ps.to_string());
@@ -128,7 +128,7 @@ pub(super) fn create_object(s: &mut Session, p: &Value) -> Result<Value> {
 pub(super) fn edit_object(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "style.object.edit";
     let name = str_param(p, "name").ok_or_else(|| bad(CMD, "missing name"))?.to_string();
-    if name == designcraft_doc::NO_OBJECT_STYLE {
+    if name == pliego_doc::NO_OBJECT_STYLE {
         return Err(bad(CMD, format!("`{name}` can't be edited")));
     }
     let old = s.doc()?.doc.styles.object_style(&name).cloned().ok_or_else(|| bad(CMD, format!("no object style `{name}`")))?;

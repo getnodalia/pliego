@@ -62,7 +62,7 @@ Known bugs to fix first:
 
 ### Character classes
 
-A `cjk::class_of(char, &Context) -> Class` in `designcraft-compose` with the JLREQ classes
+A `cjk::class_of(char, &Context) -> Class` in `pliego-compose` with the JLREQ classes
 (opening brackets, closing brackets, hyphens, dividing punctuation, middle dots, full stops,
 commas, inseparable characters, iteration marks, prolonged sound mark, small kana, prefixed and
 postfixed abbreviations, full-width ideographic space, hiragana, katakana, math symbols and
@@ -170,7 +170,7 @@ Jidori, tsume, aki before and after, em-box alignment and the other leading mode
 - **No CJK fonts in the repo.** CJK fonts are large (15–25 MB each even subset) and documents
   should name the fonts they use. The Japanese UI and document faces come from the optional
   craft-fonts build input when Pliego is built with it (release builds are).
-- **Document fonts**: fonts in a `Document Fonts` folder beside an opened `.designcraft` or
+- **Document fonts**: fonts in a `Document Fonts` folder beside an opened `.pliego` or
   `.idml` file are available to that document only, ahead of system fonts, and unloaded when it
   closes. File › Package copies the document's fonts into the package's `Document Fonts` folder
   (font licences permitting: OS/2 `fsType` restricted-licence fonts are listed, not copied), so a
@@ -247,7 +247,7 @@ Total: roughly 100–150 agent hours.
 
 ### Phase 1 in detail
 
-1. `CharProps.language` reaches `designcraft_fonts::shape` (harfrust buffer language) and the
+1. `CharProps.language` reaches `pliego_fonts::shape` (harfrust buffer language) and the
    word cache key; tests: a font with `locl` for JAN vs ZHS draws different glyphs for U+76F4.
 2. Language list: "Chinese: Simplified", "Chinese: Traditional", "Korean", "Japanese" (IDML
    names), with quotes and spelling/hyphenation off for them.

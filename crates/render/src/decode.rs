@@ -9,17 +9,17 @@ pub fn decode_pixmap(bytes: &[u8]) -> Option<Pixmap> {
 /// [`decode_pixmap`] for page `page` of a PDF (other formats have one page).
 pub fn decode_pixmap_page(bytes: &[u8], page: u32) -> Option<Pixmap> {
     // Documents retain the EPS source; only display its TIFF preview or placeholder.
-    let proxy = if designcraft_images::is_eps(bytes) { Some(designcraft_images::eps_proxy(bytes)?.0) } else { None };
+    let proxy = if pliego_images::is_eps(bytes) { Some(pliego_images::eps_proxy(bytes)?.0) } else { None };
     let bytes = proxy.as_deref().unwrap_or(bytes);
     if is_pdf(bytes) {
         return render_pdf_page(bytes, page as usize, 3000);
     }
-    if designcraft_images::is_svg(bytes) {
-        let (px, w, h) = designcraft_images::render_svg(bytes, 3000)?;
+    if pliego_images::is_svg(bytes) {
+        let (px, w, h) = pliego_images::render_svg(bytes, 3000)?;
         let data = px.as_chunks::<4>().0.iter().map(|p| vello_cpu::color::PremulRgba8 { r: p[0], g: p[1], b: p[2], a: p[3] }).collect();
         return Some(Pixmap::from_parts(data, w.min(u16::MAX as u32) as u16, h.min(u16::MAX as u32) as u16));
     }
-    let img = designcraft_images::decode_rgba(bytes)?;
+    let img = pliego_images::decode_rgba(bytes)?;
     let (w, h) = img.dimensions();
     if w == 0 || h == 0 || w > u16::MAX as u32 || h > u16::MAX as u32 {
         return None;
@@ -72,18 +72,18 @@ pub(crate) fn now() -> u64 {
 
 /// Pixel size of an encoded image without decoding it fully.
 pub fn image_size(bytes: &[u8]) -> Option<(u32, u32)> {
-    if designcraft_images::is_eps(bytes) {
-        return designcraft_images::eps_pixel_size(bytes);
+    if pliego_images::is_eps(bytes) {
+        return pliego_images::eps_pixel_size(bytes);
     }
     if is_pdf(bytes) {
         // Placed PDFs are sized by their page (crop box) in points.
         return pdf_page_size(bytes, 0).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
     }
-    if designcraft_images::is_svg(bytes) {
+    if pliego_images::is_svg(bytes) {
         // SVGs by their width and height (CSS pixels → points).
-        return designcraft_images::natural_size(bytes).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
+        return pliego_images::natural_size(bytes).map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32));
     }
-    designcraft_images::pixel_size(bytes)
+    pliego_images::pixel_size(bytes)
 }
 
 /// Natural size of a placed graphic, unrounded: a PDF page (crop box) and an SVG in points, a raster
@@ -93,9 +93,9 @@ pub fn natural_size(bytes: &[u8], page: usize) -> Option<(f64, f64)> {
     if is_pdf(bytes) {
         return pdf_page_size(bytes, page).map(|(w, h)| (w.max(1e-3), h.max(1e-3)));
     }
-    designcraft_images::natural_size(bytes)
+    pliego_images::natural_size(bytes)
 }
 
 pub fn image_mime(bytes: &[u8]) -> &'static str {
-    designcraft_images::mime(bytes)
+    pliego_images::mime(bytes)
 }

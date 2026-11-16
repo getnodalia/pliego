@@ -14,7 +14,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
             egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
                 ui.label(crate::rtl::widget(
                     ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Welcome to DesignCraft")).font(semibold(28.0)).color(t.text_strong),
+                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Welcome to Pliego")).font(semibold(28.0)).color(t.text_strong),
                 ));
                 ui.label(crate::rtl::widget(
                     ui,
@@ -72,7 +72,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ));
                 ui.add_space(8.0);
                 ui.horizontal_wrapped(|ui| {
-                    for p in designcraft_doc::build::PRESETS.iter().filter(|p| p.intent == designcraft_doc::Intent::Print) {
+                    for p in pliego_doc::build::PRESETS.iter().filter(|p| p.intent == pliego_doc::Intent::Print) {
                         let (cr, resp) = ui.allocate_exact_size(vec2(120.0, 150.0), Sense::click());
                         let hov = resp.hovered();
                         ui.painter().rect_filled(cr, 6.0, if hov { t.hover } else { t.panel });
@@ -89,11 +89,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                         ui.painter().text(
                             egui::pos2(cr.center().x, cr.max.y - 11.0),
                             egui::Align2::CENTER_CENTER,
-                            format!(
-                                "{} × {}",
-                                designcraft_geom::format_measure(p.width, p.units),
-                                designcraft_geom::format_measure(p.height, p.units)
-                            ),
+                            format!("{} × {}", pliego_geom::format_measure(p.width, p.units), pliego_geom::format_measure(p.height, p.units)),
                             egui::FontId::proportional(10.0),
                             t.text_dim,
                         );
@@ -151,9 +147,9 @@ fn recent_files(app: &mut DesignApp, ui: &mut egui::Ui) {
                 }
             }
             let color = if there { t.text_strong } else { t.text_dim };
-            // The name without `.designcraft`, on up to two lines (broken after a space or dash).
+            // The name without `.pliego`, on up to two lines (broken after a space or dash).
             let label = crate::menus::recent_label(&path);
-            let name = label.strip_suffix(".designcraft").unwrap_or(&label).to_string();
+            let name = label.strip_suffix(".pliego").unwrap_or(&label).to_string();
             let mut job = egui::text::LayoutJob::simple(name, semibold(12.0), color, cr.width() - 12.0);
             job.wrap.max_rows = 2;
             job.halign = egui::Align::Center;
@@ -194,7 +190,7 @@ pub(super) fn recent_file_stat_at(ctx: &egui::Context, path: &str, now: f64) -> 
     {
         return st;
     }
-    let meta = designcraft_engine::io::metadata(path).ok().filter(designcraft_engine::io::Metadata::is_file);
+    let meta = pliego_engine::io::metadata(path).ok().filter(pliego_engine::io::Metadata::is_file);
     let st = RecentStat { exists: meta.is_some(), modified: meta.and_then(|m| m.modified().ok()), checked: now };
     ctx.data_mut(|d| d.insert_temp(key, st.clone()));
     st
@@ -209,7 +205,7 @@ fn recent_preview_texture(ctx: &egui::Context, path: &str, modified: Option<std:
     {
         return tex;
     }
-    let tex = designcraft_engine::cmd::recent_preview(path).and_then(|p| {
+    let tex = pliego_engine::cmd::recent_preview(path).and_then(|p| {
         let size = [usize::try_from(p.width).ok()?, usize::try_from(p.height).ok()?];
         (size[0].checked_mul(size[1])?.checked_mul(4)? == p.rgba.len()).then(|| {
             ctx.load_texture(format!("recent_preview:{path}"), egui::ColorImage::from_rgba_unmultiplied(size, &p.rgba), egui::TextureOptions::LINEAR)
@@ -219,7 +215,7 @@ fn recent_preview_texture(ctx: &egui::Context, path: &str, modified: Option<std:
     tex
 }
 
-/// Start screen: the ArtCraft community (Discord first) and project links.
+/// Start screen: the Nodalia community (Discord first) and project links.
 fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     egui::Frame::NONE.fill(t.panel).corner_radius(10.0).inner_margin(egui::Margin::same(14)).show(ui, |ui| {
@@ -239,7 +235,7 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                 ui.label(crate::rtl::widget(
                     ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Join the ArtCraft community")).font(semibold(14.0)).color(t.text_strong),
+                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Join the Nodalia community")).font(semibold(14.0)).color(t.text_strong),
                 ));
                 ui.label(crate::rtl::widget(
                     ui,
@@ -249,8 +245,8 @@ fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
                 ));
                 ui.add_space(4.0);
                 ui.horizontal(|ui| {
-                    for (text, id) in [("DesignCraft page", "help.appPage"), ("GitHub", "help.github"), ("getartcraft.com", "help.website")] {
-                        let url = designcraft_engine::links::get(&id[5..]).unwrap_or_default();
+                    for (text, id) in [("Pliego page", "help.appPage"), ("GitHub", "help.github"), ("getnodalia.com", "help.website")] {
+                        let url = pliego_engine::links::get(&id[5..]).unwrap_or_default();
                         let l = ui
                             .add(egui::Label::new(egui::RichText::new(text).size(12.0).color(t.accent).underline()).sense(Sense::click()))
                             .on_hover_text(url)

@@ -1,5 +1,5 @@
 //! View › Separations Preview on the canvas: each visible spread exported as Export PDF prints
-//! it and separated into plates (`designcraft_engine::separations`), drawn over the spread.
+//! it and separated into plates (`pliego_engine::separations`), drawn over the spread.
 //!
 //! Sheets are kept per spread, keyed by document revision, resolution, print settings and color
 //! settings (the CMYK working space is the printing condition plates are separated for), so
@@ -9,11 +9,11 @@
 
 use std::sync::Arc;
 
-use designcraft_doc::SpreadRef;
-use designcraft_engine::separations::{MAX_DPI, MIN_DPI, Print, Sheet};
-use designcraft_geom::Point;
-use designcraft_tools::CanvasLayout;
 use egui::{Color32, pos2};
+use pliego_doc::SpreadRef;
+use pliego_engine::separations::{MAX_DPI, MIN_DPI, Print, Sheet};
+use pliego_geom::Point;
+use pliego_tools::CanvasLayout;
 
 use crate::DesignApp;
 use crate::canvas::Xf;
@@ -43,7 +43,7 @@ pub struct Key {
     pub spread: usize,
     pub dpi: f32,
     pub print: Print,
-    /// The color settings it was separated under ([`designcraft_color::cms::generation`]).
+    /// The color settings it was separated under ([`pliego_color::cms::generation`]).
     pub cms: u64,
 }
 
@@ -58,8 +58,8 @@ struct Entry {
 
 struct Job {
     key: Key,
-    doc: Arc<designcraft_doc::Document>,
-    cache: Arc<designcraft_compose::Cache>,
+    doc: Arc<pliego_doc::Document>,
+    cache: Arc<pliego_compose::Cache>,
 }
 
 struct Done {
@@ -80,7 +80,7 @@ impl Worker {
         let (tx, jobs) = std::sync::mpsc::channel::<Job>();
         let (done_tx, rx) = std::sync::mpsc::channel::<Done>();
         std::thread::Builder::new()
-            .name("designcraft-separations".into())
+            .name("pliego-separations".into())
             .spawn(move || {
                 while let Ok(first) = jobs.recv() {
                     // Of the jobs waiting, only the newest per spread matters.
@@ -105,8 +105,7 @@ impl Worker {
 
 fn separate(job: Job) -> Done {
     let t0 = crate::now_ms();
-    let sheet =
-        designcraft_engine::separations::separate(&job.doc, &job.cache, job.key.spread, job.key.dpi, &job.key.print).map_err(|e| e.to_string());
+    let sheet = pliego_engine::separations::separate(&job.doc, &job.cache, job.key.spread, job.key.dpi, &job.key.print).map_err(|e| e.to_string());
     Done { key: job.key, sheet, ms: crate::now_ms() - t0 }
 }
 
@@ -217,7 +216,7 @@ pub fn print_settings(app: &DesignApp) -> Print {
     let s = &app.ui.pdf_export;
     let flatten = if s.flatten.is_empty() { app.ui.flattener.as_str() } else { s.flatten.as_str() };
     Print {
-        standard: designcraft_engine::separations::Standard::parse(&s.standard).unwrap_or_default(),
+        standard: pliego_engine::separations::Standard::parse(&s.standard).unwrap_or_default(),
         compress_images: s.compress_images,
         flatten: match flatten {
             "high" => Some(300.0),
@@ -241,7 +240,7 @@ pub fn dpi_for(zoom: f64, ppp: f64) -> f32 {
 
 fn key(app: &DesignApp, si: usize, dpi: f32) -> Option<(Key, Job)> {
     let st = app.session.active()?;
-    let key = Key { uid: st.uid, revision: st.revision, spread: si, dpi, print: print_settings(app), cms: designcraft_color::cms::generation() };
+    let key = Key { uid: st.uid, revision: st.revision, spread: si, dpi, print: print_settings(app), cms: pliego_color::cms::generation() };
     Some((key.clone(), Job { key, doc: st.doc.clone(), cache: app.session.cache.clone() }))
 }
 
@@ -319,7 +318,7 @@ pub fn paint(app: &mut DesignApp, ctx: &egui::Context, painter: &egui::Painter, 
     app.canvas.separations.pointer = None;
     let Some(st) = app.session.active() else { return };
     let doc = st.doc.clone();
-    let visible: Vec<(usize, &designcraft_tools::SpreadSlot)> = layout
+    let visible: Vec<(usize, &pliego_tools::SpreadSlot)> = layout
         .slots
         .iter()
         .filter_map(|slot| {
@@ -403,7 +402,7 @@ mod tests {
     #[test]
     #[cfg(not(target_arch = "wasm32"))]
     fn the_ui_thread_separates_one_sheet_per_frame() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", &json!({"pages": 4, "facing": false})).unwrap();
         let ctx = egui::Context::default();
         let jobs = |app: &crate::DesignApp| [0, 1].map(|si| super::key(app, si, 36.0).unwrap().1);
@@ -423,7 +422,7 @@ mod tests {
 
     #[test]
     fn view_separations_lists_the_spot_plate_and_shows_it_alone() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", &json!({})).unwrap();
         app.session.execute("swatch.create", &json!({"name": "Gold", "spot": true, "color": {"c": 0, "m": 20, "y": 80, "k": 10}})).unwrap();
         let id = app.session.execute("frame.create", &json!({"rect": [72, 72, 172, 172]})).unwrap()["id"].clone();
@@ -450,7 +449,7 @@ mod tests {
     /// Plates separated under other color settings (another CMYK working space) aren't reused.
     #[test]
     fn plates_of_other_color_settings_are_separated_again() {
-        let mut app = crate::DesignApp::new(designcraft_engine::Session::new(), crate::Services::default());
+        let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
         app.session.execute("file.new", &json!({})).unwrap();
         let first = super::current_sheet(&mut app).unwrap();
         assert!(std::sync::Arc::ptr_eq(&first, &super::current_sheet(&mut app).unwrap()), "the same settings reuse the sheet");
@@ -459,6 +458,6 @@ mod tests {
         }
         let again = super::current_sheet(&mut app).unwrap();
         assert!(!std::sync::Arc::ptr_eq(&first, &again), "a sheet of other color settings is separated again");
-        assert!(app.canvas.separations.entries.iter().all(|e| e.key.cms == designcraft_color::cms::generation()));
+        assert!(app.canvas.separations.entries.iter().all(|e| e.key.cms == pliego_color::cms::generation()));
     }
 }

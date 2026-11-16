@@ -122,7 +122,7 @@ pub(crate) fn show(app: &mut DesignApp, ctx: &egui::Context) {
     #[cfg(target_arch = "wasm32")]
     if app.updates_rt.manual_window_open {
         let mut open = true;
-        let title = crate::i18n::tr(&app.ui.language, "DesignCraft Updates");
+        let title = crate::i18n::tr(&app.ui.language, "Pliego Updates");
         let ok_label = crate::i18n::tr(&app.ui.language, "OK");
         egui::Window::new(title)
             .open(&mut open)
@@ -146,9 +146,9 @@ pub(crate) fn show(app: &mut DesignApp, ctx: &egui::Context) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use designcraft_engine::Session;
     #[cfg(not(target_arch = "wasm32"))]
     use nodalia_update::egui::Status;
+    use pliego_engine::Session;
 
     #[test]
     fn default_runtime_is_idle() {

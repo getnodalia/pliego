@@ -202,7 +202,7 @@ mod visual_regressions {
         for brightness in crate::theme::Brightness::ALL {
             for width in [800.0, 1280.0] {
                 for scale in [1.0, 1.5, 2.0] {
-                    let app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+                    let app = DesignApp::new(pliego_engine::Session::new(), Default::default());
                     let mut ready = false;
                     let mut harness =
                         egui_kittest::Harness::builder().with_size(vec2(width, 640.0)).with_pixels_per_point(scale).wgpu().build_ui_state(
@@ -219,7 +219,7 @@ mod visual_regressions {
                         );
                     harness.input_mut().max_texture_side = Some(8192);
                     harness.run_steps(4);
-                    let stem = format!("designcraft-dock-{}-{width}-{scale}x", brightness.id());
+                    let stem = format!("pliego-dock-{}-{width}-{scale}x", brightness.id());
                     harness.render().unwrap().save(directory.join(format!("{stem}.png"))).unwrap();
                     let tab = crate::panel_docking::tab_id("properties");
                     let tab = harness.ctx.read_response(tab).unwrap().rect;
@@ -250,7 +250,7 @@ mod visual_regressions {
                     crate::theme::install_fonts(&ctx, "en");
                     let tokens = Tokens::for_brightness(brightness);
                     crate::theme::apply(&ctx, &tokens);
-                    let mut app = DesignApp::new(designcraft_engine::Session::new(), Default::default());
+                    let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
                     let mut output = ctx.run_ui(scaled_input(vec2(width, 640.0), scale), |ui| crate::panel_docking::show(&mut app, ui));
                     output.textures_delta.clear();
                     let mut output = ctx.run_ui(scaled_input(vec2(width, 640.0), scale), |ui| crate::panel_docking::show(&mut app, ui));

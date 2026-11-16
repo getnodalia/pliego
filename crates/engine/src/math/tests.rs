@@ -238,7 +238,7 @@ fn layout_sizes_and_svg() {
     assert!(h2 > h1 * 1.4 && h3 > h2, "{h1} {h2} {h3}");
     // The SVG parses and rasterises.
     let (svg, _) = to_svg(r"\sqrt{a^2+b^2} \ne \pi", 14.0);
-    assert!(designcraft_images::svg_tree(&svg).is_some());
+    assert!(pliego_images::svg_tree(&svg).is_some());
 }
 
 /// Hostile input must not overflow the stack: nesting past the cap stops descending instead

@@ -74,7 +74,7 @@ pub fn label(ui: &mut egui::Ui, text: impl Into<WidgetText>) -> egui::Response {
 /// Isolate a user-provided name when embedding it in LTR chrome/metadata.
 /// A Latin product name or suffix must not change the name's internal reading order.
 pub fn isolate(text: &str) -> String {
-    if text.chars().any(designcraft_fonts::is_rtl) { format!("\u{2068}{text}\u{2069}") } else { text.to_owned() }
+    if text.chars().any(pliego_fonts::is_rtl) { format!("\u{2068}{text}\u{2069}") } else { text.to_owned() }
 }
 
 pub fn plain(ctx: &egui::Context, text: &str, font: FontId, color: Color32) -> Arc<Galley> {
@@ -150,7 +150,7 @@ fn layout(ctx: &egui::Context, job: LayoutJob) -> Arc<Galley> {
         return layout_uncached(ctx, job);
     }
     let token = ctx.fonts_mut(|fonts| fonts.layout_no_wrap(String::new(), FontId::default(), Color32::TRANSPARENT));
-    let id = egui::Id::unique("designcraft.rtl.layout-cache");
+    let id = egui::Id::unique("pliego.rtl.layout-cache");
     let key = egui::util::hash(&job);
     let cached = ctx.data_mut(|data| data.get_temp_mut_or_default::<LayoutCache>(id).lookup(token, key, &job));
     if let Some(galley) = cached {
@@ -178,7 +178,7 @@ mod tests {
         let ctx = egui::Context::default();
         // The built-in faces only: installed fonts (the CJK fallbacks) would make the glyphs
         // measured here depend on the machine.
-        ctx.set_fonts(crate::theme::font_definitions(designcraft_fonts::CRAFT_FONTS, "ar"));
+        ctx.set_fonts(crate::theme::font_definitions(pliego_fonts::CRAFT_FONTS, "ar"));
         ctx.begin_pass(egui::RawInput { max_texture_side: Some(8192), ..Default::default() });
         test(&ctx);
         let mut output = ctx.end_pass();
@@ -375,12 +375,12 @@ mod tests {
     #[test]
     fn isolates_arabic_names_from_latin_brand_and_zoom_suffix() {
         with_fonts(|ctx| {
-            for text in [format!("DesignCraft — {}", isolate("ملف (PDF 123) جديد")), format!("{} @ 89%", isolate("ملف (PDF 123) جديد"))]
-            {
+            for text in [format!("Pliego — {}", isolate("ملف (PDF 123) جديد")), format!("{} @ 89%", isolate("ملف (PDF 123) جديد"))] {
                 let galley = plain(ctx, &text, FontId::proportional(15.0), Color32::WHITE);
                 let glyphs = &galley.rows[0].glyphs;
                 let x = |c| glyphs.iter().find(|g| g.chr == c && g.advance_width > 0.0).unwrap().pos.x;
-                assert!(x('ج') < x('P') && x('P') < x('ف'), "Arabic name must keep its internal RTL order");
+                // `D` from "PDF": the brand in front has a `P` of its own.
+                assert!(x('ج') < x('D') && x('D') < x('ف'), "Arabic name must keep its internal RTL order");
                 assert_eq!(galley.job.text, text);
             }
         });

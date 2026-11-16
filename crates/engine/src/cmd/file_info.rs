@@ -2,8 +2,8 @@
 //! export writes the title, author, description and keywords into the file's metadata, and EPUB
 //! export writes the title and author.
 
-use designcraft_doc::FileInfo;
-use designcraft_doc::file_info::{clean_keywords, parse_keywords};
+use pliego_doc::FileInfo;
+use pliego_doc::file_info::{clean_keywords, parse_keywords};
 use serde_json::{Map, Value, json};
 
 use super::{CommandSpec, bad, cmd, has_doc};
@@ -139,7 +139,7 @@ mod tests {
         assert_eq!(steps(&s), before + 1, "no change, no undo step");
         let saved = s.execute("file.serialize", &json!({})).unwrap();
         let mut t = Session::new();
-        t.execute("file.openBytes", &json!({"name": "a.designcraft", "base64": saved["base64"]})).unwrap();
+        t.execute("file.openBytes", &json!({"name": "a.pliego", "base64": saved["base64"]})).unwrap();
         assert_eq!(t.doc().unwrap().doc.file_info.document_title, "Spring Catalog", "saved with the document");
         s.execute("edit.undo", &json!({})).unwrap();
         assert!(s.doc().unwrap().doc.file_info.is_empty());

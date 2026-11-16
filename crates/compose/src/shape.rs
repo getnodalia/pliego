@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use designcraft_doc::{Capitalization, CharProps, Kerning, Leading, Position, Story, Styles, story};
-use designcraft_fonts::{FaceRef, Feature, FontFace, ScopedFonts, ShapedGlyph, feature};
+use pliego_doc::{Capitalization, CharProps, Kerning, Leading, Position, Story, Styles, story};
+use pliego_fonts::{FaceRef, Feature, FontFace, ScopedFonts, ShapedGlyph, feature};
 
 use crate::RunStyle;
 
@@ -60,9 +60,9 @@ pub struct Glyph {
     pub cjk_hang: f64,
     pub moji: crate::mojikumi::Metrics,
     pub ideographic_space_elastic: bool,
-    pub character_alignment: designcraft_doc::cjk::CharacterAlignment,
-    pub leading_model: designcraft_doc::cjk::LeadingModel,
-    pub character_direction: designcraft_doc::arabic::CharacterDirection,
+    pub character_alignment: pliego_doc::cjk::CharacterAlignment,
+    pub leading_model: pliego_doc::cjk::LeadingModel,
+    pub character_direction: pliego_doc::arabic::CharacterDirection,
     pub display_char: char,
     /// Actual shaped character, including generated labels, for glyph diagnostics.
     pub rendered_char: char,
@@ -71,7 +71,7 @@ pub struct Glyph {
     pub allow_kashidas: bool,
     pub safe_tatweel_before: bool,
     pub shaping_rtl: bool,
-    /// The character's language as a BCP 47 tag ([`designcraft_doc::language_tag`]).
+    /// The character's language as a BCP 47 tag ([`pliego_doc::language_tag`]).
     pub lang: Option<&'static str>,
     /// Upright in a vertical frame: shaped top to bottom (`adv` is its vertical advance) and hung
     /// from its vertical origin on the line's centre (see [`crate::PlacedGlyph::vertical_xf`]).
@@ -178,7 +178,7 @@ pub struct SubstCtx {
     /// Footnote reference labels by story byte of the reference character.
     pub notes: HashMap<usize, String>,
     /// Footnote reference formatting: position and character style (`None` = the text's).
-    pub note_position: designcraft_doc::Position,
+    pub note_position: pliego_doc::Position,
     pub note_style: Option<String>,
     /// Cross-reference texts by story byte of the cross-reference mark.
     pub xrefs: HashMap<usize, String>,
@@ -241,7 +241,7 @@ impl StyleTable<'_> {
     fn intern(&mut self, db: &ScopedFonts<'_>, p: &CharProps) -> u32 {
         // Kenten are drawn in a run style of their own (Kenten Color); it has no kenten itself.
         let kenten_mark = if p.kenten {
-            use designcraft_doc::cjk_settings::AdornmentOverprint as O;
+            use pliego_doc::cjk_settings::AdornmentOverprint as O;
             let mut style = self.intern(db, &crate::kenten::mark_props(p));
             // Text has no overprint of its own, so `Auto` is off.
             let (fill, stroke) = (p.kenten_overprint_fill == O::On, p.kenten_overprint_stroke == O::On);
@@ -278,12 +278,12 @@ impl StyleTable<'_> {
             skew: p.skew,
             size: p.size,
             missing_font: *self.missing.entry(p.font_family.clone()).or_insert_with(|| !p.font_family.is_empty() && !db.has_family(&p.font_family)),
-            custom_tracking: p.tracking.abs() > 1e-9 || matches!(p.kerning, designcraft_doc::Kerning::Manual(_)),
+            custom_tracking: p.tracking.abs() > 1e-9 || matches!(p.kerning, pliego_doc::Kerning::Manual(_)),
             condition: p.conditions.first().cloned(),
-            inserted: p.change == designcraft_doc::ChangeMark::Inserted,
+            inserted: p.change == pliego_doc::ChangeMark::Inserted,
             xml_tag: (!p.xml_tag.is_empty()).then(|| p.xml_tag.clone()),
             ruby: (!p.ruby.is_empty()).then(|| crate::ruby::capped(&p.ruby).to_string()),
-            ruby_spec: (!p.ruby.is_empty()).then(|| designcraft_doc::ruby::RubySpec::of(p)),
+            ruby_spec: (!p.ruby.is_empty()).then(|| pliego_doc::ruby::RubySpec::of(p)),
             ruby_unit: None,
             overprint_fill: false,
             overprint_stroke: false,
@@ -324,11 +324,11 @@ impl StyleTable<'_> {
 /// this, "Source Sans 3" made every unresolved family look like a sans one (#1692, noted in
 /// review).
 fn style_of_substitute(family: &str) -> Option<bool> {
-    let standin = [designcraft_fonts::DEFAULT_FAMILY, designcraft_fonts::FALLBACK_FAMILY];
+    let standin = [pliego_fonts::DEFAULT_FAMILY, pliego_fonts::FALLBACK_FAMILY];
     if standin.iter().any(|s| s.eq_ignore_ascii_case(family)) {
         return None;
     }
-    designcraft_fonts::sans_by_name(family)
+    pliego_fonts::sans_by_name(family)
 }
 
 /// Resolve and shape one paragraph. Its drop cap ends at byte `drop.0` (`range.start` without
@@ -341,8 +341,8 @@ pub(crate) struct ShapeInput<'a, 'font> {
     pub(crate) para_chars: &'a CharProps,
     pub(crate) auto_leading: TypeEnv,
     pub(crate) sub: &'a SubstCtx,
-    pub(crate) nested: &'a [designcraft_doc::NestedStyle],
-    pub(crate) grep: &'a [designcraft_doc::GrepStyle],
+    pub(crate) nested: &'a [pliego_doc::NestedStyle],
+    pub(crate) grep: &'a [pliego_doc::GrepStyle],
     pub(crate) lines: &'a [(std::ops::Range<usize>, String)],
     pub(crate) drop_cap: (usize, &'a str),
 }
@@ -377,15 +377,15 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
     // stores it in). Set (`[None]` included), it restyles that entry; a real one stands in for a
     // missing entry. Either way the nested styles after it start after the drop cap.
     let set = Some(drop_cap.1).filter(|s| !s.is_empty());
-    let cap_style = set.filter(|s| *s != designcraft_doc::NO_CHAR_STYLE);
-    let with_cap: Vec<designcraft_doc::NestedStyle>;
+    let cap_style = set.filter(|s| *s != pliego_doc::NO_CHAR_STYLE);
+    let with_cap: Vec<pliego_doc::NestedStyle>;
     let nested = match set {
-        Some(s) if nested.first().is_some_and(designcraft_doc::NestedStyle::is_drop_cap) => {
-            with_cap = std::iter::once(designcraft_doc::NestedStyle::drop_cap(s)).chain(nested.iter().skip(1).cloned()).collect();
+        Some(s) if nested.first().is_some_and(pliego_doc::NestedStyle::is_drop_cap) => {
+            with_cap = std::iter::once(pliego_doc::NestedStyle::drop_cap(s)).chain(nested.iter().skip(1).cloned()).collect();
             &with_cap[..]
         }
         Some(s) if cap_style.is_some() && !nested.is_empty() => {
-            with_cap = std::iter::once(designcraft_doc::NestedStyle::drop_cap(s)).chain(nested.iter().cloned()).collect();
+            with_cap = std::iter::once(pliego_doc::NestedStyle::drop_cap(s)).chain(nested.iter().cloned()).collect();
             &with_cap[..]
         }
         _ => nested,
@@ -400,7 +400,7 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
     }
     // Each run, cut where nested / GREP styles start and end.
     let bands = overlay_bands(&overlays);
-    let mut segments: Vec<(usize, usize, Option<&str>, &designcraft_doc::CharFormat)> = Vec::new();
+    let mut segments: Vec<(usize, usize, Option<&str>, &pliego_doc::CharFormat)> = Vec::new();
     for (rr, fmt) in story.runs() {
         let a = rr.start.max(range.start);
         let b = rr.end.min(range.end);
@@ -431,7 +431,7 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
         let base;
         let para_chars = match overlay {
             Some(st) => {
-                base = styles.resolve_char(para_chars, &designcraft_doc::CharFormat { style: st.to_string(), over: Default::default() });
+                base = styles.resolve_char(para_chars, &pliego_doc::CharFormat { style: st.to_string(), over: Default::default() });
                 &base
             }
             None => para_chars,
@@ -462,12 +462,12 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
         let style = table.intern(db, &props);
         // A missing font's substitute stands in for the whole font: fallback fonts help it.
         let auto_leading = table.env_for(auto_leading, style);
-        let deleted = props.change == designcraft_doc::ChangeMark::Deleted;
+        let deleted = props.change == pliego_doc::ChangeMark::Deleted;
         if deleted || (!props.conditions.is_empty() && props.conditions.iter().all(|c| sub.hidden_conditions.contains(c))) {
             pieces.push(Piece { range: a..b, props, style, env: auto_leading, hidden: true, composite_note: false });
             continue;
         }
-        let is_ref = |c: char| c == designcraft_doc::FOOTNOTE_REF || c == designcraft_doc::ENDNOTE_REF;
+        let is_ref = |c: char| c == pliego_doc::FOOTNOTE_REF || c == pliego_doc::ENDNOTE_REF;
         if !story.text[a..b].contains(is_ref) {
             pieces.push(Piece { range: a..b, props, style, env: auto_leading, hidden: false, composite_note: false });
             continue;
@@ -483,7 +483,7 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
         let rstyle = table.intern(db, &rprops);
         let renv = table.env_for(auto_leading, rstyle);
         let mut ef = fmt.clone();
-        ef.over.position = Some(designcraft_doc::Position::Superscript);
+        ef.over.position = Some(pliego_doc::Position::Superscript);
         let eprops = styles.resolve_char(&resolved_base, &ef);
         let estyle = table.intern(db, &eprops);
         let eenv = table.env_for(auto_leading, estyle);
@@ -494,7 +494,7 @@ fn resolve_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>) -> (Ve
                 pieces.push(Piece { range: k..i, props: props.clone(), style, env: auto_leading, hidden: false, composite_note: false });
             }
             let e = i + m.len();
-            if m.starts_with(designcraft_doc::ENDNOTE_REF) {
+            if m.starts_with(pliego_doc::ENDNOTE_REF) {
                 pieces.push(Piece { range: i..e, props: eprops.clone(), style: estyle, env: eenv, hidden: false, composite_note: false });
             } else {
                 if styles.composite_font(&rprops.font_family).is_some() {
@@ -544,7 +544,7 @@ fn shape_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>, pieces: 
                 let at = first.range.start;
                 let label = sub.notes.get(&at).map_or("#", String::as_str);
                 let begin = glyphs.len();
-                let mut segments: Vec<(usize, usize, Option<&designcraft_doc::cjk::CompositeFontEntry>)> = Vec::new();
+                let mut segments: Vec<(usize, usize, Option<&pliego_doc::cjk::CompositeFontEntry>)> = Vec::new();
                 for (at, c) in label.char_indices() {
                     let entry = composite.entry(c);
                     if let Some((_, end, _)) = segments.last_mut().filter(|(_, _, previous)| *previous == entry) {
@@ -616,13 +616,13 @@ fn shape_pieces(input: &ShapeInput<'_, '_>, table: &mut StyleTable<'_>, pieces: 
 /// mark to its base, in its base's face. A run in another font, size or colour keeps its marks.
 fn marks_join_their_base<'f>(
     text: &str,
-    resolved: Vec<(usize, usize, CharProps, &'f designcraft_doc::CharFormat, CharProps)>,
-) -> Vec<(usize, usize, CharProps, &'f designcraft_doc::CharFormat, CharProps)> {
+    resolved: Vec<(usize, usize, CharProps, &'f pliego_doc::CharFormat, CharProps)>,
+) -> Vec<(usize, usize, CharProps, &'f pliego_doc::CharFormat, CharProps)> {
     let same_but_features = |a: &CharProps, b: &CharProps| {
         *b == CharProps { ligatures: b.ligatures, kerning: b.kerning, otf_features: b.otf_features.clone(), ..a.clone() }
     };
-    let is_base = |c: char| !c.is_whitespace() && !c.is_control() && !matches!(c, designcraft_doc::FOOTNOTE_REF | designcraft_doc::ENDNOTE_REF);
-    let mut out: Vec<(usize, usize, CharProps, &designcraft_doc::CharFormat, CharProps)> = Vec::with_capacity(resolved.len());
+    let is_base = |c: char| !c.is_whitespace() && !c.is_control() && !matches!(c, pliego_doc::FOOTNOTE_REF | pliego_doc::ENDNOTE_REF);
+    let mut out: Vec<(usize, usize, CharProps, &pliego_doc::CharFormat, CharProps)> = Vec::with_capacity(resolved.len());
     for (a, b, props, fmt, base) in resolved {
         let run = text.get(a..b).unwrap_or("");
         let marks = run.char_indices().find(|(_, c)| !is_mark(*c)).map_or(run.len(), |(i, _)| i);
@@ -734,7 +734,7 @@ fn is_mark(c: char) -> bool {
     unicode_bidi::bidi_class(c) == unicode_bidi::BidiClass::NSM || matches!(c, '\u{200C}' | '\u{200D}')
 }
 
-fn composite_props(db: &ScopedFonts<'_>, base: &CharProps, entry: Option<&designcraft_doc::cjk::CompositeFontEntry>) -> CharProps {
+fn composite_props(db: &ScopedFonts<'_>, base: &CharProps, entry: Option<&pliego_doc::cjk::CompositeFontEntry>) -> CharProps {
     let mut p = base.clone();
     if let Some(e) = entry {
         p.font_family.clone_from(&e.family);
@@ -776,7 +776,7 @@ fn shape_run(
         if p.tsume > 0.0 && !g.ch.is_whitespace() {
             let outline = db.outline(&g.face, g.gid);
             if !outline.elements().is_empty() {
-                let bounds = designcraft_geom::Shape::bounding_box(&*outline);
+                let bounds = pliego_geom::Shape::bounding_box(&*outline);
                 left = (g.dx + bounds.x0 * g.sx).clamp(0.0, g.adv);
                 right = (g.adv - g.dx - bounds.x1 * g.sx).clamp(0.0, g.adv - left);
             }
@@ -826,14 +826,14 @@ fn shape_run_raw(
     let primary = db.face(&p.font_family, &p.font_style);
     // The language picks the fallback for CJK characters the primary font lacks. Without
     // fallback, the primary font sets them: the shaper gives its .notdef (glyph 0).
-    let lang = designcraft_doc::language_tag(&p.language);
+    let lang = pliego_doc::language_tag(&p.language);
     // A missing Korean face is replaced by one of its own style: the requested name says whether
     // it was Dotum/Gothic or Batang/Myungjo, and if it does not, the substitute's own name does,
     // which keeps today's chain (#1692).
     // The substitute's own name is consulted only when it is a real substitute: a requested
     // family that resolves to nothing comes back as the bundled default, whose name holds "Sans",
     // and every unclassified missing font would then have taken the sans chain (noted in review).
-    let prefer_sans = designcraft_fonts::sans_by_name(&p.font_family).or_else(|| style_of_substitute(&primary.family));
+    let prefer_sans = pliego_fonts::sans_by_name(&p.font_family).or_else(|| style_of_substitute(&primary.family));
     let fallback = |c: char| {
         if auto_leading.glyph_fallback {
             db.fallback_for_styled(c, primary.id(), lang, prefer_sans).unwrap_or_else(|| primary.clone())
@@ -886,18 +886,18 @@ fn shape_run_raw(
                 | story::INDENT_HERE
                 | story::RIGHT_INDENT_TAB
                 | story::TABLE_ANCHOR
-                | designcraft_doc::FOOTNOTE_REF
-                | designcraft_doc::ENDNOTE_REF
-                | designcraft_doc::NOTE_MARK
-                | designcraft_doc::XREF_MARK
-                | designcraft_doc::ANCHOR_MARK
-                | designcraft_doc::INDEX_MARK
-                | designcraft_doc::OBJECT_MARK
-        ) || designcraft_doc::vars::var_index(c).is_some();
+                | pliego_doc::FOOTNOTE_REF
+                | pliego_doc::ENDNOTE_REF
+                | pliego_doc::NOTE_MARK
+                | pliego_doc::XREF_MARK
+                | pliego_doc::ANCHOR_MARK
+                | pliego_doc::INDEX_MARK
+                | pliego_doc::OBJECT_MARK
+        ) || pliego_doc::vars::var_index(c).is_some();
         if special {
             flush(seg_start, i, &seg_face, out);
             seg_start = i + c.len_utf8();
-            if let Some(vi) = designcraft_doc::vars::var_index(c) {
+            if let Some(vi) = pliego_doc::vars::var_index(c) {
                 match sub.vars.get(vi).filter(|v| !v.is_empty()) {
                     Some(v) => shape_segment(db, text, i..i + c.len_utf8(), Some(v), p, &primary, auto_leading, styles, out, sub.upright()),
                     None => {
@@ -927,7 +927,7 @@ fn shape_run_raw(
                         shape_segment(db, text, i..i + c.len_utf8(), Some(&s), p, &primary, auto_leading, styles, out, sub.upright());
                     }
                 }
-                designcraft_doc::OBJECT_MARK => {
+                pliego_doc::OBJECT_MARK => {
                     let mut g = control_glyph(&primary, p, auto_leading, styles.at(i), i, c);
                     if let Some(o) = sub.objects.get(&i).filter(|o| !o.custom) {
                         let auto = matches!(p.leading, Leading::Auto);
@@ -955,7 +955,7 @@ fn shape_run_raw(
                     }
                     out.push(g);
                 }
-                designcraft_doc::XREF_MARK => match sub.xrefs.get(&i).filter(|t| !t.is_empty()) {
+                pliego_doc::XREF_MARK => match sub.xrefs.get(&i).filter(|t| !t.is_empty()) {
                     Some(t) => shape_segment(db, text, i..i + c.len_utf8(), Some(t), p, &primary, auto_leading, styles, out, sub.upright()),
                     None => {
                         let mut g = control_glyph(&primary, p, auto_leading, styles.at(i), i, c);
@@ -963,7 +963,7 @@ fn shape_run_raw(
                         out.push(g);
                     }
                 },
-                designcraft_doc::FOOTNOTE_REF | designcraft_doc::ENDNOTE_REF => {
+                pliego_doc::FOOTNOTE_REF | pliego_doc::ENDNOTE_REF => {
                     let s = sub.notes.get(&i).map_or("#", String::as_str);
                     shape_segment(db, text, i..i + c.len_utf8(), Some(s), p, &primary, auto_leading, styles, out, sub.upright());
                 }
@@ -973,8 +973,8 @@ fn shape_run_raw(
                     if c == '\t'
                         || c == story::RIGHT_INDENT_TAB
                         || c == story::TABLE_ANCHOR
-                        || c == designcraft_doc::ANCHOR_MARK
-                        || c == designcraft_doc::INDEX_MARK
+                        || c == pliego_doc::ANCHOR_MARK
+                        || c == pliego_doc::INDEX_MARK
                     {
                         g.adv = 0.0;
                     }
@@ -1031,16 +1031,16 @@ fn shape_cached(
     vertical: bool,
     (before, after): (&str, &str),
 ) -> Vec<ShapedGlyph> {
-    use designcraft_fonts::ShapeContext;
+    use pliego_fonts::ShapeContext;
     let map = |c: char| if caps { c.to_uppercase().next().unwrap_or(c) } else { c };
     let shape = |s: &str, context: ShapeContext<'_>| {
         if vertical {
-            designcraft_fonts::shape_vertical(face, s, feats, map, context)
+            pliego_fonts::shape_vertical(face, s, feats, map, context)
         } else {
-            designcraft_fonts::shape_with_context(face, s, feats, map, context)
+            pliego_fonts::shape_with_context(face, s, feats, map, context)
         }
     };
-    if src.len() < 2 || !src.contains(' ') || src.chars().any(designcraft_fonts::is_rtl) {
+    if src.len() < 2 || !src.contains(' ') || src.chars().any(pliego_fonts::is_rtl) {
         return shape(src, ShapeContext { before, after, language: lang });
     }
     let words = word_map((face.id(), vertical, caps, format!("{feats:?}"), lang));
@@ -1089,13 +1089,13 @@ fn metrics(face: &FontFace, p: &CharProps, auto_leading: TypeEnv) -> (f64, f64, 
 #[derive(Clone, Copy, Debug)]
 pub struct TypeEnv {
     pub auto_leading: f64,
-    pub adv: designcraft_doc::AdvancedType,
+    pub adv: pliego_doc::AdvancedType,
     /// Characters the font lacks are drawn from fallback fonts (else as its .notdef glyph).
     pub glyph_fallback: bool,
 }
 
 /// Synthesised super/subscript: size and shift from Advanced Type (percent of the font size).
-fn effective_size(p: &CharProps, adv: &designcraft_doc::AdvancedType) -> (f64, f64) {
+fn effective_size(p: &CharProps, adv: &pliego_doc::AdvancedType) -> (f64, f64) {
     match p.position {
         Position::Superscript => (p.size * adv.superscript_size / 100.0, p.baseline_shift + p.size * adv.superscript_position / 100.0),
         Position::Subscript => (p.size * adv.subscript_size / 100.0, p.baseline_shift - p.size * adv.subscript_position / 100.0),
@@ -1145,7 +1145,7 @@ fn control_glyph(face: &Arc<FontFace>, p: &CharProps, auto_leading: TypeEnv, sty
         allow_kashidas: p.allow_kashidas,
         safe_tatweel_before: false,
         shaping_rtl: false,
-        lang: designcraft_doc::language_tag(&p.language),
+        lang: pliego_doc::language_tag(&p.language),
         upright: false,
         list_label: false,
     }
@@ -1167,10 +1167,10 @@ fn shape_segment(
     // Generated labels need the same coverage fallback as ordinary text. Keep the
     // original marker address and one carrier even when several faces draw the label.
     if let Some(label) = replacement.filter(|_| auto_leading.glyph_fallback) {
-        let lang = designcraft_doc::language_tag(&p.language);
+        let lang = pliego_doc::language_tag(&p.language);
         let mut segments: Vec<(usize, usize, Arc<FontFace>)> = Vec::new();
         // The same for every character of the label: worked out once, not per character.
-        let prefer_sans = designcraft_fonts::sans_by_name(&p.font_family).or_else(|| style_of_substitute(&face.family));
+        let prefer_sans = pliego_fonts::sans_by_name(&p.font_family).or_else(|| style_of_substitute(&face.family));
         for (at, c) in label.char_indices() {
             let selected =
                 if face.covers(c) { face.clone() } else { db.fallback_for_styled(c, face.id(), lang, prefer_sans).unwrap_or_else(|| face.clone()) };
@@ -1203,14 +1203,14 @@ fn shape_segment(
     let feats = features_for(p);
     // Upright in vertical text, Horizontal Kana takes the vertical kana alternates instead.
     let mut upright_feats = feats.clone();
-    if vertical && designcraft_doc::otf::is_on(&p.otf_features, "hkna") {
+    if vertical && pliego_doc::otf::is_on(&p.otf_features, "hkna") {
         upright_feats.extend(feature("-hkna"));
         upright_feats.extend(feature("vkna"));
     }
     let space = face.advance(face.glyph_for(' ')) * k * hs;
     // The language picks the font's localized forms (`locl`); the text around the run lets
     // letters join across a change of style.
-    let lang = designcraft_doc::language_tag(&p.language);
+    let lang = pliego_doc::language_tag(&p.language);
     // Vertical frames: upright runs top to bottom, the rest (turned as a whole) horizontally.
     // Tate-chu-yoko is set across the line, so it stays horizontal.
     let mut shaped: Vec<ShapedGlyph> = Vec::new();
@@ -1236,7 +1236,7 @@ fn shape_segment(
             // A cross-reference's text is real text in InDesign: its spaces are word spaces the
             // line may break at (text variables and page numbers stay whole). The first glyph
             // keeps the marker, as it owns the marker's bytes.
-            let space = gi > 0 && marker == designcraft_doc::XREF_MARK && src.get(sg.cluster..).is_some_and(|t| t.starts_with(' '));
+            let space = gi > 0 && marker == pliego_doc::XREF_MARK && src.get(sg.cluster..).is_some_and(|t| t.starts_with(' '));
             (range.start, if gi == 0 { range.len() } else { 0 }, if space { ' ' } else { marker })
         } else {
             let cl = range.start + sg.cluster;
@@ -1378,9 +1378,9 @@ pub(crate) fn auto_tcy_ranges(text: &str, range: std::ops::Range<usize>, max: u3
 /// The resolved runs of a paragraph with auto tate-chu-yoko runs cut out and marked tate-chu-yoko
 /// (runs already tate-chu-yoko keep theirs).
 fn split_auto_tcy<'f>(
-    resolved: Vec<(usize, usize, CharProps, &'f designcraft_doc::CharFormat, CharProps)>,
+    resolved: Vec<(usize, usize, CharProps, &'f pliego_doc::CharFormat, CharProps)>,
     auto: &[std::ops::Range<usize>],
-) -> Vec<(usize, usize, CharProps, &'f designcraft_doc::CharFormat, CharProps)> {
+) -> Vec<(usize, usize, CharProps, &'f pliego_doc::CharFormat, CharProps)> {
     if auto.is_empty() {
         return resolved;
     }
@@ -1429,7 +1429,7 @@ fn fit_auto_tcy(glyphs: &mut [Glyph], auto: &[std::ops::Range<usize>]) {
 
 /// A hyphen glyph in the face/size of `g`, placed after it (zero source length).
 pub(crate) fn hyphen_after(g: &Glyph) -> Glyph {
-    let gid = designcraft_fonts::first_glyph(&g.face, &['-', '\u{2010}']);
+    let gid = pliego_fonts::first_glyph(&g.face, &['-', '\u{2010}']);
     let mut h = g.clone();
     h.gid = gid;
     h.adv = g.face.advance(gid) * g.sx;
@@ -1446,8 +1446,8 @@ pub(crate) fn hyphen_after(g: &Glyph) -> Glyph {
 
 /// How figures 0–9 are drawn for text with these properties: the Digits setting, or, when it is
 /// Default, by the preceding strong script (`Some(true)` Arabic-script, `Some(false)` other).
-fn digit_mode(p: &designcraft_doc::CharProps, arabic_context: Option<bool>) -> designcraft_doc::Digits {
-    use designcraft_doc::Digits;
+fn digit_mode(p: &pliego_doc::CharProps, arabic_context: Option<bool>) -> pliego_doc::Digits {
+    use pliego_doc::Digits;
     if p.digits != Digits::Default {
         return p.digits;
     }
@@ -1534,8 +1534,8 @@ mod style_of_substitute_tests {
     /// unresolved family -- and the serif one on the other (#1692, noted in review).
     #[test]
     fn a_stand_in_face_says_nothing_about_the_requested_style() {
-        assert_eq!(style_of_substitute(designcraft_fonts::FALLBACK_FAMILY), None);
-        assert_eq!(style_of_substitute(designcraft_fonts::DEFAULT_FAMILY), None);
+        assert_eq!(style_of_substitute(pliego_fonts::FALLBACK_FAMILY), None);
+        assert_eq!(style_of_substitute(pliego_fonts::DEFAULT_FAMILY), None);
         assert_eq!(style_of_substitute("source sans 3"), None, "however it is spelled");
         // A real substitute still speaks for itself.
         assert_eq!(style_of_substitute("Malgun Gothic"), Some(true));

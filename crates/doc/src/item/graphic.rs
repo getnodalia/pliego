@@ -317,8 +317,8 @@ impl Graphic {
     /// The region the clipping path lets through, in frame inner space, and whether it is filled
     /// even-odd (an inverted clip: the graphic's rectangle minus the path). `None` when the graphic
     /// has no clipping path or the path is empty.
-    pub fn clip_region(&self) -> Option<(designcraft_geom::BezPath, bool)> {
-        use designcraft_geom::Shape;
+    pub fn clip_region(&self) -> Option<(pliego_geom::BezPath, bool)> {
+        use pliego_geom::Shape;
         let c = self.clip.as_ref().filter(|c| !c.path.is_empty())?;
         let mut path = c.path.to_bezpath();
         if !c.invert {

@@ -31,19 +31,19 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
     {
         return Err(bad("file.place", "the frame is locked"));
     }
-    // A page of another layout (IDML or DesignCraft): its objects, as one group.
+    // A page of another layout (IDML or Pliego): its objects, as one group.
     let lname = name.to_lowercase();
-    if lname.ends_with(".idml") || lname.ends_with(".designcraft") {
+    if lname.ends_with(".idml") || lname.ends_with(".pliego") {
         return place_layout_page(s, p, &name, &bytes);
     }
     // Keep the EPS source for link comparison; rendering uses its preview at the bounding box size.
     let eps_size = eps_size(&bytes, "file.place")?;
     // Video and sound: a media frame (Window › Interactive › Media).
-    if let Some(mime) = designcraft_doc::media_mime(&name) {
+    if let Some(mime) = pliego_doc::media_mime(&name) {
         return crate::cmd::media::place_media(s, p, name, mime, bytes, link);
     }
     // Text files (plain, Word, RTF) flow into frames.
-    if designcraft_textimport::is_text_file(&name) {
+    if pliego_textimport::is_text_file(&name) {
         return crate::cmd::place_text::place_text(s, p, &name, &bytes, link, before);
     }
     let want_w = p
@@ -57,12 +57,12 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         })
         .transpose()?;
     // Image Import Options: which page of a PDF (1-based).
-    if designcraft_render::is_pdf(&bytes) {
-        designcraft_render::check_pdf_input_size(bytes.len()).map_err(|e| bad("file.place", e.to_string()))?;
+    if pliego_render::is_pdf(&bytes) {
+        pliego_render::check_pdf_input_size(bytes.len()).map_err(|e| bad("file.place", e.to_string()))?;
     }
     let pdf_page = match p.get("pdfPage").and_then(Value::as_u64) {
-        Some(n) if designcraft_render::is_pdf(&bytes) => {
-            let count = designcraft_render::pdf_page_count(&bytes).unwrap_or(1);
+        Some(n) if pliego_render::is_pdf(&bytes) => {
+            let count = pliego_render::pdf_page_count(&bytes).unwrap_or(1);
             let invalid_page = || bad("file.place", format!("the PDF has {count} page(s)"));
             let one_based = usize::try_from(n).map_err(|_| invalid_page())?;
             if one_based == 0 || one_based > count {
@@ -74,22 +74,22 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
         _ => 0,
     };
     let (pw, ph) = match pdf_page {
-        0 => designcraft_render::image_size(&bytes).ok_or_else(|| bad("file.place", "unsupported or corrupt image"))?,
-        n => designcraft_render::pdf_page_size(&bytes, n as usize)
+        0 => pliego_render::image_size(&bytes).ok_or_else(|| bad("file.place", "unsupported or corrupt image"))?,
+        n => pliego_render::pdf_page_size(&bytes, n as usize)
             .map(|(w, h)| (w.round().max(1.0) as u32, h.round().max(1.0) as u32))
             .ok_or_else(|| bad("file.place", "can't read that PDF page"))?,
     };
     // 72 ppi by default unless the file says otherwise; scale so it fits the page when huge. PDF pages
     // and SVGs keep their exact size: rounding it to whole points would stretch them unevenly.
-    let (nw, nh) = eps_size.or_else(|| designcraft_render::natural_size(&bytes, pdf_page as usize)).unwrap_or((pw as f64, ph as f64));
+    let (nw, nh) = eps_size.or_else(|| pliego_render::natural_size(&bytes, pdf_page as usize)).unwrap_or((pw as f64, ph as f64));
     // Image Import Options › Crop to: the graphic spans that box of the PDF page.
-    let is_pdf = designcraft_render::is_pdf(&bytes);
+    let is_pdf = pliego_render::is_pdf(&bytes);
     let pdf_crop = match str_param(p, "pdfCrop") {
         Some(k) if is_pdf => PdfCrop::from_name(k)
             .ok_or_else(|| bad("file.place", format!("unknown pdfCrop `{k}` (crop, art, trim, bleed, media, contentVisible, contentAll)")))?,
         _ => PdfCrop::Crop,
     };
-    let mime = designcraft_render::image_mime(&bytes).to_string();
+    let mime = pliego_render::image_mime(&bytes).to_string();
     let mut asset = Asset { page: pdf_page, name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)), pdf_crop, ..Default::default() };
     // The graphic's natural size: the box in points (the whole page when the box can't be found,
     // and then the document says so).
@@ -109,7 +109,7 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
     });
     // `"spread": null` counts as omitted, like the other placement parameters.
     let spread = match p.get("spread") {
-        Some(Value::Null) => designcraft_doc::SpreadRef::Doc(0),
+        Some(Value::Null) => pliego_doc::SpreadRef::Doc(0),
         _ => crate::cmd::spread_param(p, "file.place")?,
     };
     let lid = s.doc()?.active_layer;
@@ -130,7 +130,7 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
             }
         };
         let id = if let Some(fid) = target_frame {
-            let it = d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?;
+            let it = d.item_mut(fid).ok_or(pliego_doc::DocError::NoItem(fid))?;
             let r = it.inner_bounds();
             // Fill the frame proportionally once. Auto-Fit stays off, so resizing the frame crops.
             let k = (r.width() / bw).max(r.height() / bh);
@@ -189,10 +189,10 @@ pub(super) fn file_place(s: &mut Session, p: &Value) -> Result<Value> {
 /// keeps its crop choice (a missing link relinked later gets its box then).
 pub(crate) fn crop_pdf(a: &mut Asset) -> Option<(f64, f64)> {
     a.pdf_box = None;
-    if a.pdf_crop == PdfCrop::Crop || !designcraft_render::is_pdf(&a.data) {
+    if a.pdf_crop == PdfCrop::Crop || !pliego_render::is_pdf(&a.data) {
         return None;
     }
-    let (frac, size) = designcraft_render::pdf_crop_box(&a.data, a.page as usize, a.pdf_crop)?;
+    let (frac, size) = pliego_render::pdf_crop_box(&a.data, a.page as usize, a.pdf_crop)?;
     a.pdf_box = Some(frac);
     Some(size)
 }
@@ -211,10 +211,10 @@ pub(crate) fn read_source(p: &Value) -> Result<(Vec<u8>, String, Option<String>)
 }
 
 fn eps_size(bytes: &[u8], command: &str) -> Result<Option<(f64, f64)>> {
-    if !designcraft_images::is_eps(bytes) {
+    if !pliego_images::is_eps(bytes) {
         return Ok(None);
     }
-    designcraft_images::eps_size(bytes)
+    pliego_images::eps_size(bytes)
         .map(Some)
         .ok_or_else(|| bad(command, "the EPS has a missing or invalid bounding box (dimensions must be 0.001–20,000 points)"))
 }
@@ -237,9 +237,9 @@ pub(crate) fn validate_placement(size: (f64, f64), frame: Rect, xf: Affine, comm
 
 pub(super) fn place_load(s: &mut Session, p: &Value) -> Result<Value> {
     let (bytes, name, link) = read_source(p)?;
-    let (pw, ph) = designcraft_render::image_size(&bytes).ok_or_else(|| bad("place.load", "unsupported or corrupt image"))?;
-    let natural = eps_size(&bytes, "place.load")?.or_else(|| designcraft_render::natural_size(&bytes, 0)).unwrap_or((pw as f64, ph as f64));
-    let mime = designcraft_render::image_mime(&bytes).to_string();
+    let (pw, ph) = pliego_render::image_size(&bytes).ok_or_else(|| bad("place.load", "unsupported or corrupt image"))?;
+    let natural = eps_size(&bytes, "place.load")?.or_else(|| pliego_render::natural_size(&bytes, 0)).unwrap_or((pw as f64, ph as f64));
+    let mime = pliego_render::image_mime(&bytes).to_string();
     let asset = Asset { name, mime, link, data: Arc::new(bytes), pixels: Some((pw, ph)), ..Default::default() };
     load_cursor(s, asset, natural)
 }
@@ -271,7 +271,7 @@ pub(super) fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
     let (x, y) = (crate::cmd::f64_or(p, "x", 0.0), crate::cmd::f64_or(p, "y", 0.0));
     let d = &s.doc()?.doc;
     let (frame_rect, xf, auto_fit) = if let Some(fid) = frame {
-        let r = d.item(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?.inner_bounds();
+        let r = d.item(fid).ok_or(pliego_doc::DocError::NoItem(fid))?.inner_bounds();
         let k = (r.width() / nw).max(r.height() / nh);
         let xf = Affine::translate((r.x0 + (r.width() - nw * k) / 2.0, r.y0 + (r.height() - nh * k) / 2.0)) * Affine::scale(k);
         // Fill the frame proportionally once. Auto-Fit stays off, so resizing the frame crops.
@@ -282,7 +282,7 @@ pub(super) fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
         }
         // Drag: fit proportionally; click: actual size at the point.
         let (r, k) = match rect {
-            Some(r) if r.width() > designcraft_tools::PLACE_DRAG_MIN && r.height() > designcraft_tools::PLACE_DRAG_MIN => {
+            Some(r) if r.width() > pliego_tools::PLACE_DRAG_MIN && r.height() > pliego_tools::PLACE_DRAG_MIN => {
                 let k = (r.width() / nw).min(r.height() / nh);
                 (Rect::new(r.x0, r.y0, r.x0 + nw * k, r.y0 + nh * k), k)
             }
@@ -305,7 +305,7 @@ pub(super) fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
             fill: Default::default(),
         });
         let id = if let Some(fid) = frame {
-            d.item_mut(fid).ok_or(designcraft_doc::DocError::NoItem(fid))?.content = graphic;
+            d.item_mut(fid).ok_or(pliego_doc::DocError::NoItem(fid))?.content = graphic;
             fid
         } else {
             let id = ItemId(d.alloc());
@@ -326,7 +326,7 @@ pub(super) fn place_drop(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(r)
 }
 
-/// File › Place of an IDML or DesignCraft document: the objects of one page (`layoutPage`,
+/// File › Place of an IDML or Pliego document: the objects of one page (`layoutPage`,
 /// 1-based) grouped, top-left at x/y (default: the source position on the first page).
 fn place_layout_page(s: &mut Session, p: &Value, name: &str, bytes: &[u8]) -> Result<Value> {
     const ID: &str = "file.place";
@@ -349,8 +349,8 @@ fn place_layout_page(s: &mut Session, p: &Value, name: &str, bytes: &[u8]) -> Re
     }
     let to = crate::cmd::spread_param(p, ID)?;
     let off = match (p.get("x").and_then(Value::as_f64), p.get("y").and_then(Value::as_f64)) {
-        (Some(x), Some(y)) => designcraft_geom::Vec2::new(x - pr.x0, y - pr.y0),
-        _ => designcraft_geom::Vec2::new(-pr.x0, -pr.y0),
+        (Some(x), Some(y)) => pliego_geom::Vec2::new(x - pr.x0, y - pr.y0),
+        _ => pliego_geom::Vec2::new(-pr.x0, -pr.y0),
     };
     let placed = s.edit(|d, sel| {
         for sw in &src.swatches {
@@ -378,8 +378,8 @@ fn place_layout_page(s: &mut Session, p: &Value, name: &str, bytes: &[u8]) -> Re
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 pub(super) mod image_place_tests {
-    use designcraft_doc::{Content, ItemId};
-    use designcraft_geom::Rect;
+    use pliego_doc::{Content, ItemId};
+    use pliego_geom::Rect;
     use serde_json::{Value, json};
 
     use crate::Session;
@@ -390,7 +390,7 @@ pub(super) mod image_place_tests {
 
     fn image_file_with_color(red: u8) -> std::io::Result<tempfile::NamedTempFile> {
         let file = tempfile::Builder::new().suffix(".png").tempfile()?;
-        let png = designcraft_render::Rendered { width: 40, height: 20, pixels: [red, 90, 180, 255].repeat(800) }.to_png();
+        let png = pliego_render::Rendered { width: 40, height: 20, pixels: [red, 90, 180, 255].repeat(800) }.to_png();
         std::fs::write(file.path(), png)?;
         Ok(file)
     }
@@ -497,15 +497,15 @@ pub(super) mod image_place_tests {
         let selected = session.execute(command, &params)?;
         session.execute("object.stroke", &json!({"weight": 6}))?;
         let id = ItemId(selected["id"].as_u64().ok_or("missing selected item id")?);
-        let original = serde_json::to_value(session.doc()?.doc.item(id).ok_or(designcraft_doc::DocError::NoItem(id))?)?;
+        let original = serde_json::to_value(session.doc()?.doc.item(id).ok_or(pliego_doc::DocError::NoItem(id))?)?;
 
         let placed = session.execute("file.place", &json!({"path": image.path()}))?;
 
         assert_ne!(placed["id"], selected["id"], "{command}");
         let document = &session.doc()?.doc;
-        assert_eq!(serde_json::to_value(document.item(id).ok_or(designcraft_doc::DocError::NoItem(id))?)?, original, "{command}");
+        assert_eq!(serde_json::to_value(document.item(id).ok_or(pliego_doc::DocError::NoItem(id))?)?, original, "{command}");
         let placed_id = ItemId(placed["id"].as_u64().ok_or("missing placed item id")?);
-        let item = document.item(placed_id).ok_or(designcraft_doc::DocError::NoItem(placed_id))?;
+        let item = document.item(placed_id).ok_or(pliego_doc::DocError::NoItem(placed_id))?;
         assert_eq!(item.bounds(), Rect::new(36.0, 36.0, 76.0, 56.0));
         assert!(matches!(item.content, Content::Graphic(_)));
         assert_eq!(document.spreads[0].items.len(), 2);
@@ -646,7 +646,7 @@ pub(super) mod image_place_tests {
             }
             let document = &session.doc()?.doc;
             let id = ItemId(selected["id"].as_u64().ok_or_else(|| crate::EngineError::Other("frame.create returned no numeric id".into()))?);
-            let item = document.item(id).ok_or(designcraft_doc::DocError::NoItem(id))?;
+            let item = document.item(id).ok_or(pliego_doc::DocError::NoItem(id))?;
             assert_eq!(item.bounds(), Rect::new(100.0, 120.0, 200.0, 220.0));
             assert!(matches!(&item.content, Content::Graphic(_)), "placed frame must be graphic");
             let Content::Graphic(content) = &item.content else {
@@ -726,7 +726,7 @@ mod pdf_crop_tests {
         let size = |t: &mut Session, crop: &str| {
             t.execute("edit.deselectAll", &json!({})).unwrap();
             let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "pdfCrop": crop, "width": 630, "x": 0, "y": 0})).unwrap();
-            let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+            let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
             t.doc().unwrap().doc.item(id).unwrap().bounds()
         };
         let full = size(&mut t, "crop");
@@ -754,17 +754,17 @@ mod pdf_crop_tests {
         t.execute("file.new", &json!({})).unwrap();
         // `width` is the whole page's (630 pt with its bleed): half size.
         let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "pdfCrop": "trim", "width": 315, "x": 100, "y": 100})).unwrap();
-        let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+        let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
         let d = t.doc().unwrap().doc.clone();
         let it = d.item(id).unwrap();
         let g = it.graphic().unwrap().clone();
         let a = &d.assets[&g.asset];
-        assert_eq!(a.pdf_crop, designcraft_doc::PdfCrop::Trim);
+        assert_eq!(a.pdf_crop, pliego_doc::PdfCrop::Trim);
         let b = a.shown_box().unwrap();
         let want = [9.0 / 630.0, 9.0 / 810.0, 621.0 / 630.0, 801.0 / 810.0];
         assert!(b.iter().zip(want).all(|(x, y)| (x - y).abs() < 1e-4), "{b:?}");
         assert!((g.size.0 - 612.0).abs() < 1e-3 && (g.size.1 - 792.0).abs() < 1e-3, "{:?}", g.size);
-        let shown = (it.xf * g.xf).transform_rect_bbox(designcraft_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
+        let shown = (it.xf * g.xf).transform_rect_bbox(pliego_geom::Rect::new(0.0, 0.0, g.size.0, g.size.1));
         let fb = it.bounds();
         for (x, y) in [(shown.x0, 100.0), (shown.y0, 100.0), (shown.x1, 406.0), (shown.y1, 496.0), (fb.x1, 406.0), (fb.y1, 496.0)] {
             assert!((x - y).abs() < 1e-3, "{shown:?} {fb:?}");
@@ -772,12 +772,12 @@ mod pdf_crop_tests {
 
         // A frame larger than the graphic still shows only the trim box.
         t.edit(|d, _| {
-            d.item_mut(id).unwrap().path = designcraft_geom::shapes::rectangle(designcraft_geom::Rect::new(90.0, 90.0, 416.0, 506.0));
+            d.item_mut(id).unwrap().path = pliego_geom::shapes::rectangle(pliego_geom::Rect::new(90.0, 90.0, 416.0, 506.0));
             Ok(())
         })
         .unwrap();
         let d = t.doc().unwrap().doc.clone();
-        let mut rr = designcraft_render::Renderer::new();
+        let mut rr = pliego_render::Renderer::new();
         rr.threads = 0;
         let img = rr.render_page(&d, &t.cache, 0, 1.0, false, &Default::default()).unwrap();
         let dark = |x: u32, y: u32| img.pixel(x, y)[0] < 60;
@@ -797,12 +797,12 @@ mod pdf_crop_tests {
         let mut t = Session::new();
         t.execute("file.new", &json!({})).unwrap();
         let r = t.execute("file.place", &json!({"base64": b64, "name": "a.pdf", "width": 100.4, "x": 0, "y": 0})).unwrap();
-        let id = designcraft_doc::ItemId(r["id"].as_u64().unwrap());
+        let id = pliego_doc::ItemId(r["id"].as_u64().unwrap());
         let d = &t.doc().unwrap().doc;
         let it = d.item(id).unwrap();
         let b = it.bounds();
         assert!((b.width() - 100.4).abs() < 1e-3 && (b.height() - 50.4).abs() < 1e-3, "{b:?}");
-        let designcraft_doc::Content::Graphic(g) = &it.content else { panic!("not a graphic") };
+        let pliego_doc::Content::Graphic(g) = &it.content else { panic!("not a graphic") };
         assert!((g.size.0 - 100.4).abs() < 1e-3 && (g.size.1 - 50.4).abs() < 1e-3, "{:?}", g.size);
     }
 }
@@ -819,14 +819,14 @@ mod layout_place_tests {
         a.execute("file.new", &json!({"pages": 2})).unwrap();
         a.execute("frame.create", &json!({"rect": [100, 100, 200, 150], "content": "text", "text": "From page one", "caret": false})).unwrap();
         a.execute("frame.create", &json!({"rect": [300, 400, 350, 450]})).unwrap();
-        let idml = designcraft_idml::export_idml(&a.doc().unwrap().doc);
+        let idml = pliego_idml::export_idml(&a.doc().unwrap().doc);
         let b64 = super::base64_encode(&idml);
         let mut b = Session::new();
         b.execute("file.new", &json!({})).unwrap();
         let r = b.execute("file.place", &json!({"base64": b64, "name": "src.idml", "layoutPage": 1, "x": 0, "y": 0})).unwrap();
         assert_eq!(r["items"], 2);
         let d = &b.doc().unwrap().doc;
-        let g = d.item(designcraft_doc::ItemId(r["id"].as_u64().unwrap())).unwrap();
+        let g = d.item(pliego_doc::ItemId(r["id"].as_u64().unwrap())).unwrap();
         assert_eq!(g.children().len(), 2, "one group");
         let bb = g.bounds();
         assert!((bb.x0 - 100.0).abs() < 1e-6 && (bb.y0 - 100.0).abs() < 1e-6, "page top-left at 0,0: {bb:?}");
@@ -839,14 +839,14 @@ mod layout_place_tests {
 mod nested_frame_tests {
     use std::sync::Arc;
 
-    use designcraft_doc::{Content, Item, ItemId, Shape, SpreadRef};
-    use designcraft_geom::{Affine, Rect, shapes};
+    use pliego_doc::{Content, Item, ItemId, Shape, SpreadRef};
+    use pliego_geom::{Affine, Rect, shapes};
     use serde_json::json;
 
     use crate::Session;
 
     fn png(red: u8) -> String {
-        let png = designcraft_render::Rendered { width: 40, height: 20, pixels: [red, 90, 30, 255].repeat(800) }.to_png();
+        let png = pliego_render::Rendered { width: 40, height: 20, pixels: [red, 90, 30, 255].repeat(800) }.to_png();
         super::super::base64_encode(&png)
     }
 

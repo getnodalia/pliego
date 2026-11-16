@@ -1,4 +1,4 @@
-//! DesignCraft text composition.
+//! Pliego text composition.
 //!
 //! [`compose_story`] lays a story out through its chain of threaded frames:
 //! style resolution → shaping ([`shape`]) → line breaking ([`breaker`]: the paragraph composer is
@@ -38,12 +38,12 @@ use std::ops::Range;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use designcraft_doc::{
+use pliego_doc::{
     Align, Content, Document, FirstBaseline, GridAlign, Item, ItemId, ListAlign, ListCounter, ParaProps, SpanColumns, StartParagraph, Story, StoryId,
     TabAlign, TextFrameOptions, VerticalJustification, WrapMode, WrapSide, story,
 };
-use designcraft_fonts::{FontDb, ScopedFonts};
-use designcraft_geom::{Affine, Point, Rect};
+use pliego_fonts::{FontDb, ScopedFonts};
+use pliego_geom::{Affine, Point, Rect};
 
 use crate::breaker::{Break, Spacing};
 pub use crate::cache::{Cache, ShownOn};
@@ -86,7 +86,7 @@ pub struct RunStyle {
     pub ruby: Option<String>,
     /// The ruby's settings (set with `ruby`), and for per-character ruby the parent character's
     /// place in its run (see `ruby::reserve`).
-    pub ruby_spec: Option<designcraft_doc::ruby::RubySpec>,
+    pub ruby_spec: Option<pliego_doc::ruby::RubySpec>,
     pub ruby_unit: Option<u32>,
     /// Overprint the fill and stroke (ruby glyphs set to overprint).
     pub overprint_fill: bool,
@@ -99,7 +99,7 @@ pub struct RunStyle {
     /// Extra points between warichu baselines. 0 keeps baselines one small em apart. A negative
     /// value tightens that em, down to a shared baseline.
     pub warichu_line_spacing: f64,
-    pub warichu_align: designcraft_doc::cjk::WarichuAlignment,
+    pub warichu_align: pliego_doc::cjk::WarichuAlignment,
     pub warichu_chars_before: u32,
     pub warichu_chars_after: u32,
     /// Kenten Settings and Kenten Color resolved (`None` without kenten); see [`kenten`].
@@ -141,7 +141,7 @@ impl RunStyle {
 pub struct PlacedGlyph {
     /// Actual character drawn, including generated labels.
     pub rendered_char: char,
-    pub face: designcraft_fonts::FaceRef,
+    pub face: pliego_fonts::FaceRef,
     pub gid: u32,
     pub x: f64,
     pub y: f64,
@@ -178,21 +178,21 @@ impl PlacedGlyph {
         if self.visible {
             return true;
         }
-        self.adv > 0.0 && matches!(self.rendered_char, '\t' | designcraft_doc::story::RIGHT_INDENT_TAB)
+        self.adv > 0.0 && matches!(self.rendered_char, '\t' | pliego_doc::story::RIGHT_INDENT_TAB)
     }
 
     /// In a vertical frame, the turn that sets this glyph upright, applied after drawing it at `x`
-    /// on `baseline`: it hangs from its vertical origin ([`designcraft_fonts::FontFace::v_origin`],
+    /// on `baseline`: it hangs from its vertical origin ([`pliego_fonts::FontFace::v_origin`],
     /// centred across) at `x` on the line's centre, the middle of the font's em box; a tate-chu-yoko
     /// group sits across that centre.
-    pub fn vertical_xf(&self, baseline: f64) -> Option<designcraft_geom::Affine> {
+    pub fn vertical_xf(&self, baseline: f64) -> Option<pliego_geom::Affine> {
         let turn = -std::f64::consts::FRAC_PI_2;
         // The em box centre above the baseline, in ems.
         let (top, bottom) = self.face.em_box();
         let centre = (top + bottom) / 2.0 / self.face.units_per_em();
         if let Some([along, across, em]) = self.tcy {
             let c = Point::new(self.x + along, baseline + self.y - em * centre);
-            return Some(designcraft_geom::Affine::rotate_about(turn, c) * designcraft_geom::Affine::translate((c.x + across - self.x, 0.0)));
+            return Some(pliego_geom::Affine::rotate_about(turn, c) * pliego_geom::Affine::translate((c.x + across - self.x, 0.0)));
         }
         if !self.upright {
             return None;
@@ -203,7 +203,7 @@ impl PlacedGlyph {
         let origin = self.face.v_origin(self.gid) * self.sy;
         let mid = centre * self.face.units_per_em() * self.sy;
         let c = Point::new(self.x + (origin - mid + half) / 2.0, baseline + self.y + (half - mid - origin) / 2.0);
-        Some(designcraft_geom::Affine::rotate_about(turn, c))
+        Some(pliego_geom::Affine::rotate_about(turn, c))
     }
 }
 
@@ -265,7 +265,7 @@ pub struct Deco {
     pub rect: Rect,
     pub color: String,
     pub tint: f32,
-    pub path: Option<designcraft_geom::BezPath>,
+    pub path: Option<pliego_geom::BezPath>,
     /// Shown on screen only (not printed or exported).
     pub nonprinting: bool,
     /// Set to overprint (paragraph shading or border); PDF export doesn't overprint yet.
@@ -299,7 +299,7 @@ pub struct PlacedObject {
     /// Index in the story's [`Story::objects`].
     pub index: usize,
     /// Source item retained for anonymous footnote and cell stories.
-    pub object: Arc<designcraft_doc::AnchoredObject>,
+    pub object: Arc<pliego_doc::AnchoredObject>,
     /// Top-left of the object in frame inner space.
     pub origin: Point,
     pub size: (f64, f64),
@@ -390,14 +390,14 @@ const MAX_CONTOUR_POINTS: usize = 8192;
 
 impl Contour {
     /// The outline of `path` (after `to_inner`), flattened; None if it is empty or too detailed.
-    fn of(path: &designcraft_geom::BezPath, to_inner: designcraft_geom::Affine, offset: f64) -> Option<Contour> {
+    fn of(path: &pliego_geom::BezPath, to_inner: pliego_geom::Affine, offset: f64) -> Option<Contour> {
         let rings = flatten_rings(path, to_inner)?;
         offset.is_finite().then_some(Contour { rings, clip: Vec::new(), offset: offset.max(0.0) })
     }
 
     /// This outline counted only within `frame` (after `to_inner`); unclipped if the frame is
     /// empty or too detailed.
-    fn within(self, frame: &designcraft_geom::BezPath, to_inner: designcraft_geom::Affine) -> Contour {
+    fn within(self, frame: &pliego_geom::BezPath, to_inner: pliego_geom::Affine) -> Contour {
         match flatten_rings(frame, to_inner) {
             Some(clip) => Contour { clip, ..self },
             None => self,
@@ -405,7 +405,7 @@ impl Contour {
     }
 
     /// The outline mapped by `a`.
-    fn transformed(self, a: designcraft_geom::Affine) -> Contour {
+    fn transformed(self, a: pliego_geom::Affine) -> Contour {
         let map = |rings: Vec<Vec<Point>>| rings.into_iter().map(|r| r.into_iter().map(|p| a * p).collect()).collect();
         Contour { rings: map(self.rings), clip: map(self.clip), offset: self.offset }
     }
@@ -434,16 +434,16 @@ impl Contour {
 }
 
 /// The closed polylines of `path` (after `to_inner`), flattened; None if it is empty or too detailed.
-fn flatten_rings(path: &designcraft_geom::BezPath, to_inner: designcraft_geom::Affine) -> Option<Vec<Vec<Point>>> {
+fn flatten_rings(path: &pliego_geom::BezPath, to_inner: pliego_geom::Affine) -> Option<Vec<Vec<Point>>> {
     let mut rings: Vec<Vec<Point>> = Vec::new();
     let mut n = 0usize;
     let mut too_many = false;
-    designcraft_geom::kurbo::flatten(to_inner * path.clone(), 0.25, |el| {
+    pliego_geom::kurbo::flatten(to_inner * path.clone(), 0.25, |el| {
         n += 1;
         too_many |= n > MAX_CONTOUR_POINTS;
         match el {
-            designcraft_geom::PathEl::MoveTo(p) => rings.push(vec![p]),
-            designcraft_geom::PathEl::LineTo(p) => match rings.last_mut() {
+            pliego_geom::PathEl::MoveTo(p) => rings.push(vec![p]),
+            pliego_geom::PathEl::LineTo(p) => match rings.last_mut() {
                 Some(r) => r.push(p),
                 None => rings.push(vec![p]),
             },
@@ -494,7 +494,7 @@ fn rings_band_extent(rings: &[Vec<Point>], y0: f64, y1: f64) -> Option<(f64, f64
 /// frame whose inner space is reached from the spread by `inv`. `left_page` places the object on
 /// a left page (for the spine sides).
 pub fn exclusion(other: &Item, xf: Affine, inv: Affine, left_page: bool) -> Exclusion {
-    let group = other.shape == designcraft_doc::Shape::Group;
+    let group = other.shape == pliego_doc::Shape::Group;
     let b =
         if group { (xf * other.xf.inverse()).transform_rect_bbox(other.bounds()) } else { other.path.transformed(xf).bounds().unwrap_or(Rect::ZERO) };
     wrap_exclusion(&other.wrap, b, || (!group).then(|| contour_path(other, other.wrap.contour)), xf, inv, left_page)
@@ -511,9 +511,9 @@ pub fn graphic_exclusion(it: &Item, xf: Affine, inv: Affine, left_page: bool) ->
 /// The exclusion of `wrap` around an object with spread-space bounds `b`; `outline` gives its
 /// contour in the inner space `xf` maps to the spread (None: around the bounds).
 fn wrap_exclusion(
-    wrap: &designcraft_doc::TextWrap,
+    wrap: &pliego_doc::TextWrap,
     b: Rect,
-    outline: impl FnOnce() -> Option<(designcraft_geom::BezPath, Option<designcraft_geom::BezPath>)>,
+    outline: impl FnOnce() -> Option<(pliego_geom::BezPath, Option<pliego_geom::BezPath>)>,
     xf: Affine,
     inv: Affine,
     left_page: bool,
@@ -549,17 +549,17 @@ fn wrap_exclusion(
 /// follows the part of the placed graphic the frame shows; Same As Clipping follows the graphic's
 /// clipping path when it has one; detected edges, alpha channels and image paths need the image,
 /// so they follow the frame's path (as other frames do).
-fn contour_path(it: &Item, kind: designcraft_doc::ContourType) -> (designcraft_geom::BezPath, Option<designcraft_geom::BezPath>) {
-    let frame = designcraft_geom::corners::apply(&it.path, &it.corners);
-    if kind == designcraft_doc::ContourType::SameAsClipping
+fn contour_path(it: &Item, kind: pliego_doc::ContourType) -> (pliego_geom::BezPath, Option<pliego_geom::BezPath>) {
+    let frame = pliego_geom::corners::apply(&it.path, &it.corners);
+    if kind == pliego_doc::ContourType::SameAsClipping
         && let Some((path, _)) = it.graphic().and_then(|g| g.clip_region())
     {
         return (path, Some(frame));
     }
-    if kind == designcraft_doc::ContourType::BoundingBox
+    if kind == pliego_doc::ContourType::BoundingBox
         && let Some(r) = it.graphic().and_then(|g| g.shown_bounds(it.inner_bounds()))
     {
-        return (designcraft_geom::kurbo::Shape::to_path(&r, 0.1), Some(frame));
+        return (pliego_geom::kurbo::Shape::to_path(&r, 0.1), Some(frame));
     }
     (frame, None)
 }
@@ -602,13 +602,13 @@ impl FrameSpec {
         // Primary frames inherit the document limit (216), beyond the interactive frame editor's 40.
         let n = self.opts.columns.clamp(1, 216);
         match self.opts.columns_kind {
-            designcraft_doc::ColumnsKind::FixedWidth if self.opts.column_width > 0.0 => (0..n)
+            pliego_doc::ColumnsKind::FixedWidth if self.opts.column_width > 0.0 => (0..n)
                 .map(|i| {
                     let x = a.x0 + i as f64 * (self.opts.column_width + self.opts.gutter);
                     Rect::new(x, a.y0, x + self.opts.column_width, a.y1)
                 })
                 .collect(),
-            _ => designcraft_doc::page::column_rects(a, n, self.opts.gutter),
+            _ => pliego_doc::page::column_rects(a, n, self.opts.gutter),
         }
     }
 }
@@ -670,8 +670,8 @@ fn wrap_obstacles(it: &Item, parent: Affine, inv: Affine, skip: ItemId, left_pag
 /// reach the frame's text area wrap its text: one elsewhere on the spread would otherwise cost a
 /// narrow column its room (the 1.5 em minimum segment of `free_slots` applies once an object cuts
 /// the column).
-fn frame_wrap_exclusions(doc: &Document, sp: &designcraft_doc::Spread, item: &Item, inv: Affine, exclusions: &mut Vec<Exclusion>) {
-    let left = |x: f64| sp.page_at_x(x).and_then(|pi| sp.pages.get(pi)).is_some_and(|p| p.side == designcraft_doc::PageSide::Left);
+fn frame_wrap_exclusions(doc: &Document, sp: &pliego_doc::Spread, item: &Item, inv: Affine, exclusions: &mut Vec<Exclusion>) {
+    let left = |x: f64| sp.page_at_x(x).and_then(|pi| sp.pages.get(pi)).is_some_and(|p| p.side == pliego_doc::PageSide::Left);
     for other in &sp.items {
         if doc.layer(other.layer).is_some_and(|l| !l.visible) {
             continue;
@@ -687,10 +687,10 @@ fn frame_wrap_exclusions(doc: &Document, sp: &designcraft_doc::Spread, item: &It
 
 /// The text area and options a frame composes into. On a path, one line as long as the path (from
 /// the start offset).
-fn frame_text_area(doc: &Document, st: &Story, item: &Item, tf: &designcraft_doc::TextFrame) -> (Rect, TextFrameOptions) {
+fn frame_text_area(doc: &Document, st: &Story, item: &Item, tf: &pliego_doc::TextFrame) -> (Rect, TextFrameOptions) {
     match &tf.options.path {
         Some(pt) => {
-            let len = designcraft_geom::warp::PathWarp::new(&item.path.to_bezpath(), false).length();
+            let len = pliego_geom::warp::PathWarp::new(&item.path.to_bezpath(), false).length();
             let size = st
                 .paras
                 .first()
@@ -700,7 +700,7 @@ fn frame_text_area(doc: &Document, st: &Story, item: &Item, tf: &designcraft_doc
             let opts = TextFrameOptions {
                 columns: 1,
                 inset: [0.0; 4],
-                first_baseline: designcraft_doc::FirstBaseline::Ascent,
+                first_baseline: pliego_doc::FirstBaseline::Ascent,
                 // Keep the path identity: its synthetic area uses full line extents.
                 ..tf.options.clone()
             };
@@ -746,12 +746,12 @@ pub(crate) fn frame_specs_placed(doc: &Document, sid: StoryId, placed: &[(ItemId
             frame_wrap_exclusions(doc, sp, item, inv, &mut exclusions);
         }
         let (page_name, page, side) = match (spread_ref, spread) {
-            (Some(designcraft_doc::SpreadRef::Doc(si)), Some(sp)) => {
+            (Some(pliego_doc::SpreadRef::Doc(si)), Some(sp)) => {
                 let pi = sp.page_at_x(center_x).unwrap_or(0);
                 let abs = doc.first_page_of_spread(si) + pi;
                 (Some(doc.page_name(abs)), Some(abs), sp.pages.get(pi).map(|p| p.side))
             }
-            (Some(designcraft_doc::SpreadRef::Parent(_)), Some(sp)) => {
+            (Some(pliego_doc::SpreadRef::Parent(_)), Some(sp)) => {
                 let prefix = sp.parent.as_ref().map(|p| p.prefix.clone()).unwrap_or_else(|| "A".into());
                 // The side of the parent page under the frame, so a folio there aligns to the spine of its own page.
                 let under = sp.page_at_x(center_x).and_then(|pi| sp.pages.get(pi));
@@ -759,8 +759,8 @@ pub(crate) fn frame_specs_placed(doc: &Document, sid: StoryId, placed: &[(ItemId
             }
             _ => (None, None, None),
         };
-        let left_page = side == Some(designcraft_doc::PageSide::Left);
-        let right_page = side == Some(designcraft_doc::PageSide::Right);
+        let left_page = side == Some(pliego_doc::PageSide::Left);
+        let right_page = side == Some(pliego_doc::PageSide::Right);
         let section_marker = page.map(|abs| section_marker(doc, abs));
         // The page under the frame, and its bounds and margins in inner space (bounding boxes).
         let under = spread.and_then(|sp| sp.page_at_x(center_x).and_then(|pi| sp.pages.get(pi)));
@@ -771,7 +771,7 @@ pub(crate) fn frame_specs_placed(doc: &Document, sid: StoryId, placed: &[(ItemId
         let (start, inc) = match tf.options.baseline_grid {
             None => (under.map_or(g.start, |pg| g.origin(pg)), g.increment),
             Some(f) => {
-                use designcraft_doc::FrameGridRelative as R;
+                use pliego_doc::FrameGridRelative as R;
                 // The frame's own edges are in inner space; `ty` takes them to spread y as it takes
                 // the grid back, so a frame-relative grid keeps its place in a turned frame.
                 let from = match f.relative_to {
@@ -791,14 +791,14 @@ pub(crate) fn frame_specs_placed(doc: &Document, sid: StoryId, placed: &[(ItemId
         let outline = match &tf.options.path {
             Some(_) => None,
             None => {
-                let bp = if item.corners.is_none() { item.path.to_bezpath() } else { designcraft_geom::corners::apply(&item.path, &item.corners) };
+                let bp = if item.corners.is_none() { item.path.to_bezpath() } else { pliego_geom::corners::apply(&item.path, &item.corners) };
                 FrameOutline::new(&bp, tf.options.inset[0])
             }
         };
         // Vertical type: composed in the turned box; wraps and page rects turned with it.
         let vertical = doc.frame_vertical(item);
         let (area, exclusions, grid, page_rect, outline) = if vertical {
-            let v = designcraft_doc::vertical_text_xf(area).inverse();
+            let v = pliego_doc::vertical_text_xf(area).inverse();
             let ex = exclusions
                 .into_iter()
                 .map(|e| Exclusion { rect: v.transform_rect_bbox(e.rect), contour: e.contour.map(|c| c.transformed(v)), ..e })
@@ -819,7 +819,7 @@ pub(crate) fn frame_specs_placed(doc: &Document, sid: StoryId, placed: &[(ItemId
             page_name,
             section_marker,
             page,
-            parent: matches!(spread_ref, Some(designcraft_doc::SpreadRef::Parent(_))),
+            parent: matches!(spread_ref, Some(pliego_doc::SpreadRef::Parent(_))),
             grid,
             left_page,
             right_page,
@@ -876,7 +876,7 @@ struct SubstitutionInput<'a> {
     doc: &'a Document,
     story: &'a Story,
     range: Range<usize>,
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     frame: Option<&'a FrameSpec>,
     opts: &'a ComposeOptions,
     var_story: bool,
@@ -907,20 +907,20 @@ fn paragraph_substitution(input: SubstitutionInput<'_>) -> SubstCtx {
     };
     if !story.endnotes.is_empty() {
         // Endnote reference numbers continue through the document.
-        let first = doc.endnote_start(story.id).saturating_add(story.text[..prange.start].matches(designcraft_doc::ENDNOTE_REF).count() as u32);
-        for (k, (i, _)) in story.text[prange.clone()].match_indices(designcraft_doc::ENDNOTE_REF).enumerate() {
+        let first = doc.endnote_start(story.id).saturating_add(story.text[..prange.start].matches(pliego_doc::ENDNOTE_REF).count() as u32);
+        for (k, (i, _)) in story.text[prange.clone()].match_indices(pliego_doc::ENDNOTE_REF).enumerate() {
             sub.notes.insert(prange.start + i, doc.endnote_options.label(first.saturating_add(k as u32)));
         }
     }
     if !story.objects.is_empty() {
-        let before = story.text[..prange.start].matches(designcraft_doc::OBJECT_MARK).count();
-        for (k, (i, _)) in story.text[prange.clone()].match_indices(designcraft_doc::OBJECT_MARK).enumerate() {
+        let before = story.text[..prange.start].matches(pliego_doc::OBJECT_MARK).count();
+        for (k, (i, _)) in story.text[prange.clone()].match_indices(pliego_doc::OBJECT_MARK).enumerate() {
             let Some(o) = story.objects.get(before + k) else { continue };
             let (w, h) = o.size();
             let (y_offset, space, custom) = match &o.position {
-                designcraft_doc::AnchorPosition::Inline { y_offset } => (Some(*y_offset), 0.0, false),
-                designcraft_doc::AnchorPosition::AboveLine { space_before, space_after, .. } => (None, space_before + space_after, false),
-                designcraft_doc::AnchorPosition::Custom { .. } => (Some(0.0), 0.0, true),
+                pliego_doc::AnchorPosition::Inline { y_offset } => (Some(*y_offset), 0.0, false),
+                pliego_doc::AnchorPosition::AboveLine { space_before, space_after, .. } => (None, space_before + space_after, false),
+                pliego_doc::AnchorPosition::Custom { .. } => (Some(0.0), 0.0, true),
             };
             sub.objects.insert(prange.start + i, shape::ObjectSpec { index: before + k, w, h, y_offset, space, custom });
         }
@@ -934,8 +934,8 @@ fn paragraph_substitution(input: SubstitutionInput<'_>) -> SubstCtx {
     sub
 }
 
-fn rule_color(r: &designcraft_doc::Rule, text: &(String, f32)) -> (String, f32) {
-    if r.color == designcraft_doc::TEXT_COLOR { text.clone() } else { (r.color.clone(), r.tint) }
+fn rule_color(r: &pliego_doc::Rule, text: &(String, f32)) -> (String, f32) {
+    if r.color == pliego_doc::TEXT_COLOR { text.clone() } else { (r.color.clone(), r.tint) }
 }
 
 fn forced_break_start(forced: bool, has_more_lines: bool, break_char: Option<char>) -> Option<StartParagraph> {
@@ -967,7 +967,7 @@ pub fn visible_break(doc: &Document, story: &Story, p: usize, at: usize) -> Opti
     let start = break_start(character)?;
     let (_, chars) = doc.styles.resolve_para(story.paras.get(p)?);
     let props = doc.styles.resolve_char(&chars, story.char_format_at(at + character.len_utf8()));
-    let gone = props.change == designcraft_doc::ChangeMark::Deleted || doc.conditions_hide(&props.conditions);
+    let gone = props.change == pliego_doc::ChangeMark::Deleted || doc.conditions_hide(&props.conditions);
     (!gone).then_some(start)
 }
 
@@ -980,7 +980,7 @@ fn named_list_labels(doc: &Document, story: &Story, ranges: &[Range<usize>], del
         .zip(deleted)
         .map(|((paragraph, range), is_deleted)| {
             let (props, _) = doc.styles.resolve_para(paragraph);
-            if props.list_type != designcraft_doc::ListType::Numbers || props.list_name.is_empty() || range.is_empty() || *is_deleted {
+            if props.list_type != pliego_doc::ListType::Numbers || props.list_name.is_empty() || range.is_empty() || *is_deleted {
                 return None;
             }
             let counter = counters.entry(props.list_name.clone()).or_insert_with(|| doc.list_start(story.id, &props.list_name));
@@ -1008,12 +1008,12 @@ fn deleted_paragraph_info(info: &[ParaInfo], cursor: &Cursor) -> ParaInfo {
     )
 }
 
-fn frame_columns_and_text(frames: &[FrameSpec], direction: designcraft_doc::TextDirection) -> (Vec<Vec<Rect>>, Vec<FrameText>) {
+fn frame_columns_and_text(frames: &[FrameSpec], direction: pliego_doc::TextDirection) -> (Vec<Vec<Rect>>, Vec<FrameText>) {
     let columns: Vec<Vec<Rect>> = frames
         .iter()
         .map(|frame| {
             let mut frame_columns = frame.columns();
-            if direction == designcraft_doc::TextDirection::RightToLeft && !frame.vertical {
+            if direction == pliego_doc::TextDirection::RightToLeft && !frame.vertical {
                 frame_columns.reverse();
             }
             frame_columns
@@ -1061,11 +1061,11 @@ fn paragraph_progress(input: ParagraphProgressInput<'_>) -> ParagraphProgress {
 
 struct TableParagraphInput<'a> {
     doc: &'a Document,
-    table: &'a designcraft_doc::Table,
+    table: &'a pliego_doc::Table,
     anchor: usize,
     paragraph: usize,
     range_start: usize,
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     start: StartParagraph,
     frames: &'a [FrameSpec],
     columns: &'a [Vec<Rect>],
@@ -1160,14 +1160,14 @@ struct NestedLineStyleInput<'a, 'b, 'font> {
     doc: &'a Document,
     story: &'a Story,
     range: Range<usize>,
-    props: &'a designcraft_doc::ParaProps,
-    para_chars: &'a designcraft_doc::CharProps,
+    props: &'a pliego_doc::ParaProps,
+    para_chars: &'a pliego_doc::CharProps,
     drop_end: usize,
     base_leading: f64,
     base_cap: f64,
     drop_grid: Option<f64>,
     drop_align: bool,
-    drop_tabs: (&'a [designcraft_doc::TabStop], f64),
+    drop_tabs: (&'a [pliego_doc::TabStop], f64),
     cursor: &'a Cursor,
     frames: &'a [FrameSpec],
     columns: &'a [Vec<Rect>],
@@ -1248,7 +1248,7 @@ fn apply_nested_line_styles(input: NestedLineStyleInput<'_, '_, '_>) {
                     break;
                 }
                 let end = line + nl.lines as usize;
-                if !nl.style.is_empty() && nl.style != designcraft_doc::NO_CHAR_STYLE {
+                if !nl.style.is_empty() && nl.style != pliego_doc::NO_CHAR_STYLE {
                     want.push((byte_at(line)..byte_at(end).max(byte_at(line)), nl.style.clone()));
                 }
                 line = end;
@@ -1309,12 +1309,12 @@ struct PlacementShared<'a, 'font> {
 struct ParagraphLines<'a> {
     paragraph: usize,
     range: Range<usize>,
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     glyphs: &'a [Glyph],
     hyph_after: &'a [bool],
     drop_cap: Option<&'a DropCap>,
-    base_chars: &'a designcraft_doc::CharProps,
-    mark_chars: &'a designcraft_doc::CharProps,
+    base_chars: &'a pliego_doc::CharProps,
+    mark_chars: &'a pliego_doc::CharProps,
     mark_leading: f64,
     base_leading: f64,
     last_line_mark: Option<f64>,
@@ -1344,7 +1344,7 @@ struct PositionLineInput<'a, 'font> {
     glyphs: &'a [Glyph],
     hyph_after: &'a [bool],
     range_start: usize,
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     cursor: &'a mut Cursor,
     line_no: usize,
     carry: &'a mut Vec<(f64, f64)>,
@@ -1362,13 +1362,13 @@ struct PositionLineInput<'a, 'font> {
     descent: f64,
     lead: f64,
     reference: f64,
-    model: designcraft_doc::cjk::LeadingModel,
+    model: pliego_doc::cjk::LeadingModel,
     advance: f64,
     base_size: f64,
     rtl: bool,
     db: &'a ScopedFonts<'font>,
     mark_leading: f64,
-    mark_chars: &'a designcraft_doc::CharProps,
+    mark_chars: &'a pliego_doc::CharProps,
     last_line_mark: Option<f64>,
 }
 
@@ -1448,7 +1448,7 @@ fn position_line(input: PositionLineInput<'_, '_>) -> LinePosition {
                     let r = grid::reference_offset(line_glyphs, pp.grid_reference);
                     let block = n > 0 && pp.paragraph_gyoudori && line_no == 0;
                     let span = if block {
-                        let aki_below = |line_model, line_lead| (line_model == designcraft_doc::cjk::LeadingModel::AkiBelow).then_some(line_lead);
+                        let aki_below = |line_model, line_lead| (line_model == pliego_doc::cjk::LeadingModel::AkiBelow).then_some(line_lead);
                         let (mut down, mut prev, mut prev_aki, mut last_r) = (0.0, reference, aki_below(model, lead), r);
                         for (j, next_break) in breaks.iter().enumerate().skip(k + 1) {
                             let (ns, ne) = (g0 + next_break.start, g0 + next_break.end);
@@ -1515,7 +1515,7 @@ fn position_line(input: PositionLineInput<'_, '_>) -> LinePosition {
 struct BreakInput<'a> {
     glyphs: &'a [Glyph],
     hyphens: &'a [bool],
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     slots: &'a [(f64, f64)],
     column: Rect,
     drop_cap: Option<&'a DropCap>,
@@ -1587,7 +1587,7 @@ struct LineFitInput<'a> {
     restores: &'a mut usize,
     paragraph_count: usize,
     info: &'a [ParaInfo],
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     paragraph: usize,
     line_no: usize,
     col_first_line: usize,
@@ -1813,7 +1813,7 @@ fn place_sub_objects(
     if objects.is_empty() {
         return;
     }
-    let text_ascent = line_glyphs.iter().filter(|g| g.ch != designcraft_doc::OBJECT_MARK).map(|g| g.ascent).fold(0.0, f64::max);
+    let text_ascent = line_glyphs.iter().filter(|g| g.ch != pliego_doc::OBJECT_MARK).map(|g| g.ascent).fold(0.0, f64::max);
     let text_ascent = if text_ascent > 0.0 { text_ascent } else { base_size * 0.75 };
     for glyph in frame.lines[line_index].glyphs.iter().filter(|g| g.len > 0) {
         if let Some(object) = objects.get(&glyph.byte)
@@ -1895,10 +1895,10 @@ fn place_paragraph_lines(shared: PlacementShared<'_, '_>, paragraph: ParagraphLi
     let mut hyphen_at: Option<usize> = None;
     let has_tabs = glyphs.iter().any(|g| g.ch == '\t');
     let mut first_line_rect: Option<(usize, f64, f64, f64)> = None; // frame, baseline, ascent, x-span
-    let rtl = para_props.direction == designcraft_doc::TextDirection::RightToLeft;
+    let rtl = para_props.direction == pliego_doc::TextDirection::RightToLeft;
     // The paragraph's settings with the start-side indent an Indent to Here character set for
     // the lines after it (InDesign's ^i): those lines start where the character sits.
-    let mut indented: Option<designcraft_doc::ParaProps> = None;
+    let mut indented: Option<pliego_doc::ParaProps> = None;
     // Paragraph gyoudori: the (frame, column) of the block and the grid line after it.
     let mut para_block: Option<((usize, usize), f64)> = None;
     // Segments of a line already placed (beside an object with text on both sides) that the
@@ -2116,7 +2116,7 @@ fn place_paragraph_lines(shared: PlacementShared<'_, '_>, paragraph: ParagraphLi
             let end_x = end_x + warichu::place(styles_tab, &mut placed);
             // The spaces the break trimmed off the end follow the line undrawn, so the caret
             // and the selection reach them; alignment and justification ignore them.
-            if pp.direction != designcraft_doc::TextDirection::RightToLeft && !placed.iter().any(|g| g.rtl) {
+            if pp.direction != pliego_doc::TextDirection::RightToLeft && !placed.iter().any(|g| g.rtl) {
                 let mut x = end_x;
                 for g in glyphs.get(e..(g0 + b.next).min(glyphs.len())).unwrap_or(&[]).iter().filter(|g| g.is_space()) {
                     placed.push(PlacedGlyph { visible: false, ..place(g, x) });
@@ -2190,7 +2190,7 @@ fn place_paragraph_lines(shared: PlacementShared<'_, '_>, paragraph: ParagraphLi
             place_sub_objects(story, ft, sub_objects, ft.lines.len() - 1, line_glyphs, base_chars.size);
             cur.last_baseline = Some(baseline);
             cur.last_reference = reference;
-            cur.aki_below = (model == designcraft_doc::cjk::LeadingModel::AkiBelow).then_some(lead);
+            cur.aki_below = (model == pliego_doc::cjk::LeadingModel::AkiBelow).then_some(lead);
             cur.last_descent = desc;
             cur.pending = 0.0;
             cur.grid_next = grid_end.map(|end| (baseline, end));
@@ -2234,8 +2234,8 @@ struct ParagraphShapeInput<'a, 'font> {
     story: &'a Story,
     opts: &'a ComposeOptions,
     range: Range<usize>,
-    props: &'a mut designcraft_doc::ParaProps,
-    para_chars: &'a designcraft_doc::CharProps,
+    props: &'a mut pliego_doc::ParaProps,
+    para_chars: &'a pliego_doc::CharProps,
     frame: Option<&'a FrameSpec>,
     paragraph: usize,
     subst: &'a SubstCtx,
@@ -2264,7 +2264,7 @@ struct ShapedParagraph {
     hyph_after: Vec<bool>,
     base_size: f64,
     spacing: Spacing,
-    mark_chars: designcraft_doc::CharProps,
+    mark_chars: pliego_doc::CharProps,
     mark_leading: f64,
     last_line_mark: Option<f64>,
     para_box: Option<ParaBox>,
@@ -2324,8 +2324,8 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
     let leading_chars = &mark_chars;
     // Drop cap: the size and indent come from the text beside it (`base_*` when there's none).
     let base_leading = match leading_chars.leading {
-        designcraft_doc::Leading::Auto => leading_chars.size * pp.auto_leading,
-        designcraft_doc::Leading::Points(v) => v,
+        pliego_doc::Leading::Auto => leading_chars.size * pp.auto_leading,
+        pliego_doc::Leading::Points(v) => v,
     };
     let base_cap = {
         let face = db.face(&base_chars.font_family, &base_chars.font_style);
@@ -2333,9 +2333,9 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
     };
     let drop_grid = cur_frame.and_then(|f| f.grid).filter(|_| pp.grid_align == GridAlign::AllLines).map(|g| g.1);
     // Align Left Edge (left-to-right paragraphs).
-    let drop_align = pp.drop_cap_align_left && pp.direction == designcraft_doc::TextDirection::LeftToRight;
+    let drop_align = pp.drop_cap_align_left && pp.direction == pliego_doc::TextDirection::LeftToRight;
     // Tab stops for the drop cap, with the start-side indent (the right one, right to left).
-    let drop_tab_indent = if pp.direction == designcraft_doc::TextDirection::RightToLeft { pp.right_indent } else { pp.left_indent };
+    let drop_tab_indent = if pp.direction == pliego_doc::TextDirection::RightToLeft { pp.right_indent } else { pp.left_indent };
     apply_nested_line_styles(NestedLineStyleInput {
         db,
         doc,
@@ -2380,17 +2380,17 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
     let label_env = shape::TypeEnv { adv: Default::default(), ..env };
     let list_label = match pp.list_type {
         // An empty paragraph has no bullet or number, and the numbering carries on past it.
-        designcraft_doc::ListType::Numbers | designcraft_doc::ListType::Bullets if prange.is_empty() => None,
+        pliego_doc::ListType::Numbers | pliego_doc::ListType::Bullets if prange.is_empty() => None,
         // A named list: carries on past other paragraphs (and from earlier stories).
-        designcraft_doc::ListType::Numbers if !pp.list_name.is_empty() => {
+        pliego_doc::ListType::Numbers if !pp.list_name.is_empty() => {
             Some(named_labels.get(paragraph).cloned().flatten().unwrap_or_else(|| pp.number_label(1)))
         }
-        designcraft_doc::ListType::Numbers => {
+        pliego_doc::ListType::Numbers => {
             list_counter.advance(pp);
             Some(pp.number_label_in(list_counter))
         }
-        designcraft_doc::ListType::Bullets => Some(pp.bullet_label()),
-        designcraft_doc::ListType::None => {
+        pliego_doc::ListType::Bullets => Some(pp.bullet_label()),
+        pliego_doc::ListType::None => {
             *list_counter = ListCounter::default();
             None
         }
@@ -2419,7 +2419,7 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
         if let Some(t) = pp.list_tab.filter(|t| t.is_finite() && *t >= 0.0)
             && !pp.tabs.iter().any(|s| (s.position - t).abs() < 1e-6)
         {
-            pp.tabs.push(designcraft_doc::TabStop { position: t, align: TabAlign::Left, leader: String::new(), align_on: String::new() });
+            pp.tabs.push(pliego_doc::TabStop { position: t, align: TabAlign::Left, leader: String::new(), align_on: String::new() });
             pp.tabs.sort_by(|a, b| a.position.total_cmp(&b.position));
         }
     }
@@ -2430,8 +2430,8 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
         label_aligned = 0;
     }
     let list_align = match pp.list_type {
-        _ if label_aligned == 0 || pp.direction == designcraft_doc::TextDirection::RightToLeft => designcraft_doc::ListAlign::Left,
-        designcraft_doc::ListType::Bullets => pp.bullet_align,
+        _ if label_aligned == 0 || pp.direction == pliego_doc::TextDirection::RightToLeft => pliego_doc::ListAlign::Left,
+        pliego_doc::ListType::Bullets => pp.bullet_align,
         _ => pp.number_align,
     };
     let para_box = ParaBox::of(doc, pp);
@@ -2440,8 +2440,8 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
         // Every IDML's root style carries a leading model and character alignment, which only
         // the Japanese composers use.
         for g in &mut glyphs {
-            g.leading_model = designcraft_doc::cjk::LeadingModel::Roman;
-            g.character_alignment = designcraft_doc::cjk::CharacterAlignment::Baseline;
+            g.leading_model = pliego_doc::cjk::LeadingModel::Roman;
+            g.character_alignment = pliego_doc::cjk::CharacterAlignment::Baseline;
         }
     }
     let bidi_text = bidi::paragraph_text(&mut glyphs, &story.text);
@@ -2449,7 +2449,7 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
         &mut glyphs,
         &unicode_bidi::BidiInfo::new(
             &bidi_text,
-            Some(if pp.direction == designcraft_doc::TextDirection::RightToLeft { unicode_bidi::Level::rtl() } else { unicode_bidi::Level::ltr() }),
+            Some(if pp.direction == pliego_doc::TextDirection::RightToLeft { unicode_bidi::Level::rtl() } else { unicode_bidi::Level::ltr() }),
         ),
     );
     apply_desired_spacing(&mut glyphs, pp);
@@ -2461,19 +2461,19 @@ fn shape_paragraph(input: ParagraphShapeInput<'_, '_>) -> ShapedParagraph {
     // An empty paragraph takes its height from its paragraph mark's character format.
     let mark_chars = if glyphs.is_empty() { doc.styles.resolve_char(base_chars, story.char_format_of(prange.start)) } else { base_chars.clone() };
     let mark_leading = match mark_chars.leading {
-        designcraft_doc::Leading::Auto => mark_chars.size * pp.auto_leading,
-        designcraft_doc::Leading::Points(v) => v,
+        pliego_doc::Leading::Auto => mark_chars.size * pp.auto_leading,
+        pliego_doc::Leading::Points(v) => v,
     };
     // The paragraph mark is a character of the last line: its leading counts there like any
     // other character's. It doesn't set the line's ascent or descent. A hidden or deleted
     // mark takes no room.
     let last_line_mark = story.text.get(prange.end..).filter(|t| t.starts_with('\n')).and_then(|_| {
         let props = doc.styles.resolve_char(base_chars, story.format_after(prange.end));
-        let hidden = props.change == designcraft_doc::ChangeMark::Deleted
+        let hidden = props.change == pliego_doc::ChangeMark::Deleted
             || (!props.conditions.is_empty() && props.conditions.iter().all(|c| sub.hidden_conditions.contains(c)));
         (!hidden).then_some(match props.leading {
-            designcraft_doc::Leading::Auto => props.size * pp.auto_leading,
-            designcraft_doc::Leading::Points(v) => v,
+            pliego_doc::Leading::Auto => props.size * pp.auto_leading,
+            pliego_doc::Leading::Points(v) => v,
         })
     });
     ShapedParagraph {
@@ -2517,7 +2517,7 @@ struct ParagraphFinishInput<'a> {
     split_budget: usize,
     paragraph: usize,
     paragraph_count: usize,
-    props: &'a designcraft_doc::ParaProps,
+    props: &'a pliego_doc::ParaProps,
     info: &'a mut Vec<ParaInfo>,
     start_at: (usize, usize),
     at_top: bool,
@@ -2886,7 +2886,7 @@ fn compose_with_db(doc: &Document, story: &Story, frames: &[FrameSpec], opts: &C
         } = shaped;
         let bidi_info = unicode_bidi::BidiInfo::new(
             &bidi_text,
-            Some(if pp.direction == designcraft_doc::TextDirection::RightToLeft { unicode_bidi::Level::rtl() } else { unicode_bidi::Level::ltr() }),
+            Some(if pp.direction == pliego_doc::TextDirection::RightToLeft { unicode_bidi::Level::rtl() } else { unicode_bidi::Level::ltr() }),
         );
         // A paragraph set across the columns moves on to the next frame where others move on to
         // the next column.
@@ -3171,16 +3171,16 @@ fn finish_composition(input: FinishInput<'_>) -> ComposedStory {
                 let Some(obj) = story.objects.get(o.index) else { continue };
                 let (w, h) = o.size;
                 o.origin = match &obj.position {
-                    designcraft_doc::AnchorPosition::Inline { y_offset } => Point::new(o.x, l.baseline - y_offset - h),
-                    designcraft_doc::AnchorPosition::AboveLine { align, space_after, .. } => {
+                    pliego_doc::AnchorPosition::Inline { y_offset } => Point::new(o.x, l.baseline - y_offset - h),
+                    pliego_doc::AnchorPosition::AboveLine { align, space_after, .. } => {
                         let x = match align {
-                            designcraft_doc::anchored::AnchorAlign::Left => l.x0,
-                            designcraft_doc::anchored::AnchorAlign::Center => (l.x0 + l.x1 - w) / 2.0,
-                            designcraft_doc::anchored::AnchorAlign::Right => l.x1 - w,
+                            pliego_doc::anchored::AnchorAlign::Left => l.x0,
+                            pliego_doc::anchored::AnchorAlign::Center => (l.x0 + l.x1 - w) / 2.0,
+                            pliego_doc::anchored::AnchorAlign::Right => l.x1 - w,
                         };
                         Point::new(x, l.baseline - o.text_ascent - space_after - h)
                     }
-                    designcraft_doc::AnchorPosition::Custom {
+                    pliego_doc::AnchorPosition::Custom {
                         x_relative,
                         y_relative,
                         x_offset,
@@ -3190,7 +3190,7 @@ fn finish_composition(input: FinishInput<'_>) -> ComposedStory {
                         keep_within_column,
                         spine_relative,
                     } => {
-                        use designcraft_doc::anchored::AnchorRelative as R;
+                        use pliego_doc::anchored::AnchorRelative as R;
                         let col = ft.columns.get(l.column as usize).copied().unwrap_or(f.area);
                         let area = |r: R| match r {
                             R::Anchor => None,
@@ -3427,7 +3427,7 @@ fn apply_desired_spacing(glyphs: &mut [Glyph], pp: &ParaProps) {
     for i in 0..glyphs.len() {
         let (left, right) = glyphs.split_at_mut(i + 1);
         let Some(g) = left.last_mut() else { continue };
-        if pp.kinsoku_hang != designcraft_doc::cjk::KinsokuHang::None && pp.kinsoku.as_ref().is_some_and(|k| k.hanging.contains(g.ch)) {
+        if pp.kinsoku_hang != pliego_doc::cjk::KinsokuHang::None && pp.kinsoku.as_ref().is_some_and(|k| k.hanging.contains(g.ch)) {
             g.cjk_hang = g.adv;
         }
         g.ideographic_space_elastic = pp.treat_ideographic_space_as_space;
@@ -3545,7 +3545,7 @@ fn rewind(
 pub fn deleted_paras(story: &Story, ranges: &[Range<usize>]) -> Vec<bool> {
     let mut spans: Vec<Range<usize>> = Vec::new();
     for (r, f) in story.runs() {
-        if f.over.change != Some(designcraft_doc::ChangeMark::Deleted) {
+        if f.over.change != Some(pliego_doc::ChangeMark::Deleted) {
             continue;
         }
         match spans.last_mut() {
@@ -4103,8 +4103,8 @@ struct Tops {
     em: f64,
 }
 
-/// The em box top above the baseline at `size` ([`designcraft_fonts::FontFace::em_box`]).
-fn em_box_top(face: &designcraft_fonts::FontFace, size: f64) -> f64 {
+/// The em box top above the baseline at `size` ([`pliego_fonts::FontFace::em_box`]).
+fn em_box_top(face: &pliego_fonts::FontFace, size: f64) -> f64 {
     let em = Some(face.em_box().0 / face.upem).filter(|e| e.is_finite()).unwrap_or(0.88);
     em * size
 }
@@ -4138,7 +4138,7 @@ fn alignment_em_box(g: &Glyph) -> (f64, f64) {
 }
 /// Upward shift that puts `g`'s em box (or ICF) edge or centre where the reference glyph's is.
 fn cjk_alignment_shift(g: &Glyph, reference: &Glyph) -> f64 {
-    use designcraft_doc::cjk::CharacterAlignment as A;
+    use pliego_doc::cjk::CharacterAlignment as A;
     let (t, b) = alignment_em_box(g);
     let (rt, rb) = alignment_em_box(reference);
     match g.character_alignment {
@@ -4152,8 +4152,8 @@ fn cjk_alignment_shift(g: &Glyph, reference: &Glyph) -> f64 {
 }
 /// The point leading measures a line from, relative to its baseline, and the leading model of
 /// the line's largest character, which sets both.
-fn cjk_line_reference(line: &[Glyph]) -> (f64, designcraft_doc::cjk::LeadingModel) {
-    use designcraft_doc::cjk::LeadingModel as L;
+fn cjk_line_reference(line: &[Glyph]) -> (f64, pliego_doc::cjk::LeadingModel) {
+    use pliego_doc::cjk::LeadingModel as L;
     let Some(g) = line.iter().max_by(|a, b| a.size.total_cmp(&b.size)) else { return (0.0, L::Roman) };
     let (top, bottom) = cjk_em_box(g);
     let reference = match g.leading_model {
@@ -4174,7 +4174,7 @@ fn line_metrics(
     base_leading: f64,
     base_size: f64,
     db: &ScopedFonts<'_>,
-    base: &designcraft_doc::CharProps,
+    base: &pliego_doc::CharProps,
 ) -> (f64, Tops, f64, f64) {
     let src: &[Glyph] = if line.is_empty() { all.get(s..(s + 1).min(all.len())).unwrap_or(&[]) } else { line };
     let face = || db.face(&base.font_family, &base.font_style);
@@ -4438,7 +4438,7 @@ pub fn hj_severity(ratio: f64, min: f64, max: f64) -> u8 {
 ///
 /// The left indent is a left stop of its own: in a hanging indent, the tab after a bullet or
 /// number reaches it unless an explicit stop comes first.
-fn tab_advance<'a>(tabs: &'a [designcraft_doc::TabStop], left_indent: f64, abs: f64, after: &[Glyph]) -> (f64, Option<&'a designcraft_doc::TabStop>) {
+fn tab_advance<'a>(tabs: &'a [pliego_doc::TabStop], left_indent: f64, abs: f64, after: &[Glyph]) -> (f64, Option<&'a pliego_doc::TabStop>) {
     let indent_ahead = left_indent > abs + 0.01;
     let stop = tabs.iter().find(|t| t.position > abs + 0.01).filter(|t| !indent_ahead || t.position <= left_indent);
     let (pos, align) = match stop {
@@ -4560,7 +4560,7 @@ fn append_kashidas(line: &[Glyph], out: &mut Vec<PlacedGlyph>, kashidas: Vec<(us
     for (i, l) in kashidas {
         let first = (0..=i).rev().take_while(|&j| line[j].byte == line[i].byte).last().unwrap_or(i);
         let (g, at) = (&line[i], out[first].x - line[first].dx - l);
-        let gid = designcraft_fonts::first_glyph(&g.face, &['\u{0640}']);
+        let gid = pliego_fonts::first_glyph(&g.face, &['\u{0640}']);
         let w = g.face.advance(gid) * g.sx;
         if gid == 0 || w <= 0.0 {
             continue;
@@ -4640,12 +4640,12 @@ fn layout_line(
     let hl = first.map_or(0.0, |g| breaker::hang_left(g, sp));
     let optical_right = lastg.map_or(0.0, |g| breaker::hang_right(g, sp));
     let cjk_right = lastg.map_or(0.0, |g| g.cjk_hang);
-    let regular_hang = pp.kinsoku_hang == designcraft_doc::cjk::KinsokuHang::Regular;
+    let regular_hang = pp.kinsoku_hang == pliego_doc::cjk::KinsokuHang::Regular;
     let tab_measure = TabMeasure { x0, x1, tab_origin, hl, optical_right, cjk_right, regular_hang };
     let (leaders, last_tab) = layout_tabs(&mut line, pp, tab_measure);
     // The measure grows by the hang of the edge glyphs.
     let (mut x0, mut measure) = (x0, measure);
-    if sp.optical || pp.kinsoku_hang != designcraft_doc::cjk::KinsokuHang::None {
+    if sp.optical || pp.kinsoku_hang != pliego_doc::cjk::KinsokuHang::None {
         let cjk_right = if regular_hang { cjk_right.min((line.iter().map(|g| g.adv).sum::<f64>() - measure).max(0.0)) } else { cjk_right };
         let hr = optical_right.max(cjk_right);
         x0 -= hl;
@@ -4861,7 +4861,7 @@ fn tab_leader(tab: &Glyph, leader: &str, x: f64, w: f64, origin: f64, out: &mut 
     let glyphs: Vec<(u32, f64)> = leader
         .chars()
         .map(|c| {
-            let gid = designcraft_fonts::first_glyph(&tab.face, &[c]);
+            let gid = pliego_fonts::first_glyph(&tab.face, &[c]);
             (gid, tab.face.advance(gid) * tab.sx)
         })
         .collect();
@@ -4993,7 +4993,7 @@ fn distribute(line: &[Glyph], spaces: &[usize], extra: f64, sp: &Spacing, add: &
 /// from the start edge of the line's segment `x0..x1`. Like the paragraph's own indents it then
 /// applies from each later line's segment, so beside a text wrap it starts at the wrap's edge.
 /// `None` when there is none or the indent is unchanged.
-fn indent_here(placed: &[PlacedGlyph], pp: &designcraft_doc::ParaProps, x0: f64, x1: f64, rtl: bool) -> Option<designcraft_doc::ParaProps> {
+fn indent_here(placed: &[PlacedGlyph], pp: &pliego_doc::ParaProps, x0: f64, x1: f64, rtl: bool) -> Option<pliego_doc::ParaProps> {
     // The placed glyphs are in the line's order (bidi only moves them): the drop cap's, then a
     // list label's, which is set beside the drop cap, then the text's. A character in the drop
     // cap or the label counts too, and one in the label comes after one in the drop cap.
@@ -5105,7 +5105,7 @@ fn split_drop_cap(
     base_cap: f64,
     grid: Option<f64>,
     align_left: bool,
-    tabs: (&[designcraft_doc::TabStop], f64),
+    tabs: (&[pliego_doc::TabStop], f64),
 ) -> Option<DropCap> {
     let n = glyphs.iter().take_while(|g| g.byte < end).count();
     if n == 0 {
@@ -5148,7 +5148,7 @@ fn split_drop_cap(
     }
     let lsb = match dc.first() {
         Some(g) if align_left => {
-            let ink = designcraft_geom::Shape::bounding_box(&*db.outline(g.face.get(), g.gid));
+            let ink = pliego_geom::Shape::bounding_box(&*db.outline(g.face.get(), g.gid));
             let lsb = g.dx + ink.x0 * g.sx;
             if ink.width() > 0.0 && lsb.is_finite() { lsb } else { 0.0 }
         }
@@ -5198,13 +5198,13 @@ fn place_drop_cap(dc: &DropCap, at: f64, rtl: bool) -> Vec<PlacedGlyph> {
 
 /// The character attributes of a list label: the paragraph's, under the bullet's or number's
 /// character style, in the bullet font.
-fn label_chars(doc: &Document, pp: &ParaProps, base: &designcraft_doc::CharProps) -> designcraft_doc::CharProps {
-    let bullets = pp.list_type == designcraft_doc::ListType::Bullets;
+fn label_chars(doc: &Document, pp: &ParaProps, base: &pliego_doc::CharProps) -> pliego_doc::CharProps {
+    let bullets = pp.list_type == pliego_doc::ListType::Bullets;
     let style = if bullets { &pp.bullet_char_style } else { &pp.number_char_style };
-    let mut cp = if style.is_empty() || style == designcraft_doc::NO_CHAR_STYLE {
+    let mut cp = if style.is_empty() || style == pliego_doc::NO_CHAR_STYLE {
         base.clone()
     } else {
-        doc.styles.resolve_char(base, &designcraft_doc::CharFormat { style: style.clone(), over: Default::default() })
+        doc.styles.resolve_char(base, &pliego_doc::CharFormat { style: style.clone(), over: Default::default() })
     };
     if bullets && !pp.bullet_font.is_empty() {
         cp.font_family = pp.bullet_font.clone();
@@ -5239,14 +5239,14 @@ fn prepend_label(
     glyphs: &mut Vec<Glyph>,
     label: &str,
     at: usize,
-    base: &designcraft_doc::CharProps,
+    base: &pliego_doc::CharProps,
     env: shape::TypeEnv,
     table: &mut StyleTable<'_>,
 ) -> usize {
     // Shape the label as a tiny standalone story so it uses the paragraph's base character style.
     let mut tmp = Story::new(StoryId(0));
     tmp.insert(0, label);
-    let styles = designcraft_doc::Styles::default();
+    let styles = pliego_doc::Styles::default();
     let shaped = shape::shape_para(
         shape::ShapeInput {
             db,
@@ -5285,23 +5285,23 @@ type LimitsKey = (usize, usize, usize, bool);
 
 /// Mark glyphs after which a hyphen may be inserted (dictionary/pattern points within the
 /// paragraph's limits; words with discretionary hyphens break only there).
-/// Whether a language (a name or locale code, see [`designcraft_doc::language_tag`]) uses the
+/// Whether a language (a name or locale code, see [`pliego_doc::language_tag`]) uses the
 /// English hyphenation and spelling dictionaries.
 pub fn is_english(language: &str) -> bool {
     // InDesign's English names first: composition asks this for every run.
-    language.starts_with("English") || designcraft_doc::language_tag(language).is_some_and(|t| designcraft_doc::language_subtag(t) == "en")
+    language.starts_with("English") || pliego_doc::language_tag(language).is_some_and(|t| pliego_doc::language_subtag(t) == "en")
 }
 
 /// Byte ranges of paragraph `prange` set in a language other than English, with the hyphenator
 /// for that language (None: not hyphenated).
 fn foreign_ranges(
     doc: &Document,
-    story: &designcraft_doc::Story,
+    story: &pliego_doc::Story,
     prange: Range<usize>,
-    base: &designcraft_doc::CharProps,
+    base: &pliego_doc::CharProps,
 ) -> Vec<(Range<usize>, Option<hyphen::Lang>)> {
     if is_english(&base.language)
-        && story.runs().all(|(_, f)| f.over.language.as_deref().is_none_or(is_english) && f.style == designcraft_doc::story::NO_CHAR_STYLE)
+        && story.runs().all(|(_, f)| f.over.language.as_deref().is_none_or(is_english) && f.style == pliego_doc::story::NO_CHAR_STYLE)
     {
         return vec![];
     }
@@ -5439,28 +5439,28 @@ fn hyphenation_points(
 /// out along the rule draws solid.
 /// `(color, tint)` is the rule's (Text Color already resolved); `text`, the colour of the text
 /// the rule goes with, for a gap in Text Color.
-fn rule_decos(doc: &Document, r: &designcraft_doc::Rule, rect: Rect, (color, tint): (String, f32), text: &(String, f32)) -> Vec<Deco> {
-    use designcraft_doc::StrokeType;
+fn rule_decos(doc: &Document, r: &pliego_doc::Rule, rect: Rect, (color, tint): (String, f32), text: &(String, f32)) -> Vec<Deco> {
+    use pliego_doc::StrokeType;
     let kind = doc.stroke_kind(&r.kind);
     let (w, len) = (rect.height(), rect.width());
     let mut out = Vec::new();
-    if !matches!(kind, StrokeType::Solid) && r.gap_color != designcraft_color::swatch::NONE && w > 0.0 && len > 0.0 {
-        let gap = if r.gap_color == designcraft_doc::TEXT_COLOR { text.0.clone() } else { r.gap_color.clone() };
+    if !matches!(kind, StrokeType::Solid) && r.gap_color != pliego_color::swatch::NONE && w > 0.0 && len > 0.0 {
+        let gap = if r.gap_color == pliego_doc::TEXT_COLOR { text.0.clone() } else { r.gap_color.clone() };
         out.push(Deco { rect, color: gap, tint: r.gap_tint, ..Deco::default() });
     }
     let y = rect.center().y;
-    let mut line = designcraft_geom::BezPath::new();
+    let mut line = pliego_geom::BezPath::new();
     line.move_to((rect.x0, y));
     line.line_to((rect.x1, y));
     let path = match &kind {
         StrokeType::Dashed { pattern } if StrokeType::expandable_dashes(pattern, len) => {
-            let mut p = designcraft_geom::BezPath::new();
+            let mut p = pliego_geom::BezPath::new();
             let (mut x, mut k, mut on) = (rect.x0, 0, true);
             while x < rect.x1 {
                 let step = pattern[k % pattern.len()];
                 if on && step > 0.0 {
                     let r = Rect::new(x, rect.y0, (x + step).min(rect.x1), rect.y1);
-                    p.extend(designcraft_geom::Shape::path_elements(&r, 0.1));
+                    p.extend(pliego_geom::Shape::path_elements(&r, 0.1));
                 }
                 x += step;
                 k += 1;
@@ -5469,10 +5469,10 @@ fn rule_decos(doc: &Document, r: &designcraft_doc::Rule, rect: Rect, (color, tin
             Some(p)
         }
         StrokeType::Dotted if StrokeType::expandable_dashes(&[w, w], len) => {
-            let mut p = designcraft_geom::BezPath::new();
+            let mut p = pliego_geom::BezPath::new();
             let mut x = rect.x0 + w / 2.0;
             while x <= rect.x1 - w / 2.0 + 1e-9 {
-                p.extend(designcraft_geom::Shape::path_elements(&designcraft_geom::kurbo::Circle::new((x, y), w / 2.0), 0.1));
+                p.extend(pliego_geom::Shape::path_elements(&pliego_geom::kurbo::Circle::new((x, y), w / 2.0), 0.1));
                 x += 2.0 * w;
             }
             Some(p)
@@ -5484,7 +5484,7 @@ fn rule_decos(doc: &Document, r: &designcraft_doc::Rule, rect: Rect, (color, tin
 }
 
 /// `spanned`: a paragraph spans the frame's columns, so the lines move together.
-fn vertical_justify(ft: &mut FrameText, f: &FrameSpec, spanned: bool, notes: &designcraft_doc::FootnoteOptions) {
+fn vertical_justify(ft: &mut FrameText, f: &FrameSpec, spanned: bool, notes: &pliego_doc::FootnoteOptions) {
     if ft.lines.is_empty() || f.opts.vertical_justification == VerticalJustification::Top {
         return;
     }
@@ -5967,7 +5967,7 @@ mod tests;
 /// Type on a path: between the composed line (x along it, y as composed) and the frame's path
 /// space, as `path_glyphs` places the glyphs.
 pub struct PathTextMap {
-    warp: designcraft_geom::warp::PathWarp,
+    warp: pliego_geom::warp::PathWarp,
     start: f64,
     /// Line y that sits on the path (the alignment), and the line's baseline.
     on: f64,
@@ -5976,16 +5976,16 @@ pub struct PathTextMap {
 
 impl PathTextMap {
     /// The map of `item` (type on a path) for its composed frame `ft`; None for other frames.
-    pub fn new(item: &designcraft_doc::Item, ft: &FrameText) -> Option<Self> {
+    pub fn new(item: &pliego_doc::Item, ft: &FrameText) -> Option<Self> {
         let pt = item.text_frame()?.options.path.as_ref()?;
-        let warp = designcraft_geom::warp::PathWarp::new(&item.path.to_bezpath(), pt.flip);
+        let warp = pliego_geom::warp::PathWarp::new(&item.path.to_bezpath(), pt.flip);
         let (on, baseline) = match ft.lines.first() {
             Some(l) => (
                 match pt.align {
-                    designcraft_doc::PathAlign::Baseline => l.baseline,
-                    designcraft_doc::PathAlign::Ascender => l.baseline - l.ascent,
-                    designcraft_doc::PathAlign::Descender => l.baseline + l.descent,
-                    designcraft_doc::PathAlign::Center => l.baseline - (l.ascent - l.descent) / 2.0,
+                    pliego_doc::PathAlign::Baseline => l.baseline,
+                    pliego_doc::PathAlign::Ascender => l.baseline - l.ascent,
+                    pliego_doc::PathAlign::Descender => l.baseline + l.descent,
+                    pliego_doc::PathAlign::Center => l.baseline - (l.ascent - l.descent) / 2.0,
                 },
                 l.baseline,
             ),
@@ -5997,7 +5997,7 @@ impl PathTextMap {
     /// A point of the composed line, on the path: along it by x, across it by y.
     pub fn to_path(&self, p: Point) -> Point {
         match self.warp.at(self.start + p.x) {
-            Some((q, a)) => q + designcraft_geom::Vec2::new(-a.sin(), a.cos()) * (p.y - self.on),
+            Some((q, a)) => q + pliego_geom::Vec2::new(-a.sin(), a.cos()) * (p.y - self.on),
             None => p,
         }
     }
@@ -6011,22 +6011,17 @@ impl PathTextMap {
 
 /// Each visible glyph of a type-on-a-path frame placed on the path: its outline in frame space
 /// (grouped by run style).
-pub fn path_glyphs(
-    cs: &ComposedStory,
-    ft: &FrameText,
-    path: &designcraft_geom::BezPath,
-    pt: &designcraft_doc::PathType,
-) -> Vec<(u32, designcraft_geom::BezPath)> {
-    let db = designcraft_fonts::FontDb::global();
-    let warp = designcraft_geom::warp::PathWarp::new(path, pt.flip);
-    let mut runs: Vec<(u32, designcraft_geom::BezPath)> = Vec::new();
+pub fn path_glyphs(cs: &ComposedStory, ft: &FrameText, path: &pliego_geom::BezPath, pt: &pliego_doc::PathType) -> Vec<(u32, pliego_geom::BezPath)> {
+    let db = pliego_fonts::FontDb::global();
+    let warp = pliego_geom::warp::PathWarp::new(path, pt.flip);
+    let mut runs: Vec<(u32, pliego_geom::BezPath)> = Vec::new();
     for l in &ft.lines {
         // The part of the type that sits on the path.
         let on = match pt.align {
-            designcraft_doc::PathAlign::Baseline => l.baseline,
-            designcraft_doc::PathAlign::Ascender => l.baseline - l.ascent,
-            designcraft_doc::PathAlign::Descender => l.baseline + l.descent,
-            designcraft_doc::PathAlign::Center => l.baseline - (l.ascent - l.descent) / 2.0,
+            pliego_doc::PathAlign::Baseline => l.baseline,
+            pliego_doc::PathAlign::Ascender => l.baseline - l.ascent,
+            pliego_doc::PathAlign::Descender => l.baseline + l.descent,
+            pliego_doc::PathAlign::Center => l.baseline - (l.ascent - l.descent) / 2.0,
         };
         for g in l.glyphs.iter().filter(|g| g.visible) {
             let outline = db.outline(&g.face, g.gid);
@@ -6036,24 +6031,19 @@ pub fn path_glyphs(
             let style = &cs.styles[g.style as usize];
             let mid = g.x + g.adv / 2.0;
             let Some((p, a)) = warp.at(pt.start + mid) else { continue };
-            let place = designcraft_geom::Affine::translate(p.to_vec2())
-                * designcraft_geom::Affine::rotate(a)
-                * designcraft_geom::Affine::translate((-mid, -on));
+            let place = pliego_geom::Affine::translate(p.to_vec2()) * pliego_geom::Affine::rotate(a) * pliego_geom::Affine::translate((-mid, -on));
             let skew = if style.skew != 0.0 {
-                designcraft_geom::Affine::new([1.0, 0.0, -style.skew.to_radians().tan(), 1.0, 0.0, 0.0])
+                pliego_geom::Affine::new([1.0, 0.0, -style.skew.to_radians().tan(), 1.0, 0.0, 0.0])
             } else {
-                designcraft_geom::Affine::IDENTITY
+                pliego_geom::Affine::IDENTITY
             };
-            let shatai = style.shatai_xf(g, l.baseline).unwrap_or(designcraft_geom::Affine::IDENTITY);
-            let m = place
-                * shatai
-                * designcraft_geom::Affine::translate((g.x, l.baseline + g.y))
-                * skew
-                * designcraft_geom::Affine::scale_non_uniform(g.sx, g.sy);
+            let shatai = style.shatai_xf(g, l.baseline).unwrap_or(pliego_geom::Affine::IDENTITY);
+            let m =
+                place * shatai * pliego_geom::Affine::translate((g.x, l.baseline + g.y)) * skew * pliego_geom::Affine::scale_non_uniform(g.sx, g.sy);
             let k = match runs.iter().position(|r| r.0 == g.style) {
                 Some(k) => k,
                 None => {
-                    runs.push((g.style, designcraft_geom::BezPath::new()));
+                    runs.push((g.style, pliego_geom::BezPath::new()));
                     runs.len() - 1
                 }
             };
@@ -6068,7 +6058,7 @@ pub fn path_glyphs(
 mod column_allocation_safety_tests {
     use super::*;
 
-    fn frame(kind: designcraft_doc::ColumnsKind) -> FrameSpec {
+    fn frame(kind: pliego_doc::ColumnsKind) -> FrameSpec {
         FrameSpec {
             id: ItemId(1),
             area: Rect::new(0., 0., 300., 100.),
@@ -6086,7 +6076,7 @@ mod column_allocation_safety_tests {
             outline: None,
         }
     }
-    fn check(kind: designcraft_doc::ColumnsKind) {
+    fn check(kind: pliego_doc::ColumnsKind) {
         let mut f = frame(kind);
         // Fail safely at a small boundary before exercising hostile native options.
         assert_eq!(f.columns().len(), 216);
@@ -6095,7 +6085,7 @@ mod column_allocation_safety_tests {
         f.opts.columns = 0;
         assert_eq!(f.columns().len(), 1);
         f.opts.columns = 2;
-        let expected = if kind == designcraft_doc::ColumnsKind::FixedWidth {
+        let expected = if kind == pliego_doc::ColumnsKind::FixedWidth {
             vec![Rect::new(0., 0., 20., 100.), Rect::new(32., 0., 52., 100.)]
         } else {
             vec![Rect::new(0., 0., 144., 100.), Rect::new(156., 0., 300., 100.)]
@@ -6104,10 +6094,10 @@ mod column_allocation_safety_tests {
     }
     #[test]
     fn column_allocation_caps_equal_width_frame_count() {
-        check(designcraft_doc::ColumnsKind::FixedNumber);
+        check(pliego_doc::ColumnsKind::FixedNumber);
     }
     #[test]
     fn column_allocation_caps_fixed_width_frame_count() {
-        check(designcraft_doc::ColumnsKind::FixedWidth);
+        check(pliego_doc::ColumnsKind::FixedWidth);
     }
 }

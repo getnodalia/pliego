@@ -1,61 +1,61 @@
 {
-  "id": "designcraft",
-  "name": "DesignCraft",
-  "upgradeCode": "49E87D30-BB68-4896-AA1D-F45C833CFC3C",
+  "id": "pliego",
+  "name": "Pliego",
+  "upgradeCode": "7B0B1431-D5FE-44F0-AE77-9ADB69AF906A",
   "sources": [
-    "designcraft.wxs",
+    "pliego.wxs",
     "installer-ui.wxs"
   ],
-  "icon": "assets/app-icon/designcraft.ico",
+  "icon": "assets/app-icon/pliego.ico",
   "localization": [],
   "extensions": [],
   "payloads": [
     "NOTICE",
-    "designcraft-cli.exe",
-    "designcraft.exe"
+    "pliego-cli.exe",
+    "pliego.exe"
   ],
   "registry": [
     [
       "-1",
-      "Software\\Classes\\Designcraft.Idml\\shell\\open\\command",
+      "Software\\Classes\\Pliego.Idml\\shell\\open\\command",
       "",
-      "\"[#DesigncraftExe]\" \"%1\""
+      "\"[#PliegoExe]\" \"%1\""
     ],
     [
       "-1",
       "Software\\Classes\\.idml\\OpenWithProgids",
-      "Designcraft.Idml",
+      "Pliego.Idml",
       ""
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\designcraft.exe",
+      "Software\\Classes\\Applications\\pliego.exe",
       "FriendlyAppName",
-      "DesignCraft"
+      "Pliego"
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\designcraft.exe\\shell\\open\\command",
+      "Software\\Classes\\Applications\\pliego.exe\\shell\\open\\command",
       "",
-      "\"[#DesigncraftExe]\" \"%1\""
+      "\"[#PliegoExe]\" \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\designcraft.exe\\SupportedTypes",
-      ".designcraft",
+      "Software\\Classes\\Applications\\pliego.exe\\SupportedTypes",
+      ".pliego",
       ""
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\designcraft.exe\\SupportedTypes",
+      "Software\\Classes\\Applications\\pliego.exe\\SupportedTypes",
       ".idml",
       ""
     ],
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\designcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\pliego.exe",
       "",
-      "[#DesigncraftExe]"
+      "[#PliegoExe]"
     ]
   ],
   "mode": "dualScope"

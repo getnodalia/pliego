@@ -7,7 +7,7 @@ use super::{
 
 impl<'a> Ex<'a> {
     /// `<GraphicLayerOption>` of a placed graphic: its layer attributes and the nested layer tree.
-    pub(super) fn layer_option_el(&mut self, options: &designcraft_doc::GraphicLayerOptions) -> El {
+    pub(super) fn layer_option_el(&mut self, options: &pliego_doc::GraphicLayerOptions) -> El {
         let mut option = El::new("GraphicLayerOption");
         for (key, value) in &options.attributes {
             if graphic_layer_attribute_name(key) {
@@ -177,13 +177,13 @@ impl<'a> Ex<'a> {
                 .attr("OpticalMarginAlignment", bool_s(s.optical_margin.on))
                 .attr(
                     "OpticalMarginSize",
-                    num(designcraft_doc::OpticalMargin::clamp_size(s.optical_margin.size).unwrap_or(designcraft_doc::OpticalMargin::DEFAULT_SIZE)),
+                    num(pliego_doc::OpticalMargin::clamp_size(s.optical_margin.size).unwrap_or(pliego_doc::OpticalMargin::DEFAULT_SIZE)),
                 )
                 .attr("FrameType", "TextFrameType")
                 .attr("StoryOrientation", if s.vertical { "Vertical" } else { "Horizontal" })
                 .attr(
                     "StoryDirection",
-                    if s.direction == designcraft_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" },
+                    if s.direction == pliego_doc::TextDirection::RightToLeft { "RightToLeftDirection" } else { "LeftToRightDirection" },
                 ),
         );
         for psr in self.story_paras(s) {
@@ -195,7 +195,7 @@ impl<'a> Ex<'a> {
     /// Write an index reference and record any cross-reference it declares.
     fn index_reference(&mut self, s: &Story, k: usize) -> Option<El> {
         if let Some(r) = s.index_refs.get(k).filter(|r| !r.topics.is_empty()) {
-            use designcraft_doc::index::IndexRange as R;
+            use pliego_doc::index::IndexRange as R;
             for n in 1..=r.topics.len() {
                 // A shared topic has one key: keep the first reference's
                 // value (even empty), rather than inventing a merged key.
@@ -233,12 +233,12 @@ impl<'a> Ex<'a> {
     fn anchored_object(&mut self, s: &Story, k: usize) -> Option<El> {
         if let Some(o) = s.objects.get(k) {
             let mut e = self.item_el(&o.item, o.item.xf);
-            use designcraft_doc::anchored::AnchorAlign as A;
+            use pliego_doc::anchored::AnchorAlign as A;
             let setting = match &o.position {
-                designcraft_doc::AnchorPosition::Inline { y_offset } => {
+                pliego_doc::AnchorPosition::Inline { y_offset } => {
                     El::new("AnchoredObjectSetting").attr("AnchoredPosition", "InlinePosition").attr("AnchorYoffset", num(*y_offset))
                 }
-                designcraft_doc::AnchorPosition::AboveLine { align, space_before, space_after } => El::new("AnchoredObjectSetting")
+                pliego_doc::AnchorPosition::AboveLine { align, space_before, space_after } => El::new("AnchoredObjectSetting")
                     .attr("AnchoredPosition", "AboveLine")
                     .attr(
                         "HorizontalAlignment",
@@ -250,7 +250,7 @@ impl<'a> Ex<'a> {
                     )
                     .attr("AnchorSpaceAbove", num(*space_before))
                     .attr("AnchorYoffset", num(*space_after)),
-                designcraft_doc::AnchorPosition::Custom {
+                pliego_doc::AnchorPosition::Custom {
                     x_relative,
                     y_relative,
                     x_offset,
@@ -330,13 +330,13 @@ impl<'a> Ex<'a> {
     /// A cross-reference source's text: what its format generates, or the text typed over it, its
     /// page numbers as InDesign's live cross-reference page number (as InDesign writes them, so
     /// generated text reads back as generated).
-    fn xref_content(&mut self, c: &mut El, x: &designcraft_doc::CrossRef) {
+    fn xref_content(&mut self, c: &mut El, x: &pliego_doc::CrossRef) {
         let t = match &x.text {
             Some(t) => t.clone(),
             None => self.d.generated_xref_text(x.target, &x.format).unwrap_or_else(|| "??".into()),
         };
         let page = x.page.clone().unwrap_or_else(|| "?".into());
-        for (n, part) in t.split(designcraft_doc::xref::PAGE_NUM_BLOCK).enumerate() {
+        for (n, part) in t.split(pliego_doc::xref::PAGE_NUM_BLOCK).enumerate() {
             if n > 0 {
                 c.push(
                     El::new("TextVariableInstance")
@@ -411,10 +411,10 @@ impl<'a> Ex<'a> {
                     if let Some(t) = s.para_table(pi) {
                         out.push(Node::El(self.table_el(t)));
                     }
-                } else if ch == designcraft_doc::ANCHOR_MARK {
+                } else if ch == pliego_doc::ANCHOR_MARK {
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
-                    let k = s.text[..seg_start + ci].matches(designcraft_doc::ANCHOR_MARK).count();
+                    let k = s.text[..seg_start + ci].matches(pliego_doc::ANCHOR_MARK).count();
                     if let Some(a) = s.anchors.get(k) {
                         out.push(Node::El(
                             El::new("HyperlinkTextDestination")
@@ -424,22 +424,22 @@ impl<'a> Ex<'a> {
                                 .attr("DestinationUniqueKey", a.id & 0xFFFF_FFFF),
                         ));
                     }
-                } else if ch == designcraft_doc::OBJECT_MARK {
+                } else if ch == pliego_doc::OBJECT_MARK {
                     // An anchored object: the item inside the range with its anchoring settings.
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
-                    let k = s.text[..seg_start + ci].matches(designcraft_doc::OBJECT_MARK).count();
+                    let k = s.text[..seg_start + ci].matches(pliego_doc::OBJECT_MARK).count();
                     if let Some(el) = self.anchored_object(s, k) {
                         out.push(Node::El(el));
                     }
-                } else if ch == designcraft_doc::INDEX_MARK {
+                } else if ch == pliego_doc::INDEX_MARK {
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
-                    let k = s.text[..seg_start + ci].matches(designcraft_doc::INDEX_MARK).count();
+                    let k = s.text[..seg_start + ci].matches(pliego_doc::INDEX_MARK).count();
                     if let Some(el) = self.index_reference(s, k) {
                         out.push(Node::El(el));
                     }
-                } else if ch == designcraft_doc::XREF_MARK {
+                } else if ch == pliego_doc::XREF_MARK {
                     // A source wrapping its current text (InDesign regenerates it on update).
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
@@ -448,7 +448,7 @@ impl<'a> Ex<'a> {
                         c.children.append(&mut out);
                         csrs.push(c);
                     }
-                    let k = s.text[..seg_start + ci].matches(designcraft_doc::XREF_MARK).count();
+                    let k = s.text[..seg_start + ci].matches(pliego_doc::XREF_MARK).count();
                     if let Some(x) = s.xrefs.get(k) {
                         let me = self.fresh();
                         let fmt = self.d.xref_formats.iter().position(|ff| ff.name == x.format).map_or("n".to_string(), xref_format_self);
@@ -463,7 +463,7 @@ impl<'a> Ex<'a> {
                         csrs.push(src);
                         self.xref_sources.push((me, x.target));
                     }
-                } else if let Some(vi) = designcraft_doc::vars::var_index(ch) {
+                } else if let Some(vi) = pliego_doc::vars::var_index(ch) {
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
                     if let Some(v) = self.d.text_variables.get(vi) {
@@ -476,12 +476,12 @@ impl<'a> Ex<'a> {
                                 .attr("AssociatedTextVariable", format!("dTextVariablen{}", v.name)),
                         ));
                     }
-                } else if ch == designcraft_doc::NOTE_MARK {
+                } else if ch == pliego_doc::NOTE_MARK {
                     // Editorial notes aren't written to IDML yet.
-                } else if ch == designcraft_doc::ENDNOTE_REF {
+                } else if ch == pliego_doc::ENDNOTE_REF {
                     // Endnotes aren't written to IDML yet: the endnote frame keeps their text
                     // (numbers included) and the references are left out.
-                } else if ch == designcraft_doc::FOOTNOTE_REF {
+                } else if ch == pliego_doc::FOOTNOTE_REF {
                     // The reference: its own range carrying the reference position.
                     flush_text(&mut cur, &mut pending);
                     flush_content(&mut pending, &mut out);
@@ -493,7 +493,7 @@ impl<'a> Ex<'a> {
                     if let Some(n) = s.notes.get(s.notes_before(seg_start + ci)) {
                         let mut c = self.csr_el(&f);
                         let pos = self.d.footnote_options.ref_position;
-                        if pos != designcraft_doc::Position::Normal {
+                        if pos != pliego_doc::Position::Normal {
                             c.set("Position", names::position_out(pos));
                         }
                         c.push(self.footnote_el(&n.text));
@@ -550,7 +550,7 @@ impl<'a> Ex<'a> {
             .iter()
             .enumerate()
             .filter_map(|(i, h)| match &h.source {
-                designcraft_doc::HyperlinkSource::Text { story, start, end } if *story == s.id => {
+                pliego_doc::HyperlinkSource::Text { story, start, end } if *story == s.id => {
                     let (a, b) = ((*start).max(r.start), (*end).min(r.end));
                     (a < b).then_some((i, a..b))
                 }
@@ -626,7 +626,7 @@ impl<'a> Ex<'a> {
 }
 
 /// The left stop the composer adds for a list's Tab Position, if it adds one.
-fn list_tab_stop(pp: &designcraft_doc::ParaProps) -> Option<f64> {
+fn list_tab_stop(pp: &pliego_doc::ParaProps) -> Option<f64> {
     if !matches!(pp.list_type, ListType::Bullets | ListType::Numbers) {
         return None;
     }
@@ -637,7 +637,7 @@ fn list_tab_stop(pp: &designcraft_doc::ParaProps) -> Option<f64> {
 /// stop the composer adds for it, in the TabList of each level (style or paragraph) that sets the
 /// list type, the tab position or the tabs. `resolved` gives this level's resolved attributes and
 /// those it inherits; the stop comes back on import as an ordinary tab stop.
-pub(super) fn with_list_tab(mut a: ParaAttrs, resolved: impl FnOnce() -> (designcraft_doc::ParaProps, designcraft_doc::ParaProps)) -> ParaAttrs {
+pub(super) fn with_list_tab(mut a: ParaAttrs, resolved: impl FnOnce() -> (pliego_doc::ParaProps, pliego_doc::ParaProps)) -> ParaAttrs {
     if a.list_tab.is_none() && a.tabs.is_none() && a.list_type.is_none() {
         return a;
     }
@@ -649,7 +649,7 @@ pub(super) fn with_list_tab(mut a: ParaAttrs, resolved: impl FnOnce() -> (design
     }
     let mut tabs = here.tabs;
     if let Some(t) = stop {
-        tabs.push(designcraft_doc::TabStop { position: t, align: designcraft_doc::TabAlign::Left, leader: String::new(), align_on: String::new() });
+        tabs.push(pliego_doc::TabStop { position: t, align: pliego_doc::TabAlign::Left, leader: String::new(), align_on: String::new() });
         tabs.sort_by(|a, b| a.position.total_cmp(&b.position));
     }
     a.tabs = Some(tabs);

@@ -64,7 +64,7 @@ pub fn check_pdf_input_size(size: usize) -> Result<(), PdfRasterError> {
 }
 
 /// PDF page `page` as PNG, its longer side about `max_side` pixels, with the `hidden` layers off.
-/// Only the `shown` part ([`designcraft_doc::Asset::shown_box`]) is kept when given.
+/// Only the `shown` part ([`pliego_doc::Asset::shown_box`]) is kept when given.
 /// Returns `None` on the same failures as [`pdf_page_png_checked`].
 pub fn pdf_page_png(bytes: &[u8], page: usize, max_side: u32, hidden: &[String], shown: Option<[f64; 4]>) -> Option<Vec<u8>> {
     pdf_page_png_checked(bytes, page, max_side, hidden, shown).ok()
@@ -177,9 +177,9 @@ pub fn pdf_page_box(bytes: &[u8], page: usize, kind: &str) -> Option<(f64, f64, 
 /// in points. A box the page doesn't define is its crop box, as PDF readers do. The content boxes
 /// are the bounds of what the page draws, found from its drawing operations without rendering it
 /// (the whole page when it draws nothing).
-pub fn pdf_crop_box(bytes: &[u8], page: usize, crop: designcraft_doc::PdfCrop) -> Option<([f64; 4], (f64, f64))> {
+pub fn pdf_crop_box(bytes: &[u8], page: usize, crop: pliego_doc::PdfCrop) -> Option<([f64; 4], (f64, f64))> {
     use craft_pdf::syntax::object::{Rect as PRect, dict::keys};
-    use designcraft_doc::PdfCrop;
+    use pliego_doc::PdfCrop;
     const WHOLE: [f64; 4] = [0.0, 0.0, 1.0, 1.0];
     let pdf = craft_pdf::open_slice(bytes, None).ok()?;
     let p = pdf.pages().get(page)?;
@@ -222,21 +222,21 @@ pub fn pdf_crop_box(bytes: &[u8], page: usize, crop: designcraft_doc::PdfCrop) -
     (frac.iter().all(|v| v.is_finite()) && size.0 > 0.0 && size.1 > 0.0).then_some((frac, size))
 }
 
-/// The part of the page a placed PDF shows ([`designcraft_doc::Asset::shown_box`]). A Bounding
+/// The part of the page a placed PDF shows ([`pliego_doc::Asset::shown_box`]). A Bounding
 /// Box crop that import left unmeasured is measured here, once per file, page and crop: that
 /// interprets the page's drawing, which only drawing or exporting the graphic needs.
-pub fn shown_box(asset: &designcraft_doc::Asset) -> Option<[f64; 4]> {
+pub fn shown_box(asset: &pliego_doc::Asset) -> Option<[f64; 4]> {
     if !asset.content_box_pending() {
         return asset.shown_box();
     }
     asset.shown(content_box(&asset.data, asset.page, asset.pdf_crop)?)
 }
 
-type ContentBoxes = HashMap<(usize, u32, designcraft_doc::PdfCrop), (std::sync::Weak<Vec<u8>>, Option<[f64; 4]>)>;
+type ContentBoxes = HashMap<(usize, u32, pliego_doc::PdfCrop), (std::sync::Weak<Vec<u8>>, Option<[f64; 4]>)>;
 
 /// [`pdf_crop_box`]'s box, cached by the file's allocation. The weak reference keeps that address
 /// from naming another file while the entry lives.
-fn content_box(bytes: &Arc<Vec<u8>>, page: u32, crop: designcraft_doc::PdfCrop) -> Option<[f64; 4]> {
+fn content_box(bytes: &Arc<Vec<u8>>, page: u32, crop: pliego_doc::PdfCrop) -> Option<[f64; 4]> {
     static CACHE: std::sync::Mutex<Option<ContentBoxes>> = std::sync::Mutex::new(None);
     let key = (Arc::as_ptr(bytes) as usize, page, crop);
     let cached = CACHE.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref().and_then(|c| c.get(&key)).and_then(|(file, b)| {

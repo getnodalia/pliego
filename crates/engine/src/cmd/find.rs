@@ -4,9 +4,9 @@
 use std::ops::Range;
 use std::sync::{Arc, Weak};
 
-use designcraft_compose::grep::{Grep, GrepOptions, translate_replacement};
-use designcraft_doc::story::floor_char_boundary;
-use designcraft_doc::{CellAddr, Document, Selection, Story, StoryId, Styles, TextSel};
+use pliego_compose::grep::{Grep, GrepOptions, translate_replacement};
+use pliego_doc::story::floor_char_boundary;
+use pliego_doc::{CellAddr, Document, Selection, Story, StoryId, Styles, TextSel};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, bad, bool_or, cmd, has_doc, str_param};
@@ -21,7 +21,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let ids = find_objects(&s.doc()?.doc, p);
             if p.get("select").and_then(Value::as_bool).unwrap_or(true) && !ids.is_empty() {
                 let st = s.doc_mut()?;
-                st.selection = designcraft_doc::Selection::items(ids.clone());
+                st.selection = pliego_doc::Selection::items(ids.clone());
                 st.bump_revision();
             }
             Ok(json!({"ids": ids.iter().map(|i| i.0).collect::<Vec<_>>()}))
@@ -44,7 +44,7 @@ pub fn specs() -> Vec<CommandSpec> {
                     for id in &ids {
                         let Some(it) = d.item_mut(*id) else { continue };
                         if let Some(f) = ch.get("fill").and_then(Value::as_str) {
-                            it.fill = designcraft_doc::Fill::swatch(f);
+                            it.fill = pliego_doc::Fill::swatch(f);
                         }
                         if let Some(c) = ch.get("stroke").and_then(Value::as_str) {
                             it.stroke.swatch = c.to_string();
@@ -96,7 +96,7 @@ fn metachars(s: &str) -> String {
     out
 }
 
-/// The search pattern: GREP (in the documents' dialect, see `designcraft_compose::grep`) or
+/// The search pattern: GREP (in the documents' dialect, see `pliego_compose::grep`) or
 /// literal text with metacharacters.
 fn build(p: &Value) -> Result<Grep> {
     let f = str_param(p, "find").ok_or_else(|| bad("find", "missing `find`"))?;
@@ -135,7 +135,7 @@ impl FindFormat {
         };
         // Only attributes text has, kept as the document writes them: `font_style` and
         // `fontStyle`, or 12 and 12.0, then find the same text. A null asks for nothing.
-        let mut known = designcraft_doc::CharAttrs::default();
+        let mut known = pliego_doc::CharAttrs::default();
         for (k, v) in chars.into_iter().flatten() {
             known.set_json(k, v).map_err(|e| bad("find", format!("findFormat: {e}")))?;
         }
@@ -571,7 +571,7 @@ fn replacement(p: &Value) -> String {
 }
 
 /// Repair byte validity of a text selection once against the final story, without remapping valid offsets.
-fn repair_selection(t: &mut designcraft_doc::TextSel, st: &designcraft_doc::Story) {
+fn repair_selection(t: &mut pliego_doc::TextSel, st: &pliego_doc::Story) {
     let range = t.range();
     let start = floor_char_boundary(&st.text, range.start);
     let mut end = range.end.min(st.len());
@@ -585,8 +585,8 @@ fn repair_selection(t: &mut designcraft_doc::TextSel, st: &designcraft_doc::Stor
 }
 
 /// The character overrides a Change applies to every replacement, from its `attrs` object.
-fn char_overrides(attrs: Option<&Value>) -> Result<designcraft_doc::CharAttrs> {
-    let mut over = designcraft_doc::CharAttrs::default();
+fn char_overrides(attrs: Option<&Value>) -> Result<pliego_doc::CharAttrs> {
+    let mut over = pliego_doc::CharAttrs::default();
     if let Some(o) = attrs.and_then(Value::as_object) {
         for (k, v) in o {
             over.set_json(k, v).map_err(|e| bad("find.change", e))?;
@@ -789,8 +789,8 @@ fn find_next(s: &mut Session, p: &Value) -> Result<Value> {
 mod tests;
 
 /// Objects matching Find/Change › Object criteria, in document order (nested ones included).
-fn find_objects(d: &designcraft_doc::Document, p: &Value) -> Vec<designcraft_doc::ItemId> {
-    use designcraft_doc::{Content, Shape};
+fn find_objects(d: &pliego_doc::Document, p: &Value) -> Vec<pliego_doc::ItemId> {
+    use pliego_doc::{Content, Shape};
     let fill = str_param(p, "fill");
     let stroke = str_param(p, "stroke");
     let weight = p.get("strokeWeight").and_then(Value::as_f64);
@@ -848,7 +848,7 @@ Two
 Three"}),
             )
             .unwrap();
-        let sid = designcraft_doc::StoryId(r["story"].as_u64().unwrap());
+        let sid = pliego_doc::StoryId(r["story"].as_u64().unwrap());
         s.execute("style.paragraph.create", &json!({"name": "Method"})).unwrap();
         let r = s.execute("find.change", &json!({"find": "^", "change": "", "grep": true, "paraStyle": "Method"})).unwrap();
         assert_eq!(r["count"], 3);

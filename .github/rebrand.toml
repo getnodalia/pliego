@@ -1,0 +1,254 @@
+# What `scripts/rebrand.py` renames: upstream's DesignCraft becomes Pliego, in file contents and in
+# paths. The weekly upstream sync applies the same rules to upstream's tree before merging it, so
+# a rule added here applies to everything upstream sends from then on.
+#
+# Replacements are literal and case-sensitive, applied in order: put the longer, more specific
+# ones first. Keep spans are found before any replacement, so a replacement never reaches inside
+# one.
+
+# Left as they are wherever they appear (in file contents and in paths).
+keep = [
+    # Links to upstream's issues, pull requests and commits: history, not branding.
+    "(https?://)?github\\.com/storytold/[\\w.-]+/(issues|pull|commit|discussions)/[^\\s)\\]\"'<>`]*",
+    # Links to other people's repositories. Upstream's own repository and the shared crates that
+    # getnodalia/foundation vendors (craft-libs, egui, winit, craft-fonts) are renamed below.
+    "https?://(github\\.com|raw\\.githubusercontent\\.com)/(?!storytold/(designcraft|craft-libs|egui|winit|craft-fonts)\\b|getnodalia|danielmigueltejedor)[^\\s)\\]\"'<>`]*",
+    # Upstream's issues named without a link (`storytold/designcraft#123`).
+    "storytold/[\\w.-]+#\\d+",
+    # The shared test corpus keeps its name.
+    "photocraft-corpus",
+    # Upstream's repository in the sync workflow and in the record of what came from it.
+    "(?<=UPSTREAM_REPO: )storytold/designcraft",
+    # The native file's signature, `"format": "designcraft"`, and the media type stored first in
+    # every archive: files saved before the rename are read by them, and files Pliego saves stay
+    # readable by older versions. The extension is renamed (files under the old one keep opening,
+    # `pliego_format::OLDER_EXTENSIONS`).
+    '(?:(?<=format\\":\\")|(?<=format\\": \\")|(?<=format":")|(?<=format": "))designcraft(?=\\?")',
+    "vnd\\.designcraft\\+zip",
+    # Credit for work done upstream.
+    "DesignCraft contributors",
+    "ArtCraft Team",
+    # Crafting hostile input in tests is not a product name.
+    "Crafting hostile",
+]
+
+# Files left alone entirely.
+skip = [
+    ".github/rebrand.toml",
+    "scripts/rebrand.py",
+    # Licence notices keep upstream's copyright line, which the licences require.
+    "NOTICE",
+    "LICENSE-*",
+    "licenses/*",
+    # The record of what came from upstream, upstream's own README kept for reference, and the
+    # record of the move to Nodalia.
+    "docs/upstream.md",
+    "docs/upstream-readme.md",
+    "NODALIA_MIGRATION.md",
+]
+
+# Run after renaming: shorter names change how rustfmt wraps lines and sorts imports.
+after = [["cargo", "fmt", "--all"]]
+
+# Lines that keep this app's value when upstream's tree is rebranded (the sync passes --pin-from).
+[[pin]]
+file = "Cargo.toml"
+pattern = '^version = "[^"]*"'
+
+# Identity: app id, publisher, installer identities (a product of its own, never DesignCraft's).
+[[replace]]
+from = "ai.storyteller.designcraft"
+to = "dev.danielmiguelt.Pliego"
+
+[[replace]]
+from = "DesignCraft maintainers <designcraft@storyteller.ai>"
+to = "Nodalia <https://github.com/getnodalia/pliego/issues>"
+
+[[replace]]
+from = "Learning Machines LLC"
+to = "Nodalia"
+
+[[replace]]
+from = "49E87D30-BB68-4896-AA1D-F45C833CFC3C"
+to = "7B0B1431-D5FE-44F0-AE77-9ADB69AF906A"
+
+[[replace]]
+from = "DE018EF3-EE87-4E36-9F76-0B7B060A195E"
+to = "26C90AED-413B-482C-A44F-FBA499B926AC"
+
+# Shared crates come from getnodalia/foundation, which vendors them at the same commits.
+[[replace]]
+from = "https://github.com/storytold/craft-libs"
+to = "https://github.com/getnodalia/foundation"
+
+[[replace]]
+from = "https://github.com/storytold/egui.git"
+to = "https://github.com/getnodalia/foundation"
+
+[[replace]]
+from = "https://github.com/storytold/winit.git"
+to = "https://github.com/getnodalia/foundation"
+
+[[replace]]
+from = "https://github.com/storytold/craft-fonts"
+to = "https://github.com/getnodalia/foundation/tree/vendor/craft-fonts/main"
+
+[[replace]]
+from = "storytold/craft-fonts"
+to = "getnodalia/foundation (vendor/craft-fonts/main)"
+
+# Where the app lives: its repository, releases, container images and web page.
+[[replace]]
+from = "ghcr.io/storytold/designcraft"
+to = "ghcr.io/getnodalia/pliego"
+
+[[replace]]
+from = "storytold/designcraft"
+to = "getnodalia/pliego"
+
+[[replace]]
+from = "https://discord.gg/artcraft"
+to = "https://github.com/getnodalia/pliego/issues"
+
+[[replace]]
+from = "discord.gg/artcraft"
+to = "github.com/getnodalia/pliego/issues"
+
+[[replace]]
+from = "getartcraft.com/apps/designcraft"
+to = "getnodalia.com/pliego"
+
+[[replace]]
+from = "getartcraft.com/apps"
+to = "getnodalia.com"
+
+[[replace]]
+from = "getartcraft.com"
+to = "getnodalia.com"
+
+# The sibling apps upstream names, by the names they have in Nodalia.
+[[replace]]
+from = "PhotoCraft"
+to = "Lienzo"
+
+[[replace]]
+from = "photocraft"
+to = "lienzo"
+
+[[replace]]
+from = "VectorCraft"
+to = "Pluma"
+
+[[replace]]
+from = "vectorcraft"
+to = "pluma"
+
+[[replace]]
+from = "PdfCraft"
+to = "Papel"
+
+[[replace]]
+from = "pdfcraft"
+to = "papel"
+
+[[replace]]
+from = "GridCraft"
+to = "Celdas"
+
+[[replace]]
+from = "gridcraft"
+to = "celdas"
+
+[[replace]]
+from = "DeckCraft"
+to = "Lámina"
+
+[[replace]]
+from = "deckcraft"
+to = "lamina"
+
+[[replace]]
+from = "EffectCraft"
+to = "Pulso"
+
+[[replace]]
+from = "effectcraft"
+to = "pulso"
+
+[[replace]]
+from = "FilmCraft"
+to = "Toma"
+
+[[replace]]
+from = "filmcraft"
+to = "toma"
+
+[[replace]]
+from = "LightCraft"
+to = "Luz"
+
+[[replace]]
+from = "lightcraft"
+to = "luz"
+
+[[replace]]
+from = "WordCraft"
+to = "Letra"
+
+[[replace]]
+from = "wordcraft"
+to = "letra"
+
+[[replace]]
+from = "FigCraft"
+to = "Trama"
+
+[[replace]]
+from = "figcraft"
+to = "trama"
+
+[[replace]]
+from = "SolidCraft"
+to = "Torno"
+
+[[replace]]
+from = "solidcraft"
+to = "torno"
+
+[[replace]]
+from = "CadCraft"
+to = "Forja"
+
+[[replace]]
+from = "cadcraft"
+to = "forja"
+
+# The family the app belongs to: install folders, the About box.
+[[replace]]
+from = "ArtCraft Crafting Apps"
+to = "Nodalia apps"
+
+[[replace]]
+from = "Crafting Apps"
+to = "Nodalia apps"
+
+[[replace]]
+from = "ArtCraft"
+to = "Nodalia"
+
+# The name, in every casing upstream uses.
+[[replace]]
+from = "DesignCraft"
+to = "Pliego"
+
+[[replace]]
+from = "Designcraft"
+to = "Pliego"
+
+[[replace]]
+from = "designcraft"
+to = "pliego"
+
+[[replace]]
+from = "DESIGNCRAFT"
+to = "PLIEGO"

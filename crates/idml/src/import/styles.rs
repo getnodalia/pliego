@@ -21,13 +21,12 @@ impl<'r> Importer<'r> {
                 .collect();
             let color = if nums.len() == 3 { [nums[0], nums[1], nums[2]] } else { [79, 153, 255] };
             self.condition_names.insert(id.to_string(), name.to_string());
-            self.conditions.push(designcraft_doc::Condition { name: name.to_string(), color, visible: e.get("Visible") != Some("false") });
+            self.conditions.push(pliego_doc::Condition { name: name.to_string(), color, visible: e.get("Visible") != Some("false") });
         }
         for e in top.iter().filter(|e| e.local() == "NumberingList") {
             let name = e.get("Name").unwrap_or("").to_string();
             if !name.is_empty() && !name.starts_with("$ID/") && !self.lists.iter().any(|l| l.name == name) {
-                self.lists
-                    .push(designcraft_doc::NumberedList { name, continue_across_stories: e.get("ContinueNumbersAcrossStories") == Some("true") });
+                self.lists.push(pliego_doc::NumberedList { name, continue_across_stories: e.get("ContinueNumbersAcrossStories") == Some("true") });
             }
         }
         let mut paras: Vec<(String, El)> = Vec::new();
@@ -72,7 +71,7 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &paras {
             let name = names::style_name_in(PARA_BUILTINS, e.get("Name").unwrap_or(""));
-            let based_on = if name == designcraft_doc::NO_PARA_STYLE { None } else { self.based_on(e, true) };
+            let based_on = if name == pliego_doc::NO_PARA_STYLE { None } else { self.based_on(e, true) };
             let next_style = e.get("NextStyle").map(|n| self.para_style_ref(n)).filter(|n| *n != name);
             let para = self.para_attrs(e);
             let chars = self.char_attrs(e);
@@ -112,9 +111,9 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &cell_styles {
             let name = names::style_name_in(names::CELL_BUILTINS, e.get("Name").unwrap_or(""));
-            let mut cs = designcraft_doc::CellStyle { name: name.clone(), ..Default::default() };
+            let mut cs = pliego_doc::CellStyle { name: name.clone(), ..Default::default() };
             cs.based_on =
-                e.prop("BasedOn").map(|r| self.cell_style_ref(&r)).or_else(|| Some(designcraft_doc::NO_CELL_STYLE.into())).filter(|n| *n != name);
+                e.prop("BasedOn").map(|r| self.cell_style_ref(&r)).or_else(|| Some(pliego_doc::NO_CELL_STYLE.into())).filter(|n| *n != name);
             cs.fill = e.prop("FillColor").map(|c| self.swatch_ref(&c));
             cs.fill_tint = tint(e.num("FillTint"));
             let inset_names =
@@ -132,7 +131,7 @@ impl<'r> Importer<'r> {
                 cs.stroke = Some(stroke);
                 cs.strokes = Default::default();
             }
-            cs.paragraph_style = e.get("AppliedParagraphStyle").map(|r| self.para_style_ref(r)).filter(|n| n != designcraft_doc::NO_PARA_STYLE);
+            cs.paragraph_style = e.get("AppliedParagraphStyle").map(|r| self.para_style_ref(r)).filter(|n| n != pliego_doc::NO_PARA_STYLE);
             match self.styles.cell.iter_mut().find(|c| c.name == name) {
                 Some(slot) => *slot = cs,
                 None => self.styles.cell.push(cs),
@@ -140,16 +139,16 @@ impl<'r> Importer<'r> {
         }
         for (_, e) in &table_styles {
             let name = names::style_name_in(names::TABLE_BUILTINS, e.get("Name").unwrap_or(""));
-            let mut ts = designcraft_doc::TableStyle { name: name.clone(), ..Default::default() };
+            let mut ts = pliego_doc::TableStyle { name: name.clone(), ..Default::default() };
             ts.based_on =
-                e.prop("BasedOn").map(|r| self.table_style_ref(&r)).or_else(|| Some(designcraft_doc::NO_TABLE_STYLE.into())).filter(|n| *n != name);
-            ts.header = e.get("HeaderRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
-            ts.body = e.get("BodyRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
-            ts.footer = e.get("FooterRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.prop("BasedOn").map(|r| self.table_style_ref(&r)).or_else(|| Some(pliego_doc::NO_TABLE_STYLE.into())).filter(|n| *n != name);
+            ts.header = e.get("HeaderRegionCellStyle").map(|r| if r == "n" { pliego_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.body = e.get("BodyRegionCellStyle").map(|r| if r == "n" { pliego_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.footer = e.get("FooterRegionCellStyle").map(|r| if r == "n" { pliego_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.left_column =
-                e.get("LeftColumnRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.get("LeftColumnRegionCellStyle").map(|r| if r == "n" { pliego_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.right_column =
-                e.get("RightColumnRegionCellStyle").map(|r| if r == "n" { designcraft_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+                e.get("RightColumnRegionCellStyle").map(|r| if r == "n" { pliego_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.header_same_as_body = e.boolean("HeaderRegionSameAsBodyRegion");
             ts.footer_same_as_body = e.boolean("FooterRegionSameAsBodyRegion");
             ts.left_column_same_as_body = e.boolean("LeftColumnRegionSameAsBodyRegion");
@@ -178,7 +177,7 @@ impl<'r> Importer<'r> {
                     .cloned()
                     .unwrap_or_else(|| names::style_name_in(OBJECT_BUILTINS, &unescape_id(b.trim_start_matches("ObjectStyle/"))))
             });
-            let based_on = based_on.filter(|b| *b != designcraft_doc::NO_OBJECT_STYLE && *b != name);
+            let based_on = based_on.filter(|b| *b != pliego_doc::NO_OBJECT_STYLE && *b != name);
             let enabled = |k: &str, attr: &str| match e.get(k) {
                 Some(v) => v == "true",
                 None => e.get(attr).is_some(),
@@ -309,8 +308,8 @@ impl<'r> Importer<'r> {
     /// a swatch reference; anything else leaves the default.
     fn rule_color_ref(&mut self, c: &str) -> Option<String> {
         let c = c.trim();
-        if c == designcraft_doc::TEXT_COLOR || c.strip_prefix("$ID/") == Some(designcraft_doc::TEXT_COLOR) {
-            Some(designcraft_doc::TEXT_COLOR.to_string())
+        if c == pliego_doc::TEXT_COLOR || c.strip_prefix("$ID/") == Some(pliego_doc::TEXT_COLOR) {
+            Some(pliego_doc::TEXT_COLOR.to_string())
         } else {
             c.contains('/').then(|| self.swatch_ref(c))
         }
@@ -352,8 +351,8 @@ impl<'r> Importer<'r> {
             .unwrap_or_else(|| names::style_name_in(names::TABLE_BUILTINS, &unescape_id(reference.trim_start_matches("TableStyle/"))))
     }
 
-    pub(super) fn cell_stroke_attrs(&mut self, el: &El, prefix: &str) -> designcraft_doc::CellStrokeAttrs {
-        designcraft_doc::CellStrokeAttrs {
+    pub(super) fn cell_stroke_attrs(&mut self, el: &El, prefix: &str) -> pliego_doc::CellStrokeAttrs {
+        pliego_doc::CellStrokeAttrs {
             weight: el.num(&format!("{prefix}StrokeWeight")).map(|v| v.max(0.0)),
             color: el.prop(&format!("{prefix}StrokeColor")).map(|v| self.swatch_ref(&v)),
             tint: tint(el.num(&format!("{prefix}StrokeTint"))),
@@ -363,8 +362,8 @@ impl<'r> Importer<'r> {
         }
     }
 
-    pub(super) fn alt_fill_attrs(&mut self, el: &El, kind: &str) -> designcraft_doc::AltFillsAttrs {
-        designcraft_doc::AltFillsAttrs {
+    pub(super) fn alt_fill_attrs(&mut self, el: &El, kind: &str) -> pliego_doc::AltFillsAttrs {
+        pliego_doc::AltFillsAttrs {
             first: el.num(&format!("Start{kind}FillCount")).map(|v| v.max(0.0) as u32),
             first_color: el.prop(&format!("Start{kind}FillColor")).map(|v| self.swatch_ref(&v)),
             first_tint: tint(el.num(&format!("Start{kind}FillTint"))),
@@ -376,7 +375,7 @@ impl<'r> Importer<'r> {
         }
     }
 
-    pub(super) fn alt_stroke_attrs(&mut self, el: &El, kind: &str) -> designcraft_doc::AltStrokesAttrs {
+    pub(super) fn alt_stroke_attrs(&mut self, el: &El, kind: &str) -> pliego_doc::AltStrokesAttrs {
         let first_stroke = self.cell_stroke_attrs(el, &format!("Start{kind}"));
         let mut next_stroke = self.cell_stroke_attrs(el, &format!("End{kind}"));
         // IDML uses LineStyle for this one attribute (rather than StrokeType).
@@ -385,7 +384,7 @@ impl<'r> Importer<'r> {
         {
             next_stroke.kind = Some(names::stroke_type_in(&value));
         }
-        designcraft_doc::AltStrokesAttrs {
+        pliego_doc::AltStrokesAttrs {
             first: el.num(&format!("Start{kind}StrokeCount")).map(|v| v.max(0.0) as u32),
             next: el.num(&format!("End{kind}StrokeCount")).map(|v| v.max(0.0) as u32),
             first_stroke,

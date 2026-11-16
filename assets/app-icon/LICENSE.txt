@@ -1,4 +1,4 @@
-Pliego app icon (designcraft.svg, designcraft-small.svg and every file derived from them in this
+Pliego app icon (pliego.svg, pliego-small.svg and every file derived from them in this
 directory, and the web favicon where the project has one).
 
 The icon is a portrait of Johannes Gutenberg cut out, converted to black and white and placed over the

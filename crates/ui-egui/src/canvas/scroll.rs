@@ -63,7 +63,7 @@ pub(super) fn spring_zoom_mode(app: &DesignApp, ctx: &egui::Context, space: bool
 
 #[derive(Clone, Default)]
 struct SpringZoom {
-    tool: designcraft_tools::ZoomTool,
+    tool: pliego_tools::ZoomTool,
     down: bool,
 }
 
@@ -231,7 +231,7 @@ mod scrollbar_tests {
     use crate::test_window::{Window, open, wheel};
 
     fn window() -> Harness<'static, Window> {
-        let mut h = open(DesignApp::new(designcraft_engine::Session::new(), crate::Services::default()), vec2(1440.0, 900.0));
+        let mut h = open(DesignApp::new(pliego_engine::Session::new(), crate::Services::default()), vec2(1440.0, 900.0));
         // Zoomed in so both axes scroll.
         set_zoom(&mut h.state_mut().app, 2.0);
         h.run_steps(3);
