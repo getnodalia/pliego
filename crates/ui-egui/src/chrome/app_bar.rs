@@ -238,7 +238,7 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                             app.session_home();
                         }
                         ui.add_space(6.0);
-                        if !app.native_menu {
+                        if !app.native_menu && !app.global_menu {
                             ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
                             ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::NONE;
                             ui.style_mut().visuals.widgets.hovered.bg_stroke = Stroke::NONE;

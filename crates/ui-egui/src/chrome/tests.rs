@@ -709,6 +709,15 @@ fn the_nodalia_app_bar_keeps_its_menus_clear_of_the_workspace_selector() {
 }
 
 #[test]
+fn the_desktops_global_menu_takes_the_menus_out_of_the_window() {
+    let mut app = app();
+    app.global_menu = true;
+    let h = test_window::open(app, vec2(1400.0, 900.0));
+    assert!(h.query_by_label("Help").is_none(), "the top bar shows the menus");
+    assert!(h.query_by_label("Home").is_some(), "the rest of the bar stays");
+}
+
+#[test]
 fn a_wide_window_does_not_scroll_the_bars() {
     let mut h = test_window::open(classic_app(), vec2(1400.0, 900.0));
     let before = [rect(&h, FIRST_CONTROL), rect(&h, LAST_CONTROL), rect(&h, "Help"), rect(&h, "Share")];

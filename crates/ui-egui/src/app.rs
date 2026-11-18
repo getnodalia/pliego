@@ -104,6 +104,7 @@ impl DesignApp {
             window_maximized: false,
             pending_window_commands: vec![],
             native_menu: false,
+            global_menu: false,
             native_shortcuts: Default::default(),
             keymap: crate::keys::new_keymap(craft_keymap::Overrides::new()),
             key_dispatcher: craft_keymap::egui::Dispatcher::new(),

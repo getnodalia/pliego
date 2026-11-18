@@ -18,6 +18,8 @@ mod apple_events;
 mod control_server;
 mod gpu;
 mod gpu_limits;
+#[cfg(target_os = "linux")]
+mod linux_menu;
 mod logging;
 #[cfg(target_os = "macos")]
 mod native_menu;
@@ -33,6 +35,9 @@ struct App {
     app: DesignApp,
     #[cfg(target_os = "macos")]
     menu: Option<native_menu::NativeMenu>,
+    /// The desktop's global menu (Nodalix's top bar), once installed; `Some(None)` where there is none.
+    #[cfg(target_os = "linux")]
+    global_menu: Option<Option<linux_menu::GlobalMenu>>,
     /// The window's start: the adapter and backend chosen for it; see `gpu`.
     startup: std::sync::Arc<gpu::Startup>,
     /// Documents and quit requests from Finder, the Dock and Open With.
@@ -89,6 +94,14 @@ impl eframe::App for App {
                 }
                 // Noted for a start again after a graphics failure, which reopens them (`gpu::restart`).
                 self.startup.opening(apple_events::poll(&self.apple_events, &mut self.app, ui.ctx()));
+            }
+            #[cfg(target_os = "linux")]
+            {
+                let ctx = ui.ctx().clone();
+                let app = &self.app;
+                if let Some(m) = self.global_menu.get_or_insert_with(|| linux_menu::install(app, &ctx)) {
+                    m.poll(&mut self.app, &ctx);
+                }
             }
         }
         self.app.ui(ui);
@@ -476,6 +489,8 @@ fn main() -> std::process::ExitCode {
                     app,
                     #[cfg(target_os = "macos")]
                     menu: None,
+                    #[cfg(target_os = "linux")]
+                    global_menu: None,
                     startup: created,
                     #[cfg(target_os = "macos")]
                     apple_events: events.connect(&cc.egui_ctx),
