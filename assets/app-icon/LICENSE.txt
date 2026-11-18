@@ -1,12 +1,13 @@
 Pliego app icon (pliego.svg, pliego-small.svg and every file derived from them in this
 directory, and the web favicon where the project has one).
 
-The icon is a portrait of Johannes Gutenberg cut out, converted to black and white and placed over the
+The icon is a portrait of Benjamin Franklin cut out, converted to black and white and placed over the
 app colour. It belongs to the Nodalia icon family: one historical figure per app.
 
-Source portrait: "Portret van Johannes Gutenberg, RP-P-1914-4009.jpg", from Wikimedia Commons
-(https://commons.wikimedia.org/wiki/File:Portret_van_Johannes_Gutenberg,_RP-P-1914-4009.jpg).
-Status of the source: CC0.
+Source portrait: "Joseph Siffrein Duplessis - Benjamin Franklin - Google Art Project.jpg" (oil portrait by
+Joseph-Siffred Duplessis), from Wikimedia Commons
+(https://commons.wikimedia.org/wiki/File:Joseph_Siffrein_Duplessis_-_Benjamin_Franklin_-_Google_Art_Project.jpg).
+Status of the source: public domain.
 
 The derived icon is licensed like the rest of the project, under either of
 

@@ -47,7 +47,7 @@ Done in #32: Nodalia Design tokens and islands, the creator suite's app bar with
 selector and its Home, the hamburger menu with About, Preferences and Keyboard shortcuts, the
 theme selector only in Preferences, NDL window controls on Linux only (native ones on macOS and
 Windows), and the menus exported over D-Bus to the desktop's global menu on Linux. The app icon is
-Johannes Gutenberg's portrait; the macOS DMG opens its own designed window (#33).
+Benjamin Franklin's portrait; the macOS DMG opens its own designed window (#33).
 
 ## Risks and priorities
 
