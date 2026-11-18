@@ -26,14 +26,17 @@ struct SearchState {
 /// language. ↑/↓ move through the matches; Return or a click runs one as its menu item would.
 /// Running one or pressing Escape clears the field and gives the keyboard back to the widget that
 /// had it. While the field has the keyboard, no key reaches the shortcuts or the document.
-fn search_field(app: &mut DesignApp, ui: &mut egui::Ui) {
+pub(super) fn search_field(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let id = search_id();
     let state_id = id.with("state");
     let mut st: SearchState = ui.data(|d| d.get_temp(state_id)).unwrap_or_default();
-    let (r, _) = ui.allocate_exact_size(vec2(125.0, 18.0), Sense::hover());
-    ui.painter().rect(r, 1.0, t.input, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
-    icons::paint(ui.painter(), egui::Rect::from_min_size(r.min + vec2(3.0, 2.0), vec2(14.0, 14.0)), "search", t.icon);
+    // Nodalia: a field as tall as the bar's other controls, rounded like the suite's fields.
+    let (size, round, pad, font) = if t.nodalia { (vec2(NDL_SEARCH_W, 28.0), 8.0, 8.0, 12.5) } else { (vec2(125.0, 18.0), 1.0, 3.0, 11.0) };
+    let (r, _) = ui.allocate_exact_size(size, Sense::hover());
+    ui.painter().rect(r, round, t.input, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
+    let glyph = egui::Rect::from_min_size(egui::pos2(r.min.x + pad, r.center().y - 7.0), vec2(14.0, 14.0));
+    icons::paint(ui.painter(), glyph, "search", if t.nodalia { t.text_dim } else { t.icon });
     let focused = ui.memory(|m| m.has_focus(id));
     let had_focus = search_had_focus(ui.ctx());
     if !focused && !had_focus {
@@ -54,7 +57,7 @@ fn search_field(app: &mut DesignApp, ui: &mut egui::Ui) {
     };
     let lang = app.ui.language.clone();
     let hint = crate::rtl::widget(ui, egui::RichText::new(crate::i18n::tr(&lang, "Search")).color(t.text_dim));
-    let field = egui::Rect::from_min_max(r.min + vec2(19.0, 0.0), r.max - vec2(3.0, 0.0));
+    let field = egui::Rect::from_min_max(egui::pos2(glyph.max.x + 5.0, r.min.y), r.max - vec2(pad, 0.0));
     let resp = ui
         .put(
             field,
@@ -62,7 +65,7 @@ fn search_field(app: &mut DesignApp, ui: &mut egui::Ui) {
                 .id(id)
                 .frame(egui::Frame::NONE)
                 .margin(egui::Margin::ZERO)
-                .font(egui::FontId::proportional(11.0))
+                .font(egui::FontId::proportional(font))
                 .text_color(t.text)
                 .hint_text(hint)
                 .desired_width(field.width())
@@ -145,6 +148,9 @@ fn search_field(app: &mut DesignApp, ui: &mut egui::Ui) {
     }
 }
 
+/// The search field's width in the Nodalia bar.
+pub(super) const NDL_SEARCH_W: f32 = 180.0;
+
 /// Width of the app bar's right-hand slot: what is left of the row, minus a pixel of slack so
 /// that rounding at fractional scales (115%) never makes the row a hair wider than the scroll
 /// area and shows a needless scroll bar. Never narrower than the controls themselves.
@@ -155,6 +161,10 @@ fn tools_slot_width(available: f32, tools_w: f32) -> f32 {
 /// Lay out the application bar, native/custom title handling, menu and tool scrolling, drag region, caption controls and search.
 pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
+    if t.nodalia {
+        super::ndl_bar::ndl_app_bar(app, ui);
+        return;
+    }
     let mac = app.integrated_titlebar;
     let left = if mac { MAC_CONTENT_LEFT as i8 } else { 8 };
     let bar = if mac { MAC_APP_BAR } else { APP_BAR };
@@ -297,11 +307,6 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                             ui.add_space(6.0);
                             if icons::button(ui, "share", 22.0, false, crate::i18n::tr(&app.ui.language, "Share")).clicked() {
                                 app.status(crate::i18n::tr(&app.ui.language, "Export a PDF, IDML or package to share — no cloud account needed."));
-                            }
-                            ui.add_space(8.0);
-                            // Always one click away: the Nodalia community Discord.
-                            if crate::about::discord_button(ui, "Discord", vec2(78.0, 22.0)) {
-                                let _ = app.run("help.discord", json!({}));
                             }
                             tools_start = ui.min_rect().min.x;
                             ui.data_mut(|d| d.insert_temp(egui::Id::unique("app_bar_tools_start"), tools_start));

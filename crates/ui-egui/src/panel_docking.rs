@@ -1060,6 +1060,7 @@ pub(crate) fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
         dock = dock.raise_panel(panel);
     }
     let mut output = dock.show_content(ui, &layout, &style, &mut PanelContent { app: &mut *app });
+    round_dock_islands(ui);
     for event in std::mem::take(&mut output.events) {
         match event {
             craft_ui::docking::DockEvent::ToggleAutoCollapse => app.ui.dock_auto_collapse = !app.ui.dock_auto_collapse,
@@ -1126,10 +1127,36 @@ pub(crate) fn inspect(app: &DesignApp, ctx: &egui::Context) -> Value {
     })
 }
 
+/// Nodalia: the docked panels beside the canvas as rounded islands. The canvas island is the one
+/// the dock drew this frame; the docks are the bands of the dock area on each side of it.
+fn round_dock_islands(ui: &egui::Ui) {
+    let t = crate::theme::Tokens::get(ui.ctx());
+    if !t.nodalia {
+        return;
+    }
+    let Some(c) = ui.ctx().data(|d| d.get_temp::<egui::Rect>(egui::Id::unique("pliego_canvas_island"))) else { return };
+    let area = ui.max_rect();
+    let g = crate::theme::ISLAND_GAP;
+    let bands = [
+        egui::Rect::from_min_max(egui::pos2(c.max.x + g, area.min.y), area.max),
+        egui::Rect::from_min_max(area.min, egui::pos2(c.min.x - g, area.max.y)),
+        egui::Rect::from_min_max(egui::pos2(c.min.x, c.max.y + g), egui::pos2(c.max.x, area.max.y)),
+    ];
+    for band in bands {
+        if band.width() > 2.0 * g && band.height() > 2.0 * g {
+            crate::theme::round_island_corners(ui.painter(), &t, band);
+        }
+    }
+}
+
 fn dock_style(ui: &egui::Ui, language: &str) -> craft_ui::docking::DockStyle {
     let t = crate::theme::Tokens::get(ui.ctx());
     let mut style = craft_ui::docking::DockStyle::from_ui(ui);
     style.tab_height = 27.0;
+    if t.nodalia {
+        // Islands: window-coloured gaps between the canvas and the docked panels.
+        style.gap = crate::theme::ISLAND_GAP;
+    }
     style.background = t.panel;
     style.tab_background = t.tab_strip;
     style.active_background = t.panel;
@@ -1276,6 +1303,10 @@ impl craft_ui::docking::DockContent<String> for PanelContent<'_> {
             let fill = crate::theme::Tokens::get(ui.ctx()).pasteboard;
             ui.painter().rect_filled(ui.max_rect(), 0.0, fill);
             self.app.canvas_area(ui, false);
+            let t = crate::theme::Tokens::get(ui.ctx());
+            crate::theme::round_island_corners(ui.painter(), &t, ui.max_rect());
+            let canvas = ui.max_rect();
+            ui.ctx().data_mut(|d| d.insert_temp(egui::Id::unique("pliego_canvas_island"), canvas));
             return;
         }
         egui::Frame::NONE.inner_margin(egui::Margin::same(8)).show(ui, |ui| {

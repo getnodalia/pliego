@@ -390,9 +390,11 @@ pub(crate) mod test_window {
     ///
     /// 0.37 keys a panel by its *parent Ui's* scope: `Ui::scope_id().with_salt(salt)`. In this
     /// harness the app draws into a Ui the harness owns (a child of the viewport root Ui), so
-    /// `Harness::ui_id()` — not the viewport's root id — is the parent to salt.
+    /// `Harness::ui_id()` — not the viewport's root id — is the parent to salt. The app bar sits
+    /// there; every panel below it sits in the body's scope (`app::BODY_SCOPE`).
     pub fn panel_rect(h: &Harness<'static, Window>, id: &str) -> egui::Rect {
-        egui::containers::panel::PanelState::load(&h.ctx, h.ui_id().with(id)).map(|s| s.outer_rect).unwrap()
+        let load = |parent: egui::Id| egui::containers::panel::PanelState::load(&h.ctx, parent.with(id)).map(|s| s.outer_rect);
+        load(h.ui_id().with(egui::IdSalt::new(crate::app::BODY_SCOPE))).or_else(|| load(h.ui_id())).unwrap()
     }
 
     /// A primary click at `pos`, then a few frames.

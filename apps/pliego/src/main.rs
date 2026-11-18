@@ -178,6 +178,26 @@ fn keep_unreadable_prefs(path: &std::path::Path, bytes: &[u8]) {
     KEEP_UI_PREFS.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// Whether Pliego draws the window's own frame with Nodalia's round window controls: on Linux
+/// and the BSDs, unless Preferences › Interface › Use the Desktop's Title Bar is on (read from the
+/// saved preferences before the window opens) or `PLIEGO_TITLEBAR=system` asks for the desktop's.
+/// macOS and Windows always keep their native window controls.
+fn draws_own_frame() -> bool {
+    if cfg!(any(target_os = "macos", target_os = "windows")) {
+        return false;
+    }
+    match std::env::var("PLIEGO_TITLEBAR").ok().as_deref() {
+        Some("system" | "desktop") => return false,
+        Some("app") => return true,
+        _ => {}
+    }
+    if no_prefs() {
+        return true;
+    }
+    let saved = prefs_path().and_then(|p| std::fs::read(p).ok()).and_then(|b| pliego_ui_egui::UiState::read_preferences(&b).ok());
+    !saved.is_some_and(|read| read.ui.system_title_bar)
+}
+
 fn load_prefs(app: &mut DesignApp) {
     if no_prefs() {
         return;
@@ -295,12 +315,13 @@ fn main() -> std::process::ExitCode {
             Err(e) => log::warn!("no log file: {e}"),
         }
     }
+    let own_frame = draws_own_frame();
     let mut options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Pliego")
             .with_inner_size([1440.0, 900.0])
             .with_min_inner_size([900.0, 560.0])
-            .with_decorations(!cfg!(target_os = "windows"))
+            .with_decorations(!own_frame)
             .with_drag_and_drop(true)
             .with_fullsize_content_view(true)
             .with_titlebar_shown(false)
@@ -433,7 +454,7 @@ fn main() -> std::process::ExitCode {
                     app.status(note);
                 }
                 app.integrated_titlebar = cfg!(target_os = "macos");
-                app.custom_titlebar = cfg!(target_os = "windows");
+                app.custom_titlebar = own_frame;
                 // The custom title bar's undecorated window must stay borderless, or its caption
                 // and border offset the content and the pointer on some Windows systems (#1295).
                 app.services.window_frame = window_frame::service(cc, app.custom_titlebar);

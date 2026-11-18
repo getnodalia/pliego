@@ -14,7 +14,8 @@ const BTN: f32 = 24.0;
 /// screen-mode buttons; flyout rows accommodate translated labels and their shortcuts.
 pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
-    let frame = egui::Frame::NONE.fill(t.panel).stroke(Stroke::new(1.0, t.divider));
+    let (frame, gap) = crate::theme::bar_frame(&t, egui::Margin::ZERO, crate::theme::Gap::Right);
+    let frame = if t.nodalia { frame } else { frame.stroke(Stroke::new(1.0, t.divider)) };
     // A single column that doesn't fit the window's height becomes two, without changing the
     // preference; whatever two columns still can't fit scrolls.
     let single_h_id = egui::Id::unique("tools_single_column_height");
@@ -23,7 +24,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
     let crowded = !app.ui.tools_double_column && single_h.is_some_and(|h| h > viewport_h);
     let cols = if app.ui.tools_double_column || crowded { 2 } else { 1 };
     let width = 8.0 + BTN * cols as f32 + 4.0 * (cols as f32 - 1.0) + 8.0;
-    let r = egui::Panel::left("tools").exact_size(width).resizable(false).frame(frame).show(ui, |ui| {
+    let r = egui::Panel::left("tools").exact_size(width + gap).resizable(false).show_separator_line(!t.nodalia).frame(frame).show(ui, |ui| {
         crate::widgets::overflow_scrolling(ui);
         let scroll = egui::ScrollArea::vertical().id_salt("tools_scroll").auto_shrink([false, false]).show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 1.0;

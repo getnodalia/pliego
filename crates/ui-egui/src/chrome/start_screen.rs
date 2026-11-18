@@ -3,6 +3,10 @@ use super::{Color32, Content, DesignApp, Sense, Stroke, Tokens, json, semibold, 
 pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let r = ui.available_rect_before_wrap();
+    if t.nodalia {
+        ndl_home(app, ui, r);
+        return;
+    }
     ui.painter().rect_filled(r, 0.0, t.panel_darker);
     ui.scope_builder(
         egui::UiBuilder::new().max_rect(r.shrink(48.0)).layout(egui::Layout::top_down(if crate::i18n::is_rtl(&app.ui.language) {
@@ -62,8 +66,6 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                         let _ = app.run("file.newSample", json!({}));
                     }
                 });
-                ui.add_space(20.0);
-                community_card(app, ui);
                 recent_files(app, ui);
                 ui.add_space(24.0);
                 ui.label(crate::rtl::widget(
@@ -215,54 +217,145 @@ fn recent_preview_texture(ctx: &egui::Context, path: &str, modified: Option<std:
     tex
 }
 
-/// Start screen: the Nodalia community (Discord first) and project links.
-fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
+/// The Home screen in the Nodalia Design Language: the creator suite's Home
+/// (`nodalia_theme::creator::home`), the same screen as Lienzo's and Pluma's. The rail holds New
+/// file, Open…, Home, the sample magazine and the links; the page, Recent Files and the print
+/// presets to start from.
+fn ndl_home(app: &mut DesignApp, ui: &mut egui::Ui, rect: egui::Rect) {
+    use nodalia_theme::creator::home;
     let t = Tokens::get(ui.ctx());
-    egui::Frame::NONE.fill(t.panel).corner_radius(10.0).inner_margin(egui::Margin::same(14)).show(ui, |ui| {
-        // Wide enough for the longer translations of the line under the title, with the button
-        // at the right edge; the text wraps before the button's space rather than run under it.
-        const BUTTON: egui::Vec2 = vec2(190.0, 38.0);
-        ui.set_max_width(760.0);
-        ui.horizontal(|ui| {
-            let (r, _) = ui.allocate_exact_size(vec2(44.0, 44.0), Sense::hover());
-            crate::about::paint_mark(ui, r, crate::about::BRAND);
-            ui.add_space(8.0);
-            let label = crate::i18n::tr(&app.ui.language, "Join our Discord");
-            let button = crate::about::discord_button_size(ui.ctx(), label, BUTTON);
-            let text_width = (ui.available_width() - button.x - 16.0).max(120.0);
-            ui.vertical(|ui| {
-                ui.set_max_width(text_width);
-                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
-                ui.label(crate::rtl::widget(
-                    ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Join the Nodalia community")).font(semibold(14.0)).color(t.text_strong),
-                ));
-                ui.label(crate::rtl::widget(
-                    ui,
-                    egui::RichText::new(crate::i18n::tr(&app.ui.language, "Get help, share your layouts and shape what we build next."))
-                        .size(12.0)
-                        .color(t.text_dim),
-                ));
-                ui.add_space(4.0);
-                ui.horizontal(|ui| {
-                    for (text, id) in [("Pliego page", "help.appPage"), ("GitHub", "help.github"), ("getnodalia.com", "help.website")] {
-                        let url = pliego_engine::links::get(&id[5..]).unwrap_or_default();
-                        let l = ui
-                            .add(egui::Label::new(egui::RichText::new(text).size(12.0).color(t.accent).underline()).sense(Sense::click()))
-                            .on_hover_text(url)
-                            .on_hover_cursor(egui::CursorIcon::PointingHand);
-                        if l.clicked() {
-                            let _ = app.run(id, json!({}));
-                        }
-                        ui.add_space(8.0);
-                    }
-                });
-            });
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if crate::about::discord_button(ui, label, BUTTON) {
-                    let _ = app.run("help.discord", json!({}));
+    let look = t.creator();
+    let lang = app.ui.language.clone();
+    let tr = |s: &'static str| crate::i18n::tr(&lang, s);
+    let website = pliego_engine::links::get("website").unwrap_or_default();
+    let github = pliego_engine::links::get("github").unwrap_or_default();
+    let links = [home::Link { icon: "globe", label: tr("Website"), url: website }, home::Link { icon: "code", label: tr("GitHub"), url: github }];
+    let rail = home::Rail { new_file: tr("New file"), open: tr("Open…"), home: tr("Home"), learn: Some(tr("Sample Magazine")), links: &links };
+    let mark = |p: &egui::Painter, r: egui::Rect| paint_mark(p, r, &t);
+    let mut recent_pick = None;
+    let mut preset = None;
+    // Home fills the canvas island, rounded like it.
+    ui.painter().rect_filled(rect, 0.0, t.app_bar);
+    let picked = home::view(ui, &look, rect, "Pliego", &mark, &rail, |ui| {
+        recent_pick = ndl_recents(app, ui, &look);
+        ui.add_space(30.0);
+        home::section_heading(ui, &look, tr("Start a new document"));
+        ui.add_space(12.0);
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = vec2(14.0, 14.0);
+            for p in pliego_doc::build::PRESETS.iter().filter(|p| p.intent == pliego_doc::Intent::Print) {
+                if preset_card(ui, &t, p).clicked() {
+                    preset = Some(p.name);
                 }
-            });
+            }
         });
     });
+    match picked {
+        Some(home::Pick::NewFile) => {
+            let _ = app.run("app.newDocumentDialog", json!({}));
+        }
+        Some(home::Pick::Open) => {
+            let _ = app.run("app.openDialog", json!({}));
+        }
+        Some(home::Pick::Learn) => {
+            let _ = app.run("file.newSample", json!({}));
+        }
+        Some(home::Pick::Link(0)) => {
+            let _ = app.run("help.website", json!({}));
+        }
+        Some(home::Pick::Link(_)) => {
+            let _ = app.run("help.github", json!({}));
+        }
+        Some(home::Pick::Home) | None => {}
+    }
+    match recent_pick {
+        Some(home::RecentPick::Open(i)) => {
+            let _ = app.run("app.openRecent", json!({"index": i}));
+        }
+        Some(home::RecentPick::Remove(i)) => {
+            if i < app.session.prefs.recent_files.len() {
+                app.session.prefs.recent_files.remove(i);
+            }
+        }
+        Some(home::RecentPick::Clear) => app.session.prefs.recent_files.clear(),
+        Some(home::RecentPick::OpenDialog) => {
+            let _ = app.run("app.openDialog", json!({}));
+        }
+        None => {}
+    }
+    if let Some(name) = preset {
+        let _ = app.run("file.new", json!({"preset": name}));
+    }
+}
+
+/// Pliego's mark on the Home page, drawn in code: a folded sheet (a *pliego*) on Pliego's accent.
+pub(crate) fn paint_mark(p: &egui::Painter, r: egui::Rect, t: &Tokens) {
+    let s = r.width().min(r.height());
+    let r = egui::Rect::from_center_size(r.center(), vec2(s, s));
+    p.rect_filled(r, s * 0.24, t.accent);
+    let at = |x: f32, y: f32| egui::pos2(r.min.x + x * s, r.min.y + y * s);
+    let paper = Color32::WHITE;
+    // The left leaf, then the right one folded towards it.
+    p.add(egui::Shape::convex_polygon(vec![at(0.22, 0.26), at(0.49, 0.32), at(0.49, 0.80), at(0.22, 0.74)], paper, Stroke::NONE));
+    p.add(egui::Shape::convex_polygon(
+        vec![at(0.53, 0.32), at(0.78, 0.22), at(0.78, 0.70), at(0.53, 0.80)],
+        paper.gamma_multiply(0.82),
+        Stroke::NONE,
+    ));
+}
+
+/// A print preset as a Home card: the page's shape, its name and size.
+fn preset_card(ui: &mut egui::Ui, t: &Tokens, p: &pliego_doc::build::Preset) -> egui::Response {
+    let (cr, resp) = ui.allocate_exact_size(vec2(132.0, 160.0), Sense::click());
+    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+    ui.painter().rect_filled(cr, t.radius, if resp.hovered() { t.hover } else { t.panel_darker });
+    let k = (82.0 / p.width.max(p.height)) as f32;
+    let pr = egui::Rect::from_center_size(cr.center() - vec2(0.0, 16.0), vec2(p.width as f32 * k, p.height as f32 * k));
+    ui.painter().rect_filled(pr, 2.0, Color32::from_gray(248));
+    ui.painter().rect_stroke(pr, 2.0, Stroke::new(1.0, t.divider), egui::StrokeKind::Outside);
+    ui.painter().text(egui::pos2(cr.center().x, cr.max.y - 28.0), egui::Align2::CENTER_CENTER, p.name, semibold(12.5), t.text_strong);
+    ui.painter().text(
+        egui::pos2(cr.center().x, cr.max.y - 12.0),
+        egui::Align2::CENTER_CENTER,
+        format!("{} × {}", pliego_geom::format_measure(p.width, p.units), pliego_geom::format_measure(p.height, p.units)),
+        egui::FontId::proportional(10.5),
+        t.text_dim,
+    );
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, p.name));
+    resp
+}
+
+/// Recent Files on the Home page, as cards with the first page's picture or as a list.
+fn ndl_recents(app: &mut DesignApp, ui: &mut egui::Ui, look: &nodalia_theme::creator::Look) -> Option<nodalia_theme::creator::home::RecentPick> {
+    use nodalia_theme::creator::home;
+    let lang = app.ui.language.clone();
+    let files: Vec<String> = app.session.prefs.recent_files.iter().take(START_SCREEN_RECENT).cloned().collect();
+    let rows: Vec<(String, String, Option<(egui::TextureId, egui::Vec2)>)> = files
+        .iter()
+        .map(|path| {
+            let p = std::path::Path::new(path);
+            let label = crate::menus::recent_label(path);
+            let name = label.strip_suffix(".pliego").unwrap_or(&label).to_string();
+            let folder = p.parent().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
+            let stat = recent_file_stat(ui.ctx(), path);
+            let thumb = stat.exists.then_some(stat.modified).and_then(|m| recent_preview_texture(ui.ctx(), path, m)).map(|t| (t.id(), t.size_vec2()));
+            (name, folder, thumb)
+        })
+        .collect();
+    let list: Vec<home::Recent> =
+        files.iter().zip(&rows).map(|(path, (name, folder, thumb))| home::Recent { name, folder, path, thumb: *thumb }).collect();
+    let labels = home::RecentLabels {
+        heading: crate::i18n::tr(&lang, "Recent Files"),
+        grid: crate::i18n::tr(&lang, "Grid view"),
+        list: crate::i18n::tr(&lang, "List view"),
+        remove: crate::i18n::tr(&lang, "Remove from Recent"),
+        clear: crate::i18n::tr(&lang, "Clear Recent Files"),
+        no_folder: crate::i18n::tr(&lang, "On your computer"),
+        drop: crate::i18n::tr(&lang, "Drop a Pliego, IDML or PDF file anywhere to open it."),
+        drop_icon: "file",
+    };
+    let mut grid = !app.ui.home_recent_list;
+    let pick = home::recents(ui, look, &labels, &list, &mut grid);
+    app.ui.home_recent_list = !grid;
+    pick
 }
