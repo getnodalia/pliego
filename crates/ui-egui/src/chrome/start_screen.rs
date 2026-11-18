@@ -84,7 +84,7 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                         ui.painter().text(
                             egui::pos2(cr.center().x, cr.max.y - 26.0),
                             egui::Align2::CENTER_CENTER,
-                            p.name,
+                            crate::i18n::tr(&app.ui.language, p.name),
                             semibold(12.0),
                             t.text_strong,
                         );
@@ -244,7 +244,7 @@ fn ndl_home(app: &mut DesignApp, ui: &mut egui::Ui, rect: egui::Rect) {
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing = vec2(14.0, 14.0);
             for p in pliego_doc::build::PRESETS.iter().filter(|p| p.intent == pliego_doc::Intent::Print) {
-                if preset_card(ui, &t, p).clicked() {
+                if preset_card(ui, &t, &lang, p).clicked() {
                     preset = Some(p.name);
                 }
             }
@@ -310,7 +310,8 @@ pub(crate) fn paint_mark(p: &egui::Painter, r: egui::Rect, t: &Tokens) {
 }
 
 /// A print preset as a Home card: the page's shape, its name and size.
-fn preset_card(ui: &mut egui::Ui, t: &Tokens, p: &pliego_doc::build::Preset) -> egui::Response {
+fn preset_card(ui: &mut egui::Ui, t: &Tokens, lang: &str, p: &pliego_doc::build::Preset) -> egui::Response {
+    let name = crate::i18n::tr(lang, p.name);
     let (cr, resp) = ui.allocate_exact_size(vec2(132.0, 160.0), Sense::click());
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     ui.painter().rect_filled(cr, t.radius, if resp.hovered() { t.hover } else { t.panel_darker });
@@ -318,7 +319,7 @@ fn preset_card(ui: &mut egui::Ui, t: &Tokens, p: &pliego_doc::build::Preset) -> 
     let pr = egui::Rect::from_center_size(cr.center() - vec2(0.0, 16.0), vec2(p.width as f32 * k, p.height as f32 * k));
     ui.painter().rect_filled(pr, 2.0, Color32::from_gray(248));
     ui.painter().rect_stroke(pr, 2.0, Stroke::new(1.0, t.divider), egui::StrokeKind::Outside);
-    ui.painter().text(egui::pos2(cr.center().x, cr.max.y - 28.0), egui::Align2::CENTER_CENTER, p.name, semibold(12.5), t.text_strong);
+    ui.painter().text(egui::pos2(cr.center().x, cr.max.y - 28.0), egui::Align2::CENTER_CENTER, name, semibold(12.5), t.text_strong);
     ui.painter().text(
         egui::pos2(cr.center().x, cr.max.y - 12.0),
         egui::Align2::CENTER_CENTER,
@@ -326,7 +327,7 @@ fn preset_card(ui: &mut egui::Ui, t: &Tokens, p: &pliego_doc::build::Preset) -> 
         egui::FontId::proportional(10.5),
         t.text_dim,
     );
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, p.name));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, name));
     resp
 }
 
