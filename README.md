@@ -29,6 +29,15 @@
 **Pliego** is the editorial layout application of [Nodalia](https://getnodalia.com): a native app written in Rust,
 with no account and no cloud. It runs on Linux, macOS and Windows.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pliego/pliego-dark.jpg" width="900" alt="The sample magazine open in Pliego in the dark theme, with the column grid and the Properties panel">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pliego/pliego-light.jpg" width="440" alt="The same magazine in the light theme">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pliego/pliego-home-light.jpg" width="440" alt="Pliego's start screen">
+</p>
+
 > [!IMPORTANT]
 > **Pliego is at an early stage.** Keep a copy of documents that matter. Packages for Linux,
 > macOS and Windows are on the [releases page](https://github.com/getnodalia/pliego/releases/latest),
