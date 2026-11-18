@@ -288,10 +288,15 @@ fn ndl_home(app: &mut DesignApp, ui: &mut egui::Ui, rect: egui::Rect) {
     }
 }
 
-/// Pliego's mark on the Home page, drawn in code: a folded sheet (a *pliego*) on Pliego's accent.
+/// Pliego's mark: the app icon, or, should it not decode, a folded sheet (a *pliego*) on Pliego's
+/// accent drawn in code.
 pub(crate) fn paint_mark(p: &egui::Painter, r: egui::Rect, t: &Tokens) {
     let s = r.width().min(r.height());
     let r = egui::Rect::from_center_size(r.center(), vec2(s, s));
+    if let Some(tex) = crate::brand::mark(p.ctx()) {
+        p.image(tex.id(), r, egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), Color32::WHITE);
+        return;
+    }
     p.rect_filled(r, s * 0.24, t.accent);
     let at = |x: f32, y: f32| egui::pos2(r.min.x + x * s, r.min.y + y * s);
     let paper = Color32::WHITE;

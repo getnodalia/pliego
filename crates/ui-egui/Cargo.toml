@@ -21,6 +21,7 @@ pliego-compose = { workspace = true }
 pliego-render = { workspace = true }
 pliego-tools = { workspace = true }
 pliego-engine = { workspace = true }
+pliego-images = { workspace = true }
 pliego-textimport = { workspace = true }
 craft-prepress = { workspace = true }
 nodalia-theme = { workspace = true, features = ["creator"] }

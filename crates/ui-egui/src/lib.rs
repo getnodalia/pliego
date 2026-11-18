@@ -58,6 +58,7 @@ pub use control::{ControlRequest, ControlResponse};
 pub use prefs::ReadPreferences;
 
 mod app;
+mod brand;
 mod clock;
 mod key_names;
 mod services;

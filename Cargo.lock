@@ -4352,6 +4352,7 @@ dependencies = [
  "pliego-fonts",
  "pliego-geom",
  "pliego-idml",
+ "pliego-images",
  "pliego-render",
  "pliego-textimport",
  "pliego-tools",
