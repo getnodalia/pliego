@@ -15,8 +15,9 @@ fn app(double: bool) -> crate::DesignApp {
     app
 }
 
+/// The Tools panel's width: its columns, and the gap to the canvas island beside it.
 fn column_width(cols: f32) -> f32 {
-    8.0 + super::BTN * cols + 4.0 * (cols - 1.0) + 8.0
+    8.0 + super::BTN * cols + 4.0 * (cols - 1.0) + 8.0 + crate::theme::ISLAND_GAP
 }
 
 /// Returns the bounds of the labeled test widget, failing if the label cannot be found.

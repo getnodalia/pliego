@@ -3102,7 +3102,7 @@ fn open_recent_lists_the_files_then_clear() {
 #[test]
 fn open_recent_of_a_missing_file_alerts_and_the_start_screen_lists_recent_files() {
     let mut app = crate::DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
-    assert!(!start_screen_texts(&mut app).iter().any(|t| t == "Recent files"), "no section without recent files");
+    assert!(!start_screen_texts(&mut app).iter().any(|t| t == "gone"), "no card before the file is recent");
     app.session.prefs.note_recent_file("/nonexistent/dc-recent/gone.pliego");
     assert!(app.run("app.openRecent", json!({"index": 0})).is_err());
     let d = app.ui.dialog.take().expect("an alert");
@@ -3112,7 +3112,7 @@ fn open_recent_of_a_missing_file_alerts_and_the_start_screen_lists_recent_files(
     assert!(app.run("app.openRecent", json!({"index": 9})).is_err(), "out of range: an error, not a panic");
     app.ui.dialog = None;
     let texts = start_screen_texts(&mut app);
-    assert!(texts.iter().any(|t| t == "Recent files"), "{texts:?}");
+    assert!(texts.iter().any(|t| t == "Recent Files"), "{texts:?}");
     assert!(texts.iter().any(|t| t == "gone"), "the card names it without `.pliego`: {texts:?}");
 }
 

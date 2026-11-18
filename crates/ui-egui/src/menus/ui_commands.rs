@@ -384,7 +384,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
         "{on?: bool, at?: [x, y] (points from the canvas's top-left)} — the Contextual Task Bar stays where it is (or at `at`) instead of following the selection; with neither, toggles",
     ),
     ("window.taskBarReset", "Reset Bar Position", None, "{} — the Contextual Task Bar follows the selection again, under it"),
-    ("help.discord", "Join the Nodalia Discord…", None, "{} — opens https://github.com/getnodalia/pliego/issues in the browser"),
+    ("help.discord", "Get Help and Give Feedback…", None, "{} — opens https://github.com/getnodalia/pliego/issues in the browser"),
     ("help.appPage", "Pliego Website…", None, "{} — opens https://getnodalia.com/pliego"),
     ("help.github", "Pliego on GitHub…", None, "{} — opens https://github.com/getnodalia/pliego"),
     ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),

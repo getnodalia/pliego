@@ -12,6 +12,7 @@ use crate::{DesignApp, icons};
 
 mod app_bar;
 mod control_bar;
+mod ndl_bar;
 mod start_screen;
 mod status_bar;
 
@@ -21,6 +22,8 @@ use app_bar::search_id;
 pub use app_bar::{app_bar, search_had_focus};
 pub use control_bar::control_bar;
 pub(crate) use control_bar::{icon_field, swatch_field};
+pub use ndl_bar::NDL_APP_BAR;
+pub(crate) use start_screen::paint_mark;
 pub(crate) use start_screen::recent_file_stat;
 pub use start_screen::start_screen;
 #[cfg(test)]

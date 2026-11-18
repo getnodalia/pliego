@@ -1250,9 +1250,191 @@ fn paint_text(pen: &mut Pen, name: &str) -> bool {
     true
 }
 
-/// Paint icon `name` into `r`.
+/// Every Pliego icon that Nodalia Design draws, sorted, and the NDL icon that draws it. The
+/// others (tab stops, text wrap, frame fitting and the like) have no NDL counterpart yet and keep
+/// Pliego's own drawing, in a bolder line beside NDL's.
+static NDL_NAMES: &[(&str, &str)] = &[
+    ("align-center", "align-center"),
+    ("align-justify", "align-justify"),
+    ("align-justify-all", "align-justify"),
+    ("align-left", "align-left"),
+    ("align-right", "align-right"),
+    ("baseline-shift", "superscript"),
+    ("bullets", "list"),
+    ("chevron-down", "chevron-down"),
+    ("chevron-left", "chevron-left"),
+    ("chevron-right", "chevron-right"),
+    ("clock", "clock"),
+    ("double-chevron-left", "chevrons-left"),
+    ("double-chevron-right", "chevrons-right"),
+    ("eye", "view"),
+    ("find-format", "replace"),
+    ("first", "skip-previous"),
+    ("flip-horizontal", "flip"),
+    ("flip-vertical", "flip-vertical"),
+    ("font-size", "font-size"),
+    ("fx", "effects"),
+    ("grid-baseline", "gridlines"),
+    ("grid-document", "grid"),
+    ("guides-lock", "lock"),
+    ("guides-show", "guides"),
+    ("guides-smart", "snap"),
+    ("home", "home"),
+    ("hscale", "arrows-horizontal"),
+    ("indent-first", "indent"),
+    ("indent-last", "outdent"),
+    ("indent-left", "indent-left"),
+    ("indent-right", "indent-right"),
+    ("info", "info"),
+    ("kerning", "char-spacing"),
+    ("last", "skip-next"),
+    ("leading", "line-spacing"),
+    ("link", "link"),
+    ("link-broken", "link-off"),
+    ("lock", "lock"),
+    ("margin-bottom", "margins"),
+    ("margin-inside", "margins"),
+    ("margin-outside", "margins"),
+    ("margin-top", "margins"),
+    ("menu", "menu"),
+    ("next", "chevron-right"),
+    ("numbering", "list-numbers"),
+    ("objalign-bottom", "align-objects-bottom"),
+    ("objalign-hcenter", "align-objects-center"),
+    ("objalign-left", "align-objects-left"),
+    ("objalign-right", "align-objects-right"),
+    ("objalign-top", "align-objects-top"),
+    ("objalign-vcenter", "align-objects-middle"),
+    ("objdistribute-h", "distribute"),
+    ("objdistribute-v", "distribute-vertical"),
+    ("opacity", "opacity"),
+    ("page-count", "pages"),
+    ("palign-center", "align-center"),
+    ("palign-justify-center", "justify-center"),
+    ("palign-justify-left", "justify-left"),
+    ("palign-justify-right", "justify-right"),
+    ("palign-left", "align-left"),
+    ("palign-right", "align-right"),
+    ("panel-align", "align-objects-left"),
+    ("panel-articles", "file-text"),
+    ("panel-attributes", "parameters"),
+    ("panel-bookmarks", "bookmark"),
+    ("panel-character", "text"),
+    ("panel-color", "color-wheel"),
+    ("panel-conditions", "filter"),
+    ("panel-cstyles", "text-style"),
+    ("panel-datamerge", "merge-field"),
+    ("panel-effects", "effects"),
+    ("panel-flex", "layout"),
+    ("panel-gradient", "gradient"),
+    ("panel-hyperlinks", "external-link"),
+    ("panel-info", "info"),
+    ("panel-layers", "layers"),
+    ("panel-library", "library"),
+    ("panel-links", "link"),
+    ("panel-notes", "note"),
+    ("panel-pages", "pages"),
+    ("panel-paragraph", "paragraph"),
+    ("panel-preflight", "shield-check"),
+    ("panel-properties", "properties"),
+    ("panel-pstyles", "styles"),
+    ("panel-stroke", "stroke-weight"),
+    ("panel-swatches", "swatches"),
+    ("panel-table", "table"),
+    ("panel-tags", "tag"),
+    ("panel-text-frame", "text-box"),
+    ("panel-transform", "transform"),
+    ("panel-typography", "glyphs"),
+    ("panel-wrap", "wrap-text"),
+    ("para-border", "border-outside"),
+    ("para-shading", "fill"),
+    ("path-close", "closed-boundary"),
+    ("path-join", "join"),
+    ("path-open", "cut"),
+    ("path-reverse", "reverse"),
+    ("pf-add", "pathfinder-unite"),
+    ("pf-exclude", "pathfinder-exclude"),
+    ("pf-intersect", "pathfinder-intersect"),
+    ("pf-minus-back", "pathfinder-minus-back"),
+    ("pf-subtract", "pathfinder-minus-front"),
+    ("plus", "plus"),
+    ("point-corner", "anchor-point"),
+    ("point-plain", "point"),
+    ("point-smooth", "anchor-smooth"),
+    ("point-symmetrical", "symmetric"),
+    ("preset-save", "save"),
+    ("prev", "chevron-left"),
+    ("rotate-clockwise", "rotate"),
+    ("rulers", "ruler"),
+    ("screen-mode", "screen-mode"),
+    ("screen-normal", "view-normal"),
+    ("screen-preview", "preview"),
+    ("search", "search"),
+    ("shape-ellipse", "shape-ellipse"),
+    ("shape-line", "line"),
+    ("shape-polygon", "polygon"),
+    ("shape-rect", "shape-rectangle"),
+    ("shape-rounded", "shape-rounded-rectangle"),
+    ("shape-triangle", "triangle"),
+    ("share", "share"),
+    ("skew", "shear"),
+    ("small-caps", "change-case"),
+    ("space-after", "space-after"),
+    ("space-before", "space-before"),
+    ("style-clear", "clear-formatting"),
+    ("style-load", "import"),
+    ("style-new", "new"),
+    ("swap", "swap"),
+    ("text-columns", "columns"),
+    ("text-gutter", "column-width"),
+    ("tool-color-theme", "palette"),
+    ("tool-ellipse", "shape-ellipse"),
+    ("tool-erase", "eraser"),
+    ("tool-eyedropper", "eyedropper"),
+    ("tool-free-transform", "transform"),
+    ("tool-gradient", "gradient"),
+    ("tool-hand", "pan"),
+    ("tool-line", "line"),
+    ("tool-measure", "measure"),
+    ("tool-note", "note"),
+    ("tool-pen", "pen"),
+    ("tool-pen-add", "pen-add"),
+    ("tool-pen-delete", "pen-remove"),
+    ("tool-pencil", "pencil"),
+    ("tool-polygon", "polygon"),
+    ("tool-rect", "shape-rectangle"),
+    ("tool-rotate", "rotate"),
+    ("tool-scale", "scale"),
+    ("tool-scissors", "cut"),
+    ("tool-shear", "shear"),
+    ("tool-smooth", "smooth-path"),
+    ("tool-type", "text"),
+    ("tool-type-path", "type-path"),
+    ("tool-type-vertical", "type-vertical"),
+    ("tool-zoom", "zoom"),
+    ("tracking", "char-spacing"),
+    ("trash", "delete"),
+    ("view-options", "view"),
+    ("vscale", "arrows-vertical"),
+    ("wrap-none", "none"),
+];
+
+/// The NDL icon behind Pliego's `name`.
+pub fn ndl_name(name: &str) -> Option<&'static str> {
+    NDL_NAMES.binary_search_by(|(n, _)| (*n).cmp(name)).ok().and_then(|i| NDL_NAMES.get(i)).map(|(_, ndl)| *ndl)
+}
+
+/// Paint icon `name` into `r`: in the Nodalia look, NDL's bold icon where there is one.
 pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32) {
-    let mut pen = Pen { p, r, c, w: 1.3 };
+    let nodalia = crate::theme::Tokens::get(p.ctx()).nodalia;
+    if nodalia && let Some(icon) = ndl_name(name).and_then(nodalia_theme::icons::get) {
+        let side = r.width().min(r.height());
+        let square = Rect::from_center_size(r.center(), vec2(side, side));
+        if nodalia_theme::icons::paint(p, square, icon, nodalia_theme::icons::Style::bold(c)) {
+            return;
+        }
+    }
+    let mut pen = Pen { p, r, c, w: if nodalia { 1.7 } else { 1.3 } };
     if !(paint_tools(&mut pen, name)
         || paint_panels(&mut pen, name)
         || paint_shapes(&mut pen, name)
@@ -1267,10 +1449,11 @@ pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32) {
 pub fn button(ui: &mut egui::Ui, name: &str, size: f32, selected: bool, tip: &str) -> egui::Response {
     let t = crate::theme::Tokens::get(ui.ctx());
     let (r, resp) = ui.allocate_exact_size(vec2(size, size), egui::Sense::click());
+    let round = if t.nodalia { f32::from(t.radius).min(size / 3.0) } else { 3.0 };
     if selected {
-        ui.painter().rect_filled(r, 3.0, t.tool_active);
+        ui.painter().rect_filled(r, round, t.tool_active);
     } else if resp.hovered() {
-        ui.painter().rect_filled(r, 3.0, t.hover);
+        ui.painter().rect_filled(r, round, t.hover);
     }
     let pad = size * 0.16;
     paint(ui.painter(), r.shrink(pad), name, if selected { t.text_strong } else { t.icon });
@@ -1288,6 +1471,25 @@ pub fn button(ui: &mut egui::Ui, name: &str, size: f32, selected: bool, tip: &st
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The table is sorted (it is searched by halves) and every icon it names is one Nodalia
+    /// Design has and can draw.
+    #[test]
+    fn every_ndl_icon_pliego_names_exists_and_paints() {
+        assert!(NDL_NAMES.windows(2).all(|w| w[0].0 < w[1].0), "NDL_NAMES stays sorted");
+        let ctx = egui::Context::default();
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            for (name, ndl) in NDL_NAMES {
+                let icon = nodalia_theme::icons::get(ndl);
+                assert!(icon.is_some(), "{name}: NDL has no `{ndl}`");
+                if let Some(icon) = icon {
+                    let r = Rect::from_min_size(pos2(0.0, 0.0), vec2(20.0, 20.0));
+                    assert!(nodalia_theme::icons::paint(ui.painter(), r, icon, nodalia_theme::icons::Style::bold(Color32::WHITE)), "{name}");
+                }
+            }
+        });
+        out.textures_delta.clear();
+    }
 
     /// What icon `name` paints into a 20×20 rect, as the painter's shape list.
     fn drawing(name: &str) -> String {

@@ -251,6 +251,11 @@ pub struct UiState {
     pub display_quality: pliego_render::DisplayQuality,
     /// Preferences › Interface › UI scaling (1 = 100%).
     pub ui_scale: f32,
+    /// Preferences › Interface › Use the Desktop's Title Bar (Linux): the desktop draws the
+    /// window's frame instead of Nodalia's round window controls. Read when Pliego starts.
+    pub system_title_bar: bool,
+    /// Home › Recent Files as a list instead of cards.
+    pub home_recent_list: bool,
     /// Preferences › Appearance of Black: 100% K on screen as rich black (InDesign's default,
     /// Display All Blacks as Rich Black; off: accurately, as dark grey).
     pub rich_black: bool,
@@ -434,6 +439,8 @@ impl Default for UiState {
             separations: None,
             display_quality: pliego_render::DisplayQuality::High,
             ui_scale: 1.0,
+            system_title_bar: false,
+            home_recent_list: false,
             rich_black: true,
             overprint_preview: false,
             shortcuts: Default::default(),

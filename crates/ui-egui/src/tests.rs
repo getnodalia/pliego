@@ -16,7 +16,9 @@ fn control_bar_shows_its_second_row() {
         app,
     );
     h.run_steps(4);
-    let bar = egui::containers::panel::PanelState::load(&h.ctx, h.ui_id().with("control_bar")).unwrap().outer_rect;
+    let bar = egui::containers::panel::PanelState::load(&h.ctx, h.ui_id().with(egui::IdSalt::new(crate::app::BODY_SCOPE)).with("control_bar"))
+        .unwrap()
+        .outer_rect;
     assert!(bar.height() > 40.0, "{bar:?}");
     // The X/Y/W/H group: its second row holds Y: and H:.
     let group = h.ctx.read_response(egui::Id::unique(("object_control", "dimensions"))).unwrap().rect;
