@@ -30,8 +30,9 @@
 with no account and no cloud. It runs on Linux, macOS and Windows.
 
 > [!IMPORTANT]
-> **Pliego is at an early stage.** There are no published builds yet, and the Nodalia interface is
-> not wired in.
+> **Pliego is at an early stage.** Keep a copy of documents that matter. Packages for Linux,
+> macOS and Windows are on the [releases page](https://github.com/getnodalia/pliego/releases/latest),
+> and its page is [getnodalia.com/pliego](https://getnodalia.com/pliego).
 
 ## Build and run
 
@@ -49,9 +50,9 @@ cargo run --release -p pliego
 |---|---|
 | Package and binary names | Done: the desktop binary is called `pliego` |
 | App icon | Done: portrait of Johannes Gutenberg |
-| Nodalia interface | Not started |
-| Shared interface resources | Planned: the Nodalia apps will share interface components and styles |
-| Installable packages | None published |
+| Nodalia interface | Done: Nodalia Design with the creator suite's app bar and Home, NDL window controls and the desktop's global menu on Linux |
+| Shared interface resources | Done: theme, icons and Home come from nodalia-design |
+| Installable packages | From 0.1.0: AppImage, .deb, .rpm, .tar.gz, DMG, MSI and portable zip |
 
 ## App icon
 
