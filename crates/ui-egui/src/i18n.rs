@@ -22,6 +22,7 @@ mod pt_br;
 mod ru;
 mod sv;
 mod uk;
+mod zh;
 
 /// Supported interface languages: (code, name in that language).
 pub const LANGUAGES: &[(&str, &str)] = &[
@@ -103,6 +104,7 @@ fn lookup<'a>(lang: &str, s: &'a str) -> &'a str {
         return HUNGARIAN.get_or_init(|| hu::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
     }
     static SWEDISH: OnceLock<HashMap<&str, &str>> = OnceLock::new();
+    static CHINESE: OnceLock<HashMap<&str, &str>> = OnceLock::new();
     if lang == "ar" {
         return ARABIC.get_or_init(|| ar::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
     }
@@ -153,6 +155,12 @@ fn lookup<'a>(lang: &str, s: &'a str) -> &'a str {
     }
     if lang == "cs" {
         return CZECH.get_or_init(|| cs::TABLE.iter().copied().collect()).get(s).copied().unwrap_or(s);
+    }
+    // `zh::TABLE` holds the strings the shared table has no row for.
+    if lang == "zh"
+        && let Some(text) = CHINESE.get_or_init(|| zh::TABLE.iter().copied().collect()).get(s).copied().filter(|text| !text.trim().is_empty())
+    {
+        return text;
     }
     let Some(c) = column(lang) else { return s };
     TRANSLATIONS.get_or_init(|| TABLE.iter().copied().collect()).get(s).and_then(|row| row.get(c)).copied().unwrap_or(s)

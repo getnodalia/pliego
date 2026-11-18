@@ -17,6 +17,7 @@ const LANGUAGE_TABLES: &[(&str, &[(&str, &str)])] = &[
     ("ru", ru::TABLE),
     ("sv", sv::TABLE),
     ("uk", uk::TABLE),
+    ("zh", zh::TABLE),
 ];
 
 /// Every per-language table `tr_context` looks up.
