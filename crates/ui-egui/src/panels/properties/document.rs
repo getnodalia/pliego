@@ -180,13 +180,13 @@ fn edited_margins(mut m: pliego_doc::Margins, linked: bool, k: usize, nv: f64) -
 }
 
 /// The page-size preset menu; the width and height of the preset chosen.
-fn page_preset_menu(ui: &mut Ui, pw: f64, ph: f64) -> Option<(f64, f64)> {
+fn page_preset_menu(ui: &mut Ui, lang: &str, pw: f64, ph: f64) -> Option<(f64, f64)> {
     let mut preset = None;
-    let resp = dropdown(ui, preset_name(pw, ph), 93.0);
+    let resp = dropdown(ui, crate::i18n::tr(lang, preset_name(pw, ph)), 93.0);
     egui::Popup::menu(&resp).show(|ui| {
         ui.set_min_width(140.0);
         for p in PAGE_PRESETS {
-            if ui.selectable_label(preset_name(pw, ph) == p.0, p.0).clicked() {
+            if ui.selectable_label(preset_name(pw, ph) == p.0, crate::i18n::tr(lang, p.0)).clicked() {
                 preset = Some((p.1, p.2));
                 ui.close();
             }
@@ -267,7 +267,8 @@ pub(super) fn document_sections(app: &mut DesignApp, ui: &mut Ui) {
     section(ui, crate::i18n::tr(&app.ui.language, "Document"), true);
     // Preset dropdown + orientation.
     let b = block(ui, FIELD_H);
-    let preset = place(ui, sub(b, 0.0, 0.0, 93.0, FIELD_H), |ui| page_preset_menu(ui, pw, ph));
+    let lang = app.ui.language.clone();
+    let preset = place(ui, sub(b, 0.0, 0.0, 93.0, FIELD_H), |ui| page_preset_menu(ui, &lang, pw, ph));
     let landscape = pw > ph;
     let mut orient = None;
     place(ui, sub(b, 126.0, 0.0, 52.0, FIELD_H), |ui| {
