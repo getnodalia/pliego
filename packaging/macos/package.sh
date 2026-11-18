@@ -129,6 +129,19 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHORT_VERSION@/$SHORT_VERSION/g" \
   -e "s/@BUILD_SHA@/${PLIEGO_BUILD_SHA:-unknown}/g" \
   "$HERE/Info.plist.in" >"$APP/Contents/Info.plist"
 plutil -lint "$APP/Contents/Info.plist"
+# An executable or icon name that doesn't match a file leaves the app unable to open, with a
+# crossed-out icon in the DMG. Check them here rather than on someone's Mac.
+python3 - "$APP" <<'PY'
+import os, plistlib, sys
+app = sys.argv[1]
+with open(os.path.join(app, "Contents", "Info.plist"), "rb") as f:
+    info = plistlib.load(f)
+missing = [p for p in (os.path.join("MacOS", info["CFBundleExecutable"]),
+                       os.path.join("Resources", info["CFBundleIconFile"] + ".icns"))
+           if not os.path.isfile(os.path.join(app, "Contents", p))]
+if missing:
+    sys.exit(f"error: Info.plist names files the bundle lacks: {missing}")
+PY
 printf 'APPL????' >"$APP/Contents/PkgInfo"
 
 # Sign inside-out: nested code first, then the bundle itself (no --deep on the final signature).
@@ -155,6 +168,15 @@ ln -s /Applications "$STAGE/Applications"
 # Finder window layout: background, icon size and positions (packaging/macos/dmg/README.md).
 mkdir -p "$STAGE/.background"
 cp "$HERE/dmg/background.tiff" "$STAGE/.background/background.tiff"
+# The layout names the volume (the background's alias) and the app (its icon position). A layout
+# left over from another name opens a plain window with no background, so stop the build instead.
+python3 - "$HERE/dmg/dmg-layout.DS_Store" "Pliego" "Pliego.app" <<'PY'
+import sys
+path, volume, app = sys.argv[1:4]
+data = open(path, "rb").read()
+if f"/Volumes/{volume}".encode() not in data or app.encode("utf-16-be") not in data:
+    sys.exit(f"error: {path} is laid out for another volume or app; run packaging/macos/dmg/generate.py")
+PY
 cp "$HERE/dmg/dmg-layout.DS_Store" "$STAGE/.DS_Store"
 rm -f "$DMG"
 # `hdiutil create -srcfolder` writes the files as they are. `makehybrid -hfs` gave every file a
