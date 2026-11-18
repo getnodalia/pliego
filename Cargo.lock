@@ -4027,7 +4027,7 @@ checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "pliego"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "arboard",
  "craft-window",
@@ -4052,7 +4052,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-cli"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "image",
  "pliego-color",
@@ -4069,7 +4069,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-color"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "craft-cms",
  "kurbo",
@@ -4081,7 +4081,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-compose"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "fancy-regex",
  "hypher",
@@ -4101,7 +4101,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-doc"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "pliego-color",
@@ -4114,7 +4114,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-engine"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "caseless",
  "craft-atomic",
@@ -4154,7 +4154,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-epub"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "pliego-color",
@@ -4164,7 +4164,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-fonts"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "core-text",
  "harfrust 0.13.3",
@@ -4177,7 +4177,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-format"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "pliego-doc",
  "pliego-images",
@@ -4189,7 +4189,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-geom"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "flo_curves",
  "kurbo",
@@ -4202,7 +4202,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-idml"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "log",
  "pliego-color",
@@ -4217,7 +4217,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-images"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "craft-cms",
  "flate2",
@@ -4235,7 +4235,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-mcp"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "image",
  "log",
@@ -4248,7 +4248,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-pdf"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "craft-cms",
@@ -4274,7 +4274,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-pptx"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "image",
@@ -4292,7 +4292,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-render"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "craft-pdf",
  "image",
@@ -4311,7 +4311,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-textimport"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "pliego-doc",
  "quick-xml",
@@ -4320,7 +4320,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-tools"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "pliego-color",
  "pliego-compose",
@@ -4332,7 +4332,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-ui-egui"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "craft-dialogs",
  "craft-keymap",
@@ -4368,7 +4368,7 @@ dependencies = [
 
 [[package]]
 name = "pliego-web"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
@@ -7572,7 +7572,7 @@ checksum = "9440ea3e5aeabb0ac63af70daf835274065238cdd0cec83418f417eae38bacee"
 
 [[package]]
 name = "xtask"
-version = "0.17.0"
+version = "0.1.0"
 dependencies = [
  "serde_json",
 ]

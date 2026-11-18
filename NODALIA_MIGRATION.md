@@ -1,7 +1,7 @@
 # Nodalia migration: Pliego
 
 Category: secondary app.
-Status: Base Nodalia preparada, as of 2026-11-13. Evidence: the pull request that adds this file.
+Status: NDL interface and first release (0.1.0), as of 2026-11-18. Evidence: pliego #32 (NDL), #33 (DMG window) and the 0.1.0 release pull request.
 
 ## Current state
 
@@ -41,11 +41,13 @@ media type inside the archive keep their old value so files stay readable both w
 getnodalia/foundation (vendored crates, fonts, translations, reusable workflows);
 getnodalia/nodalia-design (theme, icons).
 
-## NDL work pending
+## NDL
 
-Check the interface against Foundation's NDL standard: hamburger menu with About, Preferences and
-Keyboard shortcuts; theme selector only in Preferences; NDL window controls on Linux only; global
-menu exported over D-Bus on Linux.
+Done in #32: Nodalia Design tokens and islands, the creator suite's app bar with its workspace
+selector and its Home, the hamburger menu with About, Preferences and Keyboard shortcuts, the
+theme selector only in Preferences, NDL window controls on Linux only (native ones on macOS and
+Windows), and the menus exported over D-Bus to the desktop's global menu on Linux. The app icon is
+Johannes Gutenberg's portrait; the macOS DMG opens its own designed window (#33).
 
 ## Risks and priorities
 
@@ -56,7 +58,6 @@ menu exported over D-Bus on Linux.
 
 1. A Foundation release workflow, tested with a dry run, then Pliego's release on it.
 2. A Foundation Windows ARM64 workflow.
-3. NDL review of the interface.
 
 ## What the first agent should do
 
