@@ -3599,13 +3599,13 @@ fn the_color_pickers_eyedropper_takes_a_colour_off_the_page() {
         app,
     );
     h.run_steps(6);
-    // Where the frame shows on screen.
+    // Where the frame shows on screen, clear of the picker.
     let target = {
         let app = h.state();
         let doc = &app.session.doc().unwrap().doc;
         let layout = pliego_tools::CanvasLayout::new(doc, false);
         let v = *app.view().unwrap();
-        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * pliego_geom::Point::new(300.0, 600.0))
+        crate::canvas::Xf::new(app.canvas_rect.unwrap(), &v).to_screen(layout.slots[0].xf * pliego_geom::Point::new(60.0, 680.0))
     };
     let from = h.get_by_label("Eyedropper: drag it onto the page").rect().center();
     h.hover_at(from);

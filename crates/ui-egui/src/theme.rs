@@ -1,4 +1,5 @@
-//! Design tokens (InDesign's four interface brightness levels), fonts and egui style.
+//! Design tokens (the Nodalia Design Language at four interface brightness levels, and a High
+//! Contrast one), fonts and egui style.
 
 use std::sync::Arc;
 
@@ -45,6 +46,11 @@ impl Brightness {
 #[derive(Clone, Copy, Debug)]
 pub struct Tokens {
     pub dark: bool,
+    /// The Nodalia Design Language: rounded islands with window-coloured gaps between them,
+    /// round window controls on Linux. Every brightness but High Contrast.
+    pub nodalia: bool,
+    /// An island's corner radius (panels, the canvas, the Home screen's cards).
+    pub card_radius: u8,
     pub app_bar: Color32,
     pub panel: Color32,
     pub panel_darker: Color32,
@@ -99,9 +105,73 @@ fn hex(s: u32) -> Color32 {
 }
 
 impl Tokens {
+    /// The tokens for brightness `b`: Nodalia's, but High Contrast's own black and yellow.
     pub fn for_brightness(b: Brightness) -> Self {
+        match b {
+            Brightness::HighContrast => Self::classic(b),
+            _ => Self::nodalia(b),
+        }
+    }
+
+    /// The Nodalia Design Language at brightness `b`: NDL's dark palette for Dark and Medium Dark
+    /// (Medium Dark, the default, lifted a step so pages and islands stand apart), its light one
+    /// for Light and Medium Light (whose frame is a shade deeper). Every colour comes from
+    /// `nodalia-theme`; only the marks drawn over the page (smart guides, live corners) keep
+    /// Pliego's own.
+    pub fn nodalia(b: Brightness) -> Self {
+        let p = ndl_palette(b);
+        let c = ndl;
+        let dark = matches!(b, Brightness::Dark | Brightness::MediumDark);
+        let base = Self::classic(if dark { Brightness::Dark } else { Brightness::Light });
+        let overlay = p.surface_overlay;
+        Tokens {
+            dark,
+            nodalia: true,
+            app_bar: c(p.surface_window),
+            panel: c(p.surface_panel),
+            panel_darker: c(p.control_bg),
+            input: c(p.control_field_bg),
+            input_border: c(p.border_default),
+            divider: c(p.border_subtle),
+            text: c(p.text_primary),
+            text_strong: c(p.text_primary),
+            text_dim: c(p.text_secondary),
+            text_disabled: c(p.text_disabled),
+            icon: c(p.text_primary),
+            hover: c(p.control_bg_hover),
+            tool_active: c(p.accent_subtle),
+            accent: c(p.accent_default),
+            accent_strong: c(p.accent_default),
+            row_selected: c(p.accent_subtle),
+            pasteboard: c(p.surface_sunken),
+            ruler: c(p.surface_panel),
+            ruler_tick: c(p.text_tertiary),
+            tab_inactive: c(p.surface_panel),
+            button: c(p.control_bg),
+            radius: nodalia_theme::component::CONTROL_RADIUS as u8,
+            card_radius: ISLAND_RADIUS as u8,
+            border: c(p.border_subtle),
+            field_border: c(p.border_default),
+            well: c(p.accent_subtle),
+            well_rim: c(p.border_default),
+            ruler_text: c(p.text_secondary),
+            section_divider: c(p.border_subtle),
+            tab_strip: c(p.surface_panel),
+            measure_bg: Color32::from_rgba_unmultiplied(overlay.r, overlay.g, overlay.b, 235),
+            measure_text: c(p.text_primary),
+            caption_close: c(WINDOW_CLOSE),
+            caption_close_text: c(nodalia_theme::window_color::CLOSE_ICON),
+            ..base
+        }
+    }
+
+    /// The tokens before the Nodalia Design Language, measured from InDesign; High Contrast
+    /// still uses them.
+    pub fn classic(b: Brightness) -> Self {
         let dark = Tokens {
             dark: true,
+            nodalia: false,
+            card_radius: 0,
             app_bar: hex(0x262626),
             panel: hex(0x323232),
             panel_darker: hex(0x282828),
@@ -576,9 +646,23 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.field_border);
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.field_border);
     v.widgets.active.bg_stroke = Stroke::new(1.0, t.field_border);
-    // InDesign buttons are outline-only.
-    v.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
-    v.widgets.inactive.bg_fill = t.input;
+    if t.nodalia {
+        // Nodalia: filled controls without outlines, rounded popups and windows.
+        v.window_corner_radius = CornerRadius::same(t.card_radius);
+        v.menu_corner_radius = CornerRadius::same(t.radius);
+        v.window_stroke = Stroke::new(1.0, t.border);
+        v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
+        v.widgets.inactive.bg_stroke = Stroke::NONE;
+        v.widgets.hovered.bg_stroke = Stroke::NONE;
+        v.widgets.active.bg_stroke = Stroke::NONE;
+        v.widgets.inactive.weak_bg_fill = t.button;
+        v.widgets.inactive.bg_fill = t.input;
+        v.selection.stroke = Stroke::new(1.0, t.text);
+    } else {
+        // InDesign buttons are outline-only.
+        v.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
+        v.widgets.inactive.bg_fill = t.input;
+    }
     v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 12, spread: 0, color: Color32::from_black_alpha(90) };
     ctx.set_visuals(v);
     ctx.global_style_mut(|s| {
@@ -589,6 +673,119 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
         s.spacing.menu_margin = egui::Margin::same(4);
         s.animation_time = 0.06;
     });
+}
+
+/// Pliego's accent in the Nodalia palette.
+pub const PLIEGO: nodalia_theme::Accent = nodalia_theme::Accent::Pliego;
+/// An island's corner radius in the Nodalia look.
+pub const ISLAND_RADIUS: f32 = nodalia_theme::component::PANEL_RADIUS;
+/// The window-colour gap between two islands, and between an island and the window's edge.
+pub const ISLAND_GAP: f32 = nodalia_theme::component::WINDOW_GAP;
+/// `component.window.close`: coral under the pointer, in every mode.
+const WINDOW_CLOSE: nodalia_theme::Rgba = nodalia_theme::window_color::CLOSE;
+
+pub(crate) fn ndl(c: nodalia_theme::Rgba) -> Color32 {
+    Color32::from_rgba_unmultiplied(c.r, c.g, c.b, c.a)
+}
+
+/// Nodalia's palette with Pliego's accent for brightness `b`. NDL's own dark surfaces are near
+/// black; Medium Dark lifts them a step (the pasteboard further, so pages stand out from it), and
+/// Medium Light deepens the light frame a little.
+pub(crate) fn ndl_palette(b: Brightness) -> nodalia_theme::Palette {
+    let dark = matches!(b, Brightness::Dark | Brightness::MediumDark | Brightness::HighContrast);
+    let mut p = if dark { nodalia_theme::Mode::Dark } else { nodalia_theme::Mode::Light }.palette_with(PLIEGO);
+    let shift = |c: nodalia_theme::Rgba, k: f32| {
+        let to = if k >= 0.0 { 255.0 } else { 0.0 };
+        let k = k.abs();
+        let m = |v: u8| (f32::from(v) + (to - f32::from(v)) * k).round() as u8;
+        nodalia_theme::Rgba::new(m(c.r), m(c.g), m(c.b), c.a)
+    };
+    match b {
+        Brightness::MediumDark => {
+            p.surface_window = shift(p.surface_window, 0.10);
+            p.surface_panel = shift(p.surface_panel, 0.11);
+            p.surface_raised = shift(p.surface_raised, 0.11);
+            p.surface_overlay = shift(p.surface_overlay, 0.11);
+            p.surface_sunken = shift(p.surface_sunken, 0.19);
+            p.control_bg = shift(p.control_bg, 0.11);
+            p.control_bg_hover = shift(p.control_bg_hover, 0.11);
+            p.control_bg_pressed = shift(p.control_bg_pressed, 0.11);
+            p.control_field_bg = shift(p.control_field_bg, 0.08);
+            p.border_subtle = shift(p.border_subtle, 0.11);
+            p.text_tertiary = shift(p.text_tertiary, 0.10);
+        }
+        Brightness::MediumLight => {
+            p.surface_window = shift(p.surface_window, -0.08);
+            p.surface_sunken = shift(p.surface_sunken, -0.06);
+        }
+        _ => {}
+    }
+    p
+}
+
+/// Which side of a bar faces the next island, and so keeps a gap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Gap {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+/// A bar's frame: the panel colour with `inner` padding, or in Nodalia a rounded island kept
+/// [`ISLAND_GAP`] from its neighbour on side `gap`. Returns the frame and the size the gap adds
+/// along the bar's axis (add it to the panel's exact size).
+pub fn bar_frame(t: &Tokens, inner: egui::Margin, gap: Gap) -> (egui::Frame, f32) {
+    let frame = egui::Frame::NONE.fill(t.panel).inner_margin(inner);
+    if !t.nodalia {
+        return (frame, 0.0);
+    }
+    let g = ISLAND_GAP as i8;
+    let outer = match gap {
+        Gap::Top => egui::Margin { top: g, ..Default::default() },
+        Gap::Bottom => egui::Margin { bottom: g, ..Default::default() },
+        Gap::Left => egui::Margin { left: g, ..Default::default() },
+        Gap::Right => egui::Margin { right: g, ..Default::default() },
+    };
+    (frame.corner_radius(t.card_radius).outer_margin(outer), ISLAND_GAP)
+}
+
+/// Rounds the corners of an island whose contents paint edge to edge (the canvas, a dock
+/// column): a window-coloured ring outside a rounded `rect`, clipped to it, covers the square
+/// corners. Paint it after the contents. Nothing in High Contrast.
+pub fn round_island_corners(painter: &egui::Painter, t: &Tokens, rect: egui::Rect) {
+    if t.nodalia {
+        nodalia_theme::creator::round_island_corners(painter, &t.creator(), rect);
+    }
+}
+
+impl Tokens {
+    /// The creator suite's shared parts (`nodalia_theme::creator`) in these tokens' colours, so
+    /// Pliego, Pluma and Lienzo draw the workspace selector, dialog buttons, Home rail and
+    /// Preferences navigation with the same code.
+    pub fn creator(&self) -> nodalia_theme::creator::Look {
+        let mode = if self.dark { nodalia_theme::Mode::Dark } else { nodalia_theme::Mode::Light };
+        let mut p = mode.palette_with(PLIEGO);
+        let rgba = |c: Color32| nodalia_theme::Rgba::new(c.r(), c.g(), c.b(), c.a());
+        p.surface_window = rgba(self.app_bar);
+        p.surface_panel = rgba(self.panel);
+        p.text_primary = rgba(self.text);
+        p.text_secondary = rgba(self.text_dim);
+        p.text_disabled = rgba(self.text_disabled);
+        p.control_bg = rgba(self.panel_darker);
+        p.control_bg_hover = rgba(self.hover);
+        p.control_bg_disabled = rgba(self.input);
+        p.control_field_bg = rgba(self.input);
+        p.border_default = rgba(self.input_border);
+        p.border_subtle = rgba(self.divider);
+        p.accent_default = rgba(self.accent);
+        nodalia_theme::creator::Look::new(p).strong_family(FontFamily::Name("semibold".into())).medium_family(FontFamily::Name("semibold".into()))
+    }
+
+    /// The NDL palette these tokens were made from (the window controls take theirs from it).
+    pub fn ndl_mode(&self) -> nodalia_theme::Mode {
+        if self.dark { nodalia_theme::Mode::Dark } else { nodalia_theme::Mode::Light }
+    }
 }
 
 impl Tokens {

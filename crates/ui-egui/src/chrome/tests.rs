@@ -51,6 +51,13 @@ fn app() -> crate::DesignApp {
     app
 }
 
+/// `app()` in High Contrast, which keeps the classic app bar (its Share button and its scrolling).
+fn classic_app() -> crate::DesignApp {
+    let mut app = app();
+    app.ui.brightness = crate::theme::Brightness::HighContrast;
+    app
+}
+
 /// A document with a rectangle selected, so the object controls are enabled.
 fn app_with_selection() -> crate::DesignApp {
     let mut app = app();
@@ -559,7 +566,7 @@ fn the_mac_app_bar_centres_and_clears_the_traffic_lights() {
     assert_eq!(MAC_CONTENT_LEFT - (MAC_LIGHTS_LEFT + 2.0 * MAC_LIGHT_PITCH + MAC_LIGHT), margin);
     // `egui::Margin` is in `i8`.
     assert!(MAC_CONTENT_LEFT <= f32::from(i8::MAX));
-    let mut app = app();
+    let mut app = classic_app();
     app.integrated_titlebar = true;
     let h = test_window::open(app, vec2(1400.0, 900.0));
     // The bar's controls share the lights' centre line and start after them (relative to the
@@ -624,7 +631,7 @@ fn drag(h: &mut egui_kittest::Harness<'static, test_window::Window>, from: egui:
 fn the_empty_mac_title_bar_zooms_and_moves_the_window() {
     use super::{MAC_APP_BAR, MAC_CONTENT_LEFT};
     use egui::ViewportCommand::{Maximized, Minimized, StartDrag};
-    let mut app = app();
+    let mut app = classic_app();
     app.integrated_titlebar = true;
     let mut h = test_window::open(app, vec2(1400.0, 900.0));
     let bar = test_window::panel_rect(&h, "app_bar");
@@ -657,7 +664,7 @@ fn the_empty_mac_title_bar_zooms_and_moves_the_window() {
 #[test]
 fn the_mac_window_is_not_movable_on_the_title_bar_controls() {
     use super::{MAC_APP_BAR, MAC_CONTENT_LEFT};
-    let mut app = app();
+    let mut app = classic_app();
     app.integrated_titlebar = true;
     let mut h = test_window::open(app, vec2(1400.0, 900.0));
     let bar = test_window::panel_rect(&h, "app_bar");
@@ -681,7 +688,7 @@ fn the_mac_window_is_not_movable_on_the_title_bar_controls() {
 #[test]
 fn a_narrow_window_scrolls_the_app_bar() {
     let w = 640.0;
-    let mut h = test_window::open(app(), vec2(w, 600.0));
+    let mut h = test_window::open(classic_app(), vec2(w, 600.0));
     let (help, share) = (rect(&h, "Help"), rect(&h, "Share"));
     assert!(help.max.x <= share.min.x, "the menus ({help:?}) and the workspace controls ({share:?}) overlap");
     wheel(&mut h, help.center(), vec2(0.0, -3000.0));
@@ -691,8 +698,28 @@ fn a_narrow_window_scrolls_the_app_bar() {
 }
 
 #[test]
+fn the_nodalia_app_bar_keeps_its_menus_clear_of_the_workspace_selector() {
+    for w in [900.0, 1400.0] {
+        let h = test_window::open(app(), vec2(w, 700.0));
+        let (home, help) = (rect(&h, "Home"), rect(&h, "Help"));
+        let selector = h.get_by_label("Essentials").rect();
+        assert!(home.max.x <= help.min.x && help.max.x < selector.min.x, "{w}: {home:?} {help:?} {selector:?}");
+        assert!(selector.max.x <= w, "{w}: {selector:?}");
+    }
+}
+
+#[test]
+fn the_desktops_global_menu_takes_the_menus_out_of_the_window() {
+    let mut app = app();
+    app.global_menu = true;
+    let h = test_window::open(app, vec2(1400.0, 900.0));
+    assert!(h.query_by_label("Help").is_none(), "the top bar shows the menus");
+    assert!(h.query_by_label("Home").is_some(), "the rest of the bar stays");
+}
+
+#[test]
 fn a_wide_window_does_not_scroll_the_bars() {
-    let mut h = test_window::open(app(), vec2(1400.0, 900.0));
+    let mut h = test_window::open(classic_app(), vec2(1400.0, 900.0));
     let before = [rect(&h, FIRST_CONTROL), rect(&h, LAST_CONTROL), rect(&h, "Help"), rect(&h, "Share")];
     assert!(before.iter().all(|r| r.max.x <= 1400.0), "{before:?}");
     wheel(&mut h, before[0].center(), vec2(0.0, -3000.0));
@@ -705,7 +732,7 @@ fn a_wide_window_does_not_scroll_the_bars() {
 #[test]
 fn the_app_bar_does_not_scroll_at_115_percent() {
     let w = 1400.0;
-    let mut h = test_window::open_scaled(app(), vec2(w, 900.0), 1.15);
+    let mut h = test_window::open_scaled(classic_app(), vec2(w, 900.0), 1.15);
     assert_eq!(h.ctx.pixels_per_point(), 1.15);
     let before = [rect(&h, "Help"), rect(&h, "Share")];
     assert!(before.iter().all(|r| r.max.x <= w), "{before:?}");
@@ -743,6 +770,8 @@ impl WindowHarness {
         app.custom_titlebar = true;
         let ctx = egui::Context::default();
         crate::theme::install_fonts(&ctx, "");
+        // The classic caption buttons; `ndl_window_controls_*` cover Nodalia's.
+        ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, crate::theme::Tokens::classic(crate::theme::Brightness::Dark)));
         let mut harness = Self { ctx, app, time: 0.0, maximized: false, size: vec2(1440.0, 900.0) };
         harness.frame(vec![]);
         harness.frame(vec![]);
@@ -787,6 +816,30 @@ impl WindowHarness {
     fn caption_center(&self, id: &str) -> egui::Pos2 {
         self.ctx.read_response(egui::Id::unique(id)).unwrap().rect.center()
     }
+}
+
+/// Nodalia's round window controls: the centre of the `index`th (0 minimize, 1 maximize or
+/// restore, 2 close) at the right of the app bar, `width` points wide.
+fn ndl_control(width: f32, index: usize) -> egui::Pos2 {
+    let size = nodalia_theme::component::WINDOW_CONTROL_SIZE;
+    // The controls end 8 pt from the window's edge.
+    let start = width - 8.0 - nodalia_theme::window_controls::WIDTH;
+    let gap = (nodalia_theme::window_controls::WIDTH - 3.0 * size) / 2.0;
+    egui::pos2(start + index as f32 * (size + gap) + size / 2.0, super::NDL_APP_BAR / 2.0)
+}
+
+#[test]
+fn ndl_window_controls_minimize_maximize_restore_and_close() {
+    let mut h = WindowHarness::new();
+    h.ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, crate::theme::Tokens::for_brightness(crate::theme::Brightness::Dark)));
+    h.frame(vec![]);
+    let w = h.size.x;
+    assert!(h.click(ndl_control(w, 0)).contains(&egui::ViewportCommand::Minimized(true)));
+    assert!(h.click(ndl_control(w, 1)).contains(&egui::ViewportCommand::Maximized(true)));
+    h.maximized = true;
+    h.frame(vec![]);
+    assert!(h.click(ndl_control(w, 1)).contains(&egui::ViewportCommand::Maximized(false)));
+    assert!(h.click(ndl_control(w, 2)).contains(&egui::ViewportCommand::Close));
 }
 
 #[test]

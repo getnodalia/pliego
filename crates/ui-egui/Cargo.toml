@@ -21,8 +21,10 @@ pliego-compose = { workspace = true }
 pliego-render = { workspace = true }
 pliego-tools = { workspace = true }
 pliego-engine = { workspace = true }
+pliego-images = { workspace = true }
 pliego-textimport = { workspace = true }
 craft-prepress = { workspace = true }
+nodalia-theme = { workspace = true, features = ["creator"] }
 # The UI draws monochrome icon glyphs from egui's bundled emoji faces (☰, ⚠, 📋); 0.37 moved
 # them behind this feature. They stay bundled copies of OSI/CC0 faces from `epaint_default_fonts`.
 egui = { workspace = true, features = ["monochrome_emoji_fonts"] }

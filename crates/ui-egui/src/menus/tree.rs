@@ -107,7 +107,6 @@ pub enum AppMenuItem {
 pub const MAC_APP_MENU: &[AppMenuItem] = &[
     AppMenuItem::Cmd { id: "dc-about", label: "About Pliego", command: "help.about" },
     AppMenuItem::Cmd { id: "dc-updates", label: "Check for Updates…", command: "help.checkForUpdates" },
-    AppMenuItem::Cmd { id: "dc-discord", label: "Join the Nodalia Discord…", command: "help.discord" },
     AppMenuItem::Sep,
     AppMenuItem::Cmd { id: "dc-settings", label: "Settings…", command: "app.preferences" },
     AppMenuItem::Language,

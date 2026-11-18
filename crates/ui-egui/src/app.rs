@@ -27,6 +27,9 @@ mod view;
 pub(crate) use files::browser_import_tests;
 pub use files::opens_as_document;
 
+/// The salt of the Ui every panel below the app bar is drawn in (`ui_body`).
+pub(crate) const BODY_SCOPE: &str = "pliego_body";
+
 impl DesignApp {
     /// Start the background font scan, establish the monotonic timing origin, and initialize document, view, input, screenshot, dialog and control state.
     pub fn new(session: Session, services: Services) -> Self {
@@ -101,6 +104,7 @@ impl DesignApp {
             window_maximized: false,
             pending_window_commands: vec![],
             native_menu: false,
+            global_menu: false,
             native_shortcuts: Default::default(),
             keymap: crate::keys::new_keymap(craft_keymap::Overrides::new()),
             key_dispatcher: craft_keymap::egui::Dispatcher::new(),
@@ -225,6 +229,23 @@ impl DesignApp {
             if dbg {
                 eprintln!("after app bar {:?}", ui.available_rect_before_wrap());
             }
+        }
+        // Nodalia: the islands sit on the window's colour, a gap from its edges.
+        let islands = t.nodalia && !presenting;
+        let body = ui.available_rect_before_wrap();
+        if islands {
+            ui.painter().rect_filled(body, 0.0, t.app_bar);
+        }
+        let g = if islands { theme::ISLAND_GAP } else { 0.0 };
+        let inner = egui::Rect::from_min_max(egui::pos2(body.min.x + g, body.min.y), egui::pos2(body.max.x - g, body.max.y - g));
+        // A fixed salt keeps the panels' ids stable: egui keys a panel by its parent Ui's scope.
+        ui.scope_builder(egui::UiBuilder::new().id_salt(BODY_SCOPE).max_rect(inner), |ui| self.ui_body(ui, &t, presenting, dbg));
+        self.ui_after_body(ui, ctx, t, presenting, t0);
+    }
+
+    /// Everything under the app bar: the Control panel, status bar, Tools and the docked canvas.
+    fn ui_body(&mut self, ui: &mut egui::Ui, t: &theme::Tokens, presenting: bool, dbg: bool) {
+        if !presenting {
             if self.ui.control_bar && self.session.active().is_some() && self.ui.hidden_panels == 0 {
                 chrome::control_bar(self, ui);
             }
@@ -236,7 +257,9 @@ impl DesignApp {
                 toolbar::show(self, ui);
             }
         }
-        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
+        // Nodalia: the window's colour around the islands; the canvas paints the pasteboard itself.
+        let central = if t.nodalia && !presenting { t.app_bar } else { t.pasteboard };
+        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(central)).show(ui, |ui| {
             // The panel layout holds the canvas as its protected `canvas` panel.
             if presenting || self.ui.hidden_panels != 0 {
                 self.canvas_area(ui, presenting);
@@ -244,6 +267,10 @@ impl DesignApp {
                 panel_docking::show(self, ui);
             }
         });
+    }
+
+    /// The second window, floating panels, dialogs and the end of the frame.
+    fn ui_after_body(&mut self, ui: &mut egui::Ui, ctx: egui::Context, t: theme::Tokens, presenting: bool, t0: f64) {
         // New Window: pane 1 in a window of its own.
         if self.second_window
             && !presenting

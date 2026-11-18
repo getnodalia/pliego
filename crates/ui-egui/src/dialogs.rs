@@ -2656,6 +2656,16 @@ fn preferences(app: &crate::DesignApp, ui: &mut egui::Ui, d: &mut Dialog, max_he
                         translated_combo(&lang, ui, d, "toolsColumns", &[("single", "Single Column"), ("double", "Double Column")])
                             .labelled_by(name.id);
                     });
+                    // Only Linux draws Nodalia's window controls; macOS and Windows keep their own.
+                    if cfg!(not(any(target_os = "macos", target_os = "windows", target_arch = "wasm32"))) {
+                        ui.add_space(8.0);
+                        crate::rtl::label(ui, egui::RichText::new(crate::i18n::tr(&lang, "Window")).font(semibold(12.0)));
+                        check(ui, d, "systemTitleBar", crate::i18n::tr(&lang, "Use the Desktop's Title Bar"));
+                        crate::rtl::label(
+                            ui,
+                            egui::RichText::new(crate::i18n::tr(&lang, "Takes effect the next time Pliego starts.")).color(t.text_dim),
+                        );
+                    }
                 }
                 "uiScaling" => {
                     crate::rtl::label(ui, egui::RichText::new(crate::i18n::tr(&app.ui.language, "UI Scaling")).font(semibold(12.0)));
@@ -4865,6 +4875,9 @@ fn confirm_part4(app: &mut DesignApp, d: Dialog) -> Result<Value, String> {
             }
             if d.fields.contains_key("toolsColumns") {
                 app.run("window.toolsDoubleColumn", json!({"on": d.s("toolsColumns") == "double"}))?;
+            }
+            if d.fields.contains_key("systemTitleBar") {
+                app.ui.system_title_bar = d.b("systemTitleBar");
             }
             if let Some(v) = d.n("uiScale") {
                 app.run("window.uiScale", json!({"scale": v / 100.0}))?;

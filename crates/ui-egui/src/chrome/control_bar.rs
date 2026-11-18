@@ -9,28 +9,26 @@ fn vsep(ui: &mut egui::Ui) {
 /// Two-row context-sensitive Control panel.
 pub fn control_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
-    egui::Panel::top("control_bar")
-        .exact_size(59.0)
-        .frame(
-            egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin { left: 8, right: 8, top: 5, bottom: 3 }).stroke(Stroke::new(1.0, t.divider)),
-        )
-        .show(ui, |ui| {
-            // Wider than the window: the bar scrolls sideways.
-            crate::widgets::overflow_scrolling(ui);
-            egui::ScrollArea::horizontal().id_salt("control_bar_scroll").auto_shrink([false, true]).show(ui, |ui| {
-                ui.horizontal_top(|ui| {
-                    let text_mode =
-                        matches!(app.session.tool_id(), "type" | "verticalType") || app.session.active().is_some_and(|d| d.selection.text.is_some());
-                    if app.session.tool_id() == "page" {
-                        control_page(app, ui);
-                    } else if text_mode {
-                        control_text(app, ui);
-                    } else {
-                        crate::object_control::show(app, ui);
-                    }
-                });
+    let (frame, gap) = crate::theme::bar_frame(&t, egui::Margin { left: 8, right: 8, top: 5, bottom: 3 }, crate::theme::Gap::Bottom);
+    // Nodalia: an island, rounded, with no line around it.
+    let frame = if t.nodalia { frame } else { frame.stroke(Stroke::new(1.0, t.divider)) };
+    egui::Panel::top("control_bar").exact_size(59.0 + gap).show_separator_line(!t.nodalia).frame(frame).show(ui, |ui| {
+        // Wider than the window: the bar scrolls sideways.
+        crate::widgets::overflow_scrolling(ui);
+        egui::ScrollArea::horizontal().id_salt("control_bar_scroll").auto_shrink([false, true]).show(ui, |ui| {
+            ui.horizontal_top(|ui| {
+                let text_mode =
+                    matches!(app.session.tool_id(), "type" | "verticalType") || app.session.active().is_some_and(|d| d.selection.text.is_some());
+                if app.session.tool_id() == "page" {
+                    control_page(app, ui);
+                } else if text_mode {
+                    control_text(app, ui);
+                } else {
+                    crate::object_control::show(app, ui);
+                }
             });
         });
+    });
 }
 
 /// Page-size preset menu and the portrait / landscape toggles of the Control panel.

@@ -58,6 +58,7 @@ pub use control::{ControlRequest, ControlResponse};
 pub use prefs::ReadPreferences;
 
 mod app;
+mod brand;
 mod clock;
 mod key_names;
 mod services;
@@ -225,6 +226,9 @@ pub struct DesignApp {
     pub(crate) pending_window_commands: Vec<egui::ViewportCommand>,
     /// The host installed a native menu bar (macOS): don't draw menus in the window.
     pub native_menu: bool,
+    /// The desktop's top bar shows the menus (Linux's global menu): don't draw them in the window.
+    /// Unlike `native_menu`, the keys stay with the window.
+    pub global_menu: bool,
     /// The commands the native menu bar gives a key equivalent, with that shortcut: the egui
     /// shortcut handler leaves that key to the bar and runs the command's other bindings itself.
     pub native_shortcuts: std::collections::HashMap<String, String>,
@@ -390,9 +394,11 @@ pub(crate) mod test_window {
     ///
     /// 0.37 keys a panel by its *parent Ui's* scope: `Ui::scope_id().with_salt(salt)`. In this
     /// harness the app draws into a Ui the harness owns (a child of the viewport root Ui), so
-    /// `Harness::ui_id()` — not the viewport's root id — is the parent to salt.
+    /// `Harness::ui_id()` — not the viewport's root id — is the parent to salt. The app bar sits
+    /// there; every panel below it sits in the body's scope (`app::BODY_SCOPE`).
     pub fn panel_rect(h: &Harness<'static, Window>, id: &str) -> egui::Rect {
-        egui::containers::panel::PanelState::load(&h.ctx, h.ui_id().with(id)).map(|s| s.outer_rect).unwrap()
+        let load = |parent: egui::Id| egui::containers::panel::PanelState::load(&h.ctx, parent.with(id)).map(|s| s.outer_rect);
+        load(h.ui_id().with(egui::IdSalt::new(crate::app::BODY_SCOPE))).or_else(|| load(h.ui_id())).unwrap()
     }
 
     /// A primary click at `pos`, then a few frames.
