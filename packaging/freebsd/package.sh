@@ -93,8 +93,6 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$PLIEGO_BUILD_DATE/g" \
   "$LINUX/$APP_ID.metainfo.xml.in" >"$STAGE/share/metainfo/$APP_ID.metainfo.xml"
 cp -R "$ROOT/assets/app-icon/hicolor" "$STAGE/share/icons/"
 
-# The .desktop names the icon dev.danielmiguelt.Pliego (the Nodalia name); install it under that name too.
-for f in "$STAGE"/share/icons/hicolor/*/apps/"$APP_ID".{png,svg}; do cp "$f" "${f%/*}/dev.danielmiguelt.Pliego.${f##*.}"; done
 copy_docs "$STAGE/share/doc/pliego"
 for f in NOTICE ATTRIBUTION.md; do
   if [[ -f "$ROOT/$f" ]]; then install -m 644 "$ROOT/$f" "$STAGE/share/doc/pliego/"; fi
