@@ -50,7 +50,7 @@ const MAC_LIGHT_PITCH: f32 = 20.0;
 const MAC_LIGHTS_LEFT: f32 = 10.0;
 /// Where the bar's content starts to the right of the traffic lights: the end of the three lights
 /// plus the same gap the lights keep from the top of the window.
-pub const MAC_CONTENT_LEFT: f32 = MAC_LIGHTS_LEFT + 2.0 * MAC_LIGHT_PITCH + MAC_LIGHT + (MAC_APP_BAR - MAC_LIGHT) / 2.0;
+pub const MAC_CONTENT_LEFT: f32 = nodalia_theme::titlebar::MAC_LIGHTS;
 
 impl DesignApp {
     fn session_home(&mut self) {
