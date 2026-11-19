@@ -5,6 +5,7 @@
 //! double-click there maximizes it.
 
 use super::{DesignApp, MAC_APP_BAR, MAC_CONTENT_LEFT, Sense, Tokens, json};
+use nodalia_theme::titlebar::{Placement, Side};
 
 /// The bar's height: room for its 28 pt controls with a margin above and below them.
 pub const NDL_APP_BAR: f32 = 44.0;
@@ -128,8 +129,8 @@ fn drag_area(app: &mut DesignApp, ui: &egui::Ui, rect: egui::Rect) {
     app.flush_window_commands(&ctx);
 }
 
-/// Nodalia's round window controls at the right end of `rect`.
-fn window_controls(app: &mut DesignApp, ui: &egui::Ui, rect: egui::Rect) {
+/// Nodalia's round window controls in `rect`, which the bar placed at the desktop's side.
+fn window_controls(app: &mut DesignApp, ui: &egui::Ui, rect: egui::Rect, side: Side) {
     let t = Tokens::get(ui.ctx());
     let lang = app.ui.language.clone();
     let (maximized, focused) = ui.input(|i| (i.viewport().maximized.unwrap_or(false), i.viewport().focused.unwrap_or(true)));
@@ -142,7 +143,7 @@ fn window_controls(app: &mut DesignApp, ui: &egui::Ui, rect: egui::Rect) {
         close: crate::i18n::tr(&lang, "Close"),
     };
     use nodalia_theme::window_controls::Action;
-    match nodalia_theme::window_controls::show(ui, rect, &palette, mode, focused, maximized, labels) {
+    match nodalia_theme::window_controls::show_on(ui, rect, side, &palette, mode, focused, maximized, labels) {
         Some(Action::Minimize) => {
             let _ = app.run("window.minimize", json!({}));
         }
@@ -167,7 +168,17 @@ pub(super) fn ndl_app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let mac = app.integrated_titlebar;
     let custom = app.custom_titlebar;
-    let left = if mac { MAC_CONTENT_LEFT as i8 } else { 8 };
+    // Nodalia's controls take the end of the bar the desktop keeps its own at: the right unless
+    // its button layout says left.
+    let side = if custom { nodalia_theme::titlebar::system_side() } else { Side::Right };
+    let controls_left = custom && side == Side::Left;
+    let left = if mac {
+        MAC_CONTENT_LEFT as i8
+    } else if controls_left {
+        0
+    } else {
+        8
+    };
     let control = if mac { 24.0 } else { 28.0 };
     egui::Panel::top("app_bar")
         .exact_size(height(mac))
@@ -181,13 +192,15 @@ pub(super) fn ndl_app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
             }
             if custom {
                 drag_area(app, ui, outer);
-                let controls = egui::Rect::from_min_max(egui::pos2(full.max.x - CONTROLS_W, full.min.y), egui::pos2(full.max.x - 8.0, full.max.y));
-                window_controls(app, ui, controls);
+                window_controls(app, ui, Placement::nodalia(side).controls_rect(outer), side);
             }
-            let right_edge = full.max.x - if custom { CONTROLS_W + 8.0 } else { 10.0 };
+            let right_edge = full.max.x - if custom && !controls_left { CONTROLS_W + 8.0 } else { 10.0 };
             let mut menus_end = full.min.x;
             let mut tools_start = right_edge;
             ui.horizontal_centered(|ui| {
+                if controls_left {
+                    ui.add_space(CONTROLS_W + nodalia_theme::titlebar::CONTENT_GAP);
+                }
                 main_menu(app, ui, control);
                 if crate::icons::button(ui, "home", control, app.session.active().is_none(), crate::i18n::tr(&app.ui.language, "Home")).clicked() {
                     app.session_home();
