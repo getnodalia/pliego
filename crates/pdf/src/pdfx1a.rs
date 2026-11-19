@@ -1,16 +1,16 @@
-//! PDF/X-1a:2003: the PDF/X-4 print file flattened by craft-prepress (no transparency left; RGB
+//! PDF/X-1a:2003: the PDF/X-4 print file flattened by nodalia-prepress (no transparency left; RGB
 //! and ICC color converted into the output intent's CMYK; inks, overprint and live text kept),
 //! written by krilla as PDF 1.4, given the PDF/X-1a identification and output intent, then
 //! checked.
 
 use std::collections::{HashMap, HashSet};
 
-use craft_pdf::write::backend::configure::PdfVersion;
-use craft_prepress::flatten::pdf::ReadOptions;
-use craft_prepress::flatten::{FlattenDocumentOptions, FlattenOptions, FlattenTotals, flatten_document};
 use hayro_syntax::content::UntypedIter;
 use hayro_syntax::object::{Array, Dict, Name, Object, ObjectIdentifier, Stream};
 use hayro_syntax::page::Resources;
+use nodalia_pdf::write::backend::configure::PdfVersion;
+use nodalia_prepress::flatten::pdf::ReadOptions;
+use nodalia_prepress::flatten::{FlattenDocumentOptions, FlattenOptions, FlattenTotals, flatten_document};
 
 use crate::PdfError;
 use crate::pdfx::MAX_DEPTH;

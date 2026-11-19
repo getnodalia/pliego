@@ -106,7 +106,7 @@ fn print_output_blends_in_cmyk_with_an_output_intent_only_in_pdfx() {
     assert_eq!(page_group_spaces(&x4), [Some("DeviceCMYK".to_string())]);
     let intent = output_intent(&x4).expect("output intent");
     assert_eq!(intent.identifier, "FOGRA39");
-    assert_eq!(intent.profile, craft_cms::builtin::COATED_FOGRA39_ICC);
+    assert_eq!(intent.profile, nodalia_cms::builtin::COATED_FOGRA39_ICC);
     assert!(String::from_utf8_lossy(&x4).contains("/Trapped/False"));
 
     // A booklet of a print document blends in CMYK too, without an output intent.
@@ -124,7 +124,7 @@ fn print_output_blends_in_cmyk_with_an_output_intent_only_in_pdfx() {
 /// The output intent is the CMYK working space's profile and condition, not FOGRA39.
 #[test]
 fn output_intent_is_the_cmyk_working_space() {
-    use craft_pdf::write::backend as krilla;
+    use nodalia_pdf::write::backend as krilla;
     let generic = Cms::new(&ColorSettings { cmyk: cms::GENERIC_CMYK.into(), ..ColorSettings::default() }).unwrap();
     let (plain, warning) = crate::pdfx::print_settings_with(&generic, false).unwrap();
     assert_eq!(warning, None);
@@ -141,7 +141,7 @@ fn output_intent_is_the_cmyk_working_space() {
     assert_eq!((intent.identifier.as_str(), intent.condition.as_str()), ("Custom", cms::GENERIC_CMYK));
     assert_eq!(intent.registry, None, "an unregistered condition names no registry");
     assert_eq!(intent.profile, &*want.icc);
-    assert_ne!(intent.profile, craft_cms::builtin::COATED_FOGRA39_ICC);
+    assert_ne!(intent.profile, nodalia_cms::builtin::COATED_FOGRA39_ICC);
 }
 
 /// The overprint entries of every ExtGState that has them: (`/op`, `/OP`, `/OPM`).

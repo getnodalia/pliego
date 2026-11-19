@@ -1746,9 +1746,9 @@ fn cmd_plus_zooms_the_canvas_not_the_window() {
     app.native_shortcuts.insert("view.zoomOut".to_string(), "Cmd+9".to_string());
     assert!(!zooms_out(&mut app, egui::Key::Num9), "the bar's key equivalent runs only there");
     // A second binding of a command whose first the bar holds runs here.
-    let cmd = craft_keymap::CommandRef::new("view.zoomOut");
-    let bindings = ["Cmd+F11", "Cmd+9"].map(|s| craft_keymap::Binding::parse(s).unwrap()).to_vec();
-    app.keymap.set_bindings(&cmd, bindings, craft_keymap::Policy::Steal).unwrap();
+    let cmd = nodalia_keymap::CommandRef::new("view.zoomOut");
+    let bindings = ["Cmd+F11", "Cmd+9"].map(|s| nodalia_keymap::Binding::parse(s).unwrap()).to_vec();
+    app.keymap.set_bindings(&cmd, bindings, nodalia_keymap::Policy::Steal).unwrap();
     app.ui.shortcuts = app.keymap.overrides().clone();
     app.native_shortcuts.insert("view.zoomOut".to_string(), "Cmd+F11".to_string());
     assert!(!zooms_out(&mut app, egui::Key::F11), "the bar runs its own key");

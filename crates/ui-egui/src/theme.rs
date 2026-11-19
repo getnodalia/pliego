@@ -345,7 +345,7 @@ impl Tokens {
 /// installed without waiting, and the caller installs again once they are (see
 /// [`system_fonts_ready`]) to add the installed faces for the scripts they lack.
 pub fn install_fonts(ctx: &egui::Context, lang: &str) -> bool {
-    let craft = pliego_fonts::CRAFT_FONTS;
+    let craft = pliego_fonts::NODALIA_FONTS;
     let mut defs = font_definitions(craft, lang);
     let system = system_ui_fonts(craft);
     let found = system.is_some();
@@ -426,12 +426,12 @@ const SYSTEM_UI_FONTS: &[(&str, char, &[&str])] = &[
     ("Ethi", 'አ', &["Kefa", "Ebrima", "Nyala", "Noto Sans Ethiopic", "Abyssinica SIL"]),
 ];
 
-/// The installed faces for the scripts `craft` (the built-in craft-fonts) doesn't cover, so the
-/// interface shows Japanese and Chinese without the craft-fonts build input, and Korean,
+/// The installed faces for the scripts `craft` (the built-in nodalia-fonts) doesn't cover, so the
+/// interface shows Japanese and Chinese without the nodalia-fonts build input, and Korean,
 /// Traditional Chinese (font names in the font menus), Indic, Southeast Asian and other scripts
 /// in any build. egui can't find system fonts itself; the document font scan (not on the web)
 /// does.
-fn system_ui_fonts(craft: &[pliego_fonts::CraftFont]) -> Option<Vec<SystemFont>> {
+fn system_ui_fonts(craft: &[pliego_fonts::NodaliaFont]) -> Option<Vec<SystemFont>> {
     static FACES: std::sync::OnceLock<Vec<SystemFont>> = std::sync::OnceLock::new();
     let db = pliego_fonts::FontDb::global();
     // Never wait for the font scan here (the first frame): it runs in the background, and the
@@ -453,7 +453,7 @@ fn system_ui_fonts(craft: &[pliego_fonts::CraftFont]) -> Option<Vec<SystemFont>>
 }
 
 /// The faces of [`SYSTEM_UI_FONTS`] that `db` has, for the scripts `craft` doesn't cover.
-fn installed_ui_fonts(db: &pliego_fonts::FontDb, craft: &[pliego_fonts::CraftFont]) -> Vec<SystemFont> {
+fn installed_ui_fonts(db: &pliego_fonts::FontDb, craft: &[pliego_fonts::NodaliaFont]) -> Vec<SystemFont> {
     let mut faces: Vec<SystemFont> = Vec::new();
     for (script, sample, families) in SYSTEM_UI_FONTS {
         if craft.iter().any(|f| f.scripts.contains(script)) {
@@ -537,12 +537,12 @@ pub(crate) fn add_system_fallbacks(fonts: &mut FontDefinitions, system: &[System
     }
 }
 
-/// The UI fonts: the app's own, then the craft-fonts faces from `craft` (empty without
-/// `CRAFT_FONTS_DIR`) as fallbacks at the end of every family: Japanese (BIZ UDPGothic first) and
+/// The UI fonts: the app's own, then the nodalia-fonts faces from `craft` (empty without
+/// `NODALIA_FONTS_DIR`) as fallbacks at the end of every family: Japanese (BIZ UDPGothic first) and
 /// Simplified Chinese, in the interface language's order, then Arabic and Georgian. The `arabic` families
 /// put the Arabic face first for right-to-left runs. egui has no system-font discovery, so
-/// without craft-fonts CJK, Arabic and Georgian UI text has no glyphs.
-pub(crate) fn font_definitions(craft: &'static [pliego_fonts::CraftFont], lang: &str) -> FontDefinitions {
+/// without nodalia-fonts CJK, Arabic and Georgian UI text has no glyphs.
+pub(crate) fn font_definitions(craft: &'static [pliego_fonts::NodaliaFont], lang: &str) -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
     let add = |fonts: &mut FontDefinitions, name: &str, data: &'static [u8]| {
         fonts.font_data.insert(name.into(), Arc::new(FontData::from_static(data)));
@@ -558,7 +558,7 @@ pub(crate) fn font_definitions(craft: &'static [pliego_fonts::CraftFont], lang: 
     fonts.families.entry(FontFamily::Proportional).or_default().insert(0, "ui".into());
     fonts.families.entry(FontFamily::Monospace).or_default().insert(0, "mono".into());
     fonts.families.insert(FontFamily::Name("semibold".into()), vec!["ui-semibold".into(), "ui".into()]);
-    let pick = |script: &str| -> Vec<&pliego_fonts::CraftFont> { craft.iter().filter(|f| f.scripts.contains(&script)).collect() };
+    let pick = |script: &str| -> Vec<&pliego_fonts::NodaliaFont> { craft.iter().filter(|f| f.scripts.contains(&script)).collect() };
     let mut japanese = pick("Jpan");
     // BIZ UDPGothic (the UI face) first, Regular before Bold; the semibold family prefers Bold.
     japanese.sort_by_key(|f| (f.family != "BIZ UDPGothic", f.style != "Regular"));
@@ -568,7 +568,7 @@ pub(crate) fn font_definitions(craft: &'static [pliego_fonts::CraftFont], lang: 
     // The manifest can add scripts without a special UI preference order (Hebrew, Devanagari,
     // ...). They still need installing: system fallback discovery skips scripts supplied here.
     let other: Vec<_> = craft.iter().filter(|f| !["Jpan", "Hans", "Arab", "Geor"].iter().any(|s| f.scripts.contains(s))).collect();
-    let name = |f: &pliego_fonts::CraftFont| format!("craft-{}-{}", f.family, f.style);
+    let name = |f: &pliego_fonts::NodaliaFont| format!("craft-{}-{}", f.family, f.style);
     for f in japanese.iter().chain(&chinese) {
         // CJK faces sit on the Latin baseline (see `baseline_tweak`).
         fonts.font_data.insert(name(f), Arc::new(FontData { tweak: baseline_tweak(f.bytes, 0), ..FontData::from_static(f.bytes) }));
@@ -637,11 +637,8 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     v.selection.stroke = Stroke::new(1.0, t.text_strong);
     v.hyperlink_color = t.accent;
     v.override_text_color = Some(t.text);
-    craft_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }.apply_to(
-        &mut v.widgets,
-        r,
-        Stroke::new(1.0, t.text),
-    );
+    nodalia_ui::theme::WidgetPalette { noninteractive: t.panel, inactive: t.button, hovered: t.hover, active: t.tool_active, open: t.hover }
+        .apply_to(&mut v.widgets, r, Stroke::new(1.0, t.text));
     v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
     v.widgets.inactive.bg_stroke = Stroke::new(1.0, t.field_border);
     v.widgets.hovered.bg_stroke = Stroke::new(1.0, t.field_border);
@@ -801,7 +798,7 @@ mod japanese_font_tests {
         [egui::FontFamily::Proportional, egui::FontFamily::Monospace, egui::FontFamily::Name("semibold".into())]
     }
 
-    fn ctx_with(craft: &'static [pliego_fonts::CraftFont]) -> egui::Context {
+    fn ctx_with(craft: &'static [pliego_fonts::NodaliaFont]) -> egui::Context {
         let ctx = egui::Context::default();
         ctx.set_fonts(super::font_definitions(craft, "ja"));
         let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
@@ -816,7 +813,7 @@ mod japanese_font_tests {
     fn additional_craft_scripts_render_in_every_ui_family() {
         let bytes = Box::leak(pliego_fonts::testing::font_with("DC extra scripts", &['ד', 'क']).unwrap().into_boxed_slice());
         let craft = Box::leak(
-            vec![pliego_fonts::CraftFont { family: "DC extra scripts", style: "Regular", scripts: &["Hebr", "Deva"], bytes }].into_boxed_slice(),
+            vec![pliego_fonts::NodaliaFont { family: "DC extra scripts", style: "Regular", scripts: &["Hebr", "Deva"], bytes }].into_boxed_slice(),
         );
         let ctx = ctx_with(craft);
         ctx.fonts_mut(|fonts| {
@@ -831,11 +828,11 @@ mod japanese_font_tests {
 
     #[test]
     fn japanese_ui_glyphs_are_available_in_every_family() {
-        if pliego_fonts::CRAFT_FONTS.is_empty() {
-            eprintln!("skipped: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        if pliego_fonts::NODALIA_FONTS.is_empty() {
+            eprintln!("skipped: built without nodalia-fonts (set NODALIA_FONTS_DIR to a checkout)");
             return;
         }
-        let ctx = ctx_with(pliego_fonts::CRAFT_FONTS);
+        let ctx = ctx_with(pliego_fonts::NODALIA_FONTS);
         ctx.fonts_mut(|fonts| {
             for family in families() {
                 let font = egui::FontId::new(13.0, family);
@@ -846,15 +843,15 @@ mod japanese_font_tests {
             }
         });
         // The UI face is BIZ UDPGothic, ahead of the Mincho faces.
-        let defs = super::font_definitions(pliego_fonts::CRAFT_FONTS, "ja");
+        let defs = super::font_definitions(pliego_fonts::NODALIA_FONTS, "ja");
         let stack = &defs.families[&egui::FontFamily::Proportional];
         assert_eq!(stack.iter().find(|n| n.starts_with("craft-")).map(String::as_str), Some("craft-BIZ UDPGothic-Regular"));
     }
 
-    /// Without craft-fonts, an installed Japanese face gives the interface its glyphs (here a
+    /// Without nodalia-fonts, an installed Japanese face gives the interface its glyphs (here a
     /// synthetic stand-in, so the test doesn't depend on the machine's fonts).
     #[test]
-    fn installed_fonts_give_japanese_glyphs_without_craft_fonts() {
+    fn installed_fonts_give_japanese_glyphs_without_nodalia_fonts() {
         let bytes = pliego_fonts::testing::font_with("DC UI Japanese", &['日', '本', '語']).unwrap();
         let system = [super::SystemFont::new("Jpan", "DC UI Japanese".into(), bytes, 0)];
         let mut defs = super::font_definitions(&[], "ja");
@@ -926,7 +923,7 @@ mod japanese_font_tests {
         let system = [face("DC Ja", "Jpan"), face("DC Hans", "Hans"), face("DC Hant", "Hant"), face("DC Ko", "Kore")];
         for (lang, first) in [("ja", "DC Ja"), ("zh", "DC Hans"), ("zh-hant", "DC Hant"), ("ko", "DC Ko"), ("", "DC Ja")] {
             let mut defs = super::font_definitions(&[], lang);
-            // Stand-in for a built-in CJK face (craft-fonts may be absent in this build).
+            // Stand-in for a built-in CJK face (nodalia-fonts may be absent in this build).
             defs.families.entry(egui::FontFamily::Proportional).or_default().push("craft-Stand-in".into());
             super::add_system_fallbacks(&mut defs, &system, lang);
             let stack = &defs.families[&egui::FontFamily::Proportional];
@@ -987,7 +984,7 @@ mod japanese_font_tests {
     }
 
     #[test]
-    fn ui_works_without_craft_fonts() {
+    fn ui_works_without_nodalia_fonts() {
         let ctx = ctx_with(&[]);
         ctx.fonts_mut(|fonts| {
             // (egui's has_glyph reports false for characters of the face that also supplies the
@@ -1009,7 +1006,7 @@ mod japanese_font_tests {
 mod ukrainian_font_tests {
     #[test]
     fn every_catalog_cyrillic_glyph_exists_in_the_bundled_ui_fonts() {
-        // Check the actual installed face data, without craft-fonts or system fonts.
+        // Check the actual installed face data, without nodalia-fonts or system fonts.
         // egui's has_glyph can report false for the face providing its replacement glyph.
         let definitions = super::font_definitions(&[], "uk");
         let db = pliego_fonts::FontDb::with_font_dirs(Vec::new());
@@ -1037,7 +1034,7 @@ mod ukrainian_font_tests {
 mod russian_font_tests {
     #[test]
     fn every_catalog_cyrillic_glyph_exists_in_the_bundled_ui_fonts() {
-        // Same check as for Ukrainian: the installed face data only, without craft-fonts or system fonts.
+        // Same check as for Ukrainian: the installed face data only, without nodalia-fonts or system fonts.
         let definitions = super::font_definitions(&[], "ru");
         let db = pliego_fonts::FontDb::with_font_dirs(Vec::new());
         db.set_system_fallback(false);

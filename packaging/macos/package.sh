@@ -123,7 +123,7 @@ cp "$WORK/bin/pliego-cli" "$APP/Contents/MacOS/pliego-cli"
 cp "$ROOT/assets/app-icon/pliego.icns" "$APP/Contents/Resources/Pliego.icns"
 # Required embedded-font notices are independent of optional font inputs.
 cp "$ROOT/NOTICE" "$APP/Contents/Resources/NOTICE"
-# Licences of the embedded craft-fonts fonts (only when built with CRAFT_FONTS_DIR).
+# Licences of the embedded nodalia-fonts fonts (only when built with NODALIA_FONTS_DIR).
 copy_font_licences "$APP/Contents/Resources"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHORT_VERSION@/$SHORT_VERSION/g" \
   -e "s/@BUILD_SHA@/${PLIEGO_BUILD_SHA:-unknown}/g" \

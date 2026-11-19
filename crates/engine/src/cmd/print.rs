@@ -1,4 +1,4 @@
-//! File › Print: the pages go to a printer through the system print spooler (craft-print), as PDF.
+//! File › Print: the pages go to a printer through the system print spooler (nodalia-print), as PDF.
 
 use serde_json::{Value, json};
 
@@ -23,7 +23,7 @@ pub fn specs() -> Vec<CommandSpec> {
 }
 
 fn printers() -> Value {
-    let printers = craft_print::printers();
+    let printers = nodalia_print::printers();
     let default = printers.iter().find(|p| p.default).map(|p| p.name.clone());
     let names: Vec<_> = printers.into_iter().map(|p| p.name).collect();
     json!({"printers": names, "default": default})
@@ -36,14 +36,14 @@ fn print(s: &mut Session, p: &Value) -> Result<Value> {
         Err(bad("file.print", "printing isn't available on the web: export a PDF and print it"))
     }
     #[cfg(not(target_arch = "wasm32"))]
-    print_with(s, p, craft_print::submit)
+    print_with(s, p, nodalia_print::submit)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 fn print_with(
     s: &mut Session,
     p: &Value,
-    mut submit: impl FnMut(&[u8], &craft_print::Job) -> std::result::Result<String, craft_print::Error>,
+    mut submit: impl FnMut(&[u8], &nodalia_print::Job) -> std::result::Result<String, nodalia_print::Error>,
 ) -> Result<Value> {
     let d = &s.doc()?.doc;
     let opts = super::export::options(p, d.page_count())?;
@@ -68,12 +68,12 @@ fn print_with(
     // Every job's PDF first, so a failing one sends nothing.
     let mut ready = Vec::new();
     for (title, pages) in jobs {
-        let job = craft_print::Job {
+        let job = nodalia_print::Job {
             printer: str_param(p, "printer").map(str::to_string),
             copies,
-            scaling: craft_print::Scaling::ShrinkToFit,
+            scaling: nodalia_print::Scaling::ShrinkToFit,
             title: title.clone(),
-            ..craft_print::Job::default()
+            ..nodalia_print::Job::default()
         };
         // The PDF that Export PDF writes with these settings, on the job's pages.
         let mut params = p.clone();
@@ -81,7 +81,7 @@ fn print_with(
             o.insert("pages".into(), json!(pages.iter().map(|p| p.saturating_add(1)).collect::<Vec<_>>()));
         }
         let pdf = super::export::pdf_export(s, &params)?;
-        let command = craft_print::command_preview(&job).map_err(|e| bad("file.print", e.to_string()))?;
+        let command = nodalia_print::command_preview(&job).map_err(|e| bad("file.print", e.to_string()))?;
         total_pages += pages.as_ref().or(opts.pages.as_ref()).map_or(d.page_count(), Vec::len);
         total_bytes += pdf.bytes.len();
         for w in pdf.warnings {
@@ -116,7 +116,7 @@ mod tests {
         let r = s.execute("file.print", &json!({"printer": "Office", "copies": 2, "pages": "2-3", "dryRun": true})).unwrap();
         assert_eq!(r["pages"], 2);
         let command: Vec<&str> = r["command"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
-        if craft_print::backend() == Some(craft_print::Backend::Cups) {
+        if nodalia_print::backend() == Some(nodalia_print::Backend::Cups) {
             assert_eq!(&command[..5], ["lp", "-d", "Office", "-n", "2"]);
             assert!(command.contains(&"print-scaling=auto-fit"));
             assert!(!command.iter().any(|a| a.starts_with("sides=")));
@@ -154,13 +154,13 @@ mod tests {
             assert_eq!(job.copies, 2);
             assert_eq!(job.duplex, None);
             assert!(!job.grayscale);
-            assert_eq!(job.scaling, craft_print::Scaling::ShrinkToFit);
+            assert_eq!(job.scaling, nodalia_print::Scaling::ShrinkToFit);
             assert!(!job.title.is_empty());
             Ok("request id is Office-1".into())
         })
         .unwrap();
         assert_eq!(r["pages"], 2);
-        let refusal = print_with(&mut s, &params, |_, _| Err(craft_print::Error::Spool("printer offline".into()))).unwrap_err();
+        let refusal = print_with(&mut s, &params, |_, _| Err(nodalia_print::Error::Spool("printer offline".into()))).unwrap_err();
         assert!(refusal.to_string().contains("printer offline"));
         print_with(&mut s, &json!({"dryRun": true}), |_, _| panic!("dry runs must not spool")).unwrap();
         assert!(print_with(&mut s, &json!({"pages": "9"}), |_, _| panic!("invalid ranges must not spool")).is_err());

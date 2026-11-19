@@ -188,7 +188,7 @@ pub(super) fn ndl_app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
             let full = ui.max_rect();
             let outer = egui::Rect::from_min_max(egui::pos2(full.min.x - f32::from(left), full.min.y), full.max);
             if mac {
-                let _ = craft_window::title_bar::empty_area(ui, outer);
+                let _ = nodalia_window::title_bar::empty_area(ui, outer);
             }
             if custom {
                 drag_area(app, ui, outer);

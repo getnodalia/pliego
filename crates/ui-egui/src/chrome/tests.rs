@@ -675,7 +675,7 @@ fn the_mac_window_is_not_movable_on_the_title_bar_controls() {
     let mut movable_at = |at: egui::Pos2| {
         h.hover_at(at);
         h.run_steps(2);
-        craft_window::title_bar::window_movable(&h.ctx)
+        nodalia_window::title_bar::window_movable(&h.ctx)
     };
     for at in [pos2(bar.center().x, mid), pos2(bar.min.x + MAC_CONTENT_LEFT - 4.0, bar.min.y + 4.0), pos2(bar.center().x, 500.0)] {
         assert!(movable_at(at), "empty title bar or the page at {at:?}");

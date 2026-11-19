@@ -68,7 +68,7 @@ fn svg_options() -> &'static usvg::Options<'static> {
         for f in pliego_fonts::bundled() {
             db.load_font_data(f.to_vec());
         }
-        // Japanese text in SVGs: the craft-fonts faces (none without CRAFT_FONTS_DIR).
+        // Japanese text in SVGs: the nodalia-fonts faces (none without NODALIA_FONTS_DIR).
         for f in pliego_fonts::japanese_document_fonts() {
             db.load_font_data(f.bytes.to_vec());
         }

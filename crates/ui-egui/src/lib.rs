@@ -123,7 +123,7 @@ struct ShotRequest {
     epoch: u64,
     geometry: ScreenshotGeometry,
     reserved_bytes: usize,
-    slot: Option<craft_ui::capture::CaptureSlot>,
+    slot: Option<nodalia_ui::capture::CaptureSlot>,
 }
 
 pub struct DesignApp {
@@ -233,12 +233,12 @@ pub struct DesignApp {
     /// shortcut handler leaves that key to the bar and runs the command's other bindings itself.
     pub native_shortcuts: std::collections::HashMap<String, String>,
     /// Every command's shortcuts, with the user's changes (`ui.shortcuts`) applied.
-    pub keymap: craft_keymap::Keymap,
-    pub(crate) key_dispatcher: craft_keymap::egui::Dispatcher,
+    pub keymap: nodalia_keymap::Keymap,
+    pub(crate) key_dispatcher: nodalia_keymap::egui::Dispatcher,
     /// The open Keyboard Shortcuts dialog.
     pub(crate) shortcut_dialog: Option<Box<shortcuts_dialog::Host>>,
     /// Answers the user gave in an import review (item → command), for later imports.
-    pub(crate) shortcut_answers: std::collections::BTreeMap<String, craft_keymap::CommandRef>,
+    pub(crate) shortcut_answers: std::collections::BTreeMap<String, nodalia_keymap::CommandRef>,
     last_time: f64,
     /// When recovery data was last written (seconds on the monotonic clock; see [`now_ms`]).
     pub last_recovery: f64,
@@ -378,7 +378,7 @@ pub(crate) mod test_window {
 
     /// Ensure a Hebrew face is available for the interface's glyph assertions.
     ///
-    /// Canonical craft-fonts builds bundle the face. Optional-input builds can pass
+    /// Canonical nodalia-fonts builds bundle the face. Optional-input builds can pass
     /// `PLIEGO_TEST_HEBREW_FONT=/abs/path/NotoSansHebrew.ttf` (the pinned OFL fixture)
     /// and otherwise skip their Hebrew-only assertions explicitly.
     pub fn install_test_hebrew_face() -> bool {

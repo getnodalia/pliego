@@ -5,10 +5,10 @@
 #
 # Kept in step with the release workflow (.github/workflows/release.yml) and packaging/:
 #   * `Cargo.lock` drives the dependencies (`cargoLock`), so there is no vendorHash to bump. The
-#     git sources (storytold/craft-libs) are fetched at the revision the lock file pins;
+#     git sources (getnodalia/foundation (nodalia/libs)) are fetched at the revision the lock file pins;
 #   * the desktop file, hicolor icons, MIME types and AppStream metadata are the same files the
 #     .deb/.rpm ship (packaging/linux/), so `apt` and NixOS users see one identical Pliego;
-#   * `CRAFT_FONTS_DIR` embeds the fonts from getnodalia/foundation (vendor/craft-fonts/main) (the `craft-fonts` flake input, pinned to
+#   * `NODALIA_FONTS_DIR` embeds the fonts from getnodalia/foundation (nodalia/fonts) (the `nodalia-fonts` flake input, pinned to
 #     the revision the release workflow uses); without it everything builds and runs, but some
 #     scripts (e.g. Japanese, Chinese) have no glyphs;
 #   * `doCheck` is off: the test suite needs corpora and a GPU the Nix sandbox cannot provide
@@ -49,8 +49,8 @@
   # Adds the driver search path (/run/opengl-driver/lib) to the binaries' RPATH so wgpu finds the
   # installed Vulkan/GL driver on NixOS. Optional: harmless on nixpkgs without it.
   autoAddDriverRunpath ? null,
-  # getnodalia/foundation (vendor/craft-fonts/main) checkout (flake input). `null` builds without the embedded fonts.
-  craft-fonts ? null,
+  # getnodalia/foundation (nodalia/fonts) checkout (flake input). `null` builds without the embedded fonts.
+  nodalia-fonts ? null,
   # Release date for the AppStream metadata (YYYY-MM-DD); the flake derives it from its own commit.
   buildDate ? "1970-01-01",
 }:
@@ -146,10 +146,10 @@ rustPlatform.buildRustPackage {
     libxrandr
   ];
 
-  env = lib.optionalAttrs (craft-fonts != null) {
-    CRAFT_FONTS_DIR = toString craft-fonts;
+  env = lib.optionalAttrs (nodalia-fonts != null) {
+    NODALIA_FONTS_DIR = toString nodalia-fonts;
     # A malformed font input must fail the build rather than silently ship without glyphs.
-    CRAFT_FONTS_REQUIRED = "1";
+    NODALIA_FONTS_REQUIRED = "1";
   };
 
   postInstall = ''
@@ -177,8 +177,8 @@ rustPlatform.buildRustPackage {
       if [ -f "$f" ]; then install -Dm644 "$f" "$doc/$(basename "$f")"; fi
     done
   ''
-  + lib.optionalString (craft-fonts != null) ''
-    for lic in ${toString craft-fonts}/fonts/*/OFL.txt; do
+  + lib.optionalString (nodalia-fonts != null) ''
+    for lic in ${toString nodalia-fonts}/fonts/*/OFL.txt; do
       install -Dm644 "$lic" "$doc/OFL-$(basename "$(dirname "$lic")").txt"
     done
   ''

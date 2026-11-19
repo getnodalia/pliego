@@ -15,20 +15,20 @@ pub struct ImportedFile {
     pub bytes: Vec<u8>,
 }
 
-/// Closed panels, each with where it goes back, in craft-ui's `Workspace::hidden` shape
+/// Closed panels, each with where it goes back, in nodalia-ui's `Workspace::hidden` shape
 /// (`[[panel, location], …]`). A floating panel's entry is where Dock Panel returns it.
 /// Files from before this shape hold an object keyed by panel; it still loads.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(transparent)]
-pub struct HiddenPanels(pub Vec<(String, craft_ui::docking::Location<String>)>);
+pub struct HiddenPanels(pub Vec<(String, nodalia_ui::docking::Location<String>)>);
 
 impl<'de> Deserialize<'de> for HiddenPanels {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         #[derive(Deserialize)]
         #[serde(untagged)]
         enum Shape {
-            List(Vec<(String, craft_ui::docking::Location<String>)>),
-            Keyed(std::collections::BTreeMap<String, craft_ui::docking::Location<String>>),
+            List(Vec<(String, nodalia_ui::docking::Location<String>)>),
+            Keyed(std::collections::BTreeMap<String, nodalia_ui::docking::Location<String>>),
         }
         let entries = match Shape::deserialize(deserializer)? {
             Shape::List(entries) => entries,
@@ -49,11 +49,11 @@ impl HiddenPanels {
     pub fn contains_key(&self, panel: &str) -> bool {
         self.0.iter().any(|(p, _)| p == panel)
     }
-    pub fn get(&self, panel: &str) -> Option<&craft_ui::docking::Location<String>> {
+    pub fn get(&self, panel: &str) -> Option<&nodalia_ui::docking::Location<String>> {
         self.0.iter().find(|(p, _)| p == panel).map(|(_, location)| location)
     }
     /// Record where `panel` goes back, replacing an earlier entry.
-    pub fn insert(&mut self, panel: String, location: craft_ui::docking::Location<String>) {
+    pub fn insert(&mut self, panel: String, location: nodalia_ui::docking::Location<String>) {
         self.remove(&panel);
         self.0.push((panel, location));
     }
@@ -94,7 +94,7 @@ pub struct SavedWorkspace {
     pub floating: Vec<(String, [f32; 2])>,
     /// Custom panel membership and placement; absent in older workspace files.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<nodalia_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "HiddenPanels::is_empty")]
     pub docking_hidden: HiddenPanels,
     /// The workspace's own iconic column (see [`UiState::icon_groups`]).
@@ -265,10 +265,10 @@ pub struct UiState {
     /// the keymap uses. Saved as `shortcuts` and `shortcutsMore` (see `prefs::saved_shortcuts`),
     /// which earlier versions read.
     #[serde(flatten, with = "prefs::saved_shortcuts")]
-    pub shortcuts: craft_keymap::Overrides,
+    pub shortcuts: nodalia_keymap::Overrides,
     /// The user's named shortcut sets and which one is active (see `shortcuts_dialog`).
     #[serde(deserialize_with = "prefs::lenient_sets")]
-    pub shortcut_sets: craft_keymap::Profiles,
+    pub shortcut_sets: nodalia_keymap::Profiles,
     pub control_bar: bool,
     pub tools_double_column: bool,
     /// The front tab of the default layout's Properties · Pages · Layers group. `dock_tab`,
@@ -283,7 +283,7 @@ pub struct UiState {
     /// The panel layout once the user customizes it; `None` is the workspace's default layout
     /// (`panel_docking::default_layout`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docking: Option<craft_ui::docking::Layout<String>>,
+    pub docking: Option<nodalia_ui::docking::Layout<String>>,
     #[serde(default, skip_serializing_if = "HiddenPanels::is_empty")]
     pub docking_hidden: HiddenPanels,
     /// The panel (or the canvas) last clicked or selected in the docking layout, while the panel

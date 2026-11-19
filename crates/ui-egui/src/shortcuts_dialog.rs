@@ -1,4 +1,4 @@
-//! Edit › Keyboard Shortcuts: craft-keymap's shared dialog over Pliego's keymap and the user's
+//! Edit › Keyboard Shortcuts: nodalia-keymap's shared dialog over Pliego's keymap and the user's
 //! named shortcut sets.
 //!
 //! The dialog edits `DesignApp::keymap` and `UiState::shortcut_sets` in place, so menus show new
@@ -8,12 +8,12 @@
 //! the control channel treat it as the open modal dialog.
 //!
 //! The InDesign importer stays here (`shortcut_import`): the dialog's Import offers its format
-//! next to craft-keymap's JSON, and the dialog reviews the set before it becomes a new set.
+//! next to nodalia-keymap's JSON, and the dialog reviews the set before it becomes a new set.
 
 use std::borrow::Cow;
 
-use craft_keymap::ui::{DialogState, Format, Options, Outcome, ShortcutsDialog, Text};
-use craft_keymap::{Bindable, Overrides};
+use nodalia_keymap::ui::{DialogState, Format, Options, Outcome, ShortcutsDialog, Text};
+use nodalia_keymap::{Bindable, Overrides};
 use serde_json::{Value, json};
 
 use crate::DesignApp;
@@ -90,7 +90,7 @@ impl Text for DcText<'_> {
 }
 
 /// Edit › Keyboard Shortcuts…; with `select`, the dialog opens on that command.
-pub fn open(app: &mut DesignApp, select: Option<&craft_keymap::CommandRef>) {
+pub fn open(app: &mut DesignApp, select: Option<&nodalia_keymap::CommandRef>) {
     crate::dialogs::cancel(app);
     app.sync_keymap();
     let mut host = Host::new();
@@ -211,7 +211,7 @@ pub(crate) fn deliver(app: &mut DesignApp, bytes: &[u8]) -> bool {
     true
 }
 
-/// A set file's text into the dialog: craft-keymap JSON becomes a new set at once (the dialog
+/// A set file's text into the dialog: nodalia-keymap JSON becomes a new set at once (the dialog
 /// shows why it cannot); an InDesign set opens the import review.
 fn review(app: &mut DesignApp, host: &mut Host, text: &str) {
     let lang = app.ui.language.clone();
@@ -259,19 +259,19 @@ pub(crate) fn load_active_set(app: &mut DesignApp) {
     app.ui.shortcuts = overrides;
 }
 
-/// The strings the dialog looks up: `craft_keymap::ui::STRINGS` and both forms of its plurals.
+/// The strings the dialog looks up: `nodalia_keymap::ui::STRINGS` and both forms of its plurals.
 #[cfg(test)]
 pub(crate) fn strings() -> impl Iterator<Item = &'static str> {
-    craft_keymap::ui::STRINGS.iter().copied().chain(craft_keymap::ui::PLURALS.iter().flat_map(|(one, other)| [*one, *other]))
+    nodalia_keymap::ui::STRINGS.iter().copied().chain(nodalia_keymap::ui::PLURALS.iter().flat_map(|(one, other)| [*one, *other]))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use craft_keymap::{CommandRef, Trigger};
     use egui::{Key, Modifiers, vec2};
     use egui_kittest::Harness;
     use egui_kittest::kittest::Queryable;
+    use nodalia_keymap::{CommandRef, Trigger};
 
     use crate::menus::shortcut_of;
 
@@ -404,7 +404,7 @@ mod tests {
         assert!(!open(&h));
         assert_eq!(shortcut_of(h.state(), "app.palette"), default_of("app.palette"));
         assert!(h.state().ui.shortcuts.is_empty());
-        assert_eq!(h.state().ui.shortcut_sets, craft_keymap::Profiles::default());
+        assert_eq!(h.state().ui.shortcut_sets, nodalia_keymap::Profiles::default());
 
         // `ui.dialog.cancel` from the control channel does the same.
         h.state_mut().run("app.keyboardShortcuts", json!({"command": "app.palette"})).unwrap();
@@ -495,8 +495,8 @@ mod tests {
         for s in strings() {
             assert_eq!(text.ui(s), s);
         }
-        assert_eq!(craft_keymap::ui::STRINGS.len(), 175);
-        assert_eq!(craft_keymap::ui::PLURALS.len(), 11);
+        assert_eq!(nodalia_keymap::ui::STRINGS.len(), 175);
+        assert_eq!(nodalia_keymap::ui::PLURALS.len(), 11);
         assert_eq!(text.plural(2, "{n} command will change", "{n} commands will change"), "2 commands will change");
         assert_eq!(DcText { lang: "fr" }.ui("Cancel"), tr("fr", "Cancel"));
     }

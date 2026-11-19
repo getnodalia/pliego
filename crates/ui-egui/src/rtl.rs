@@ -178,7 +178,7 @@ mod tests {
         let ctx = egui::Context::default();
         // The built-in faces only: installed fonts (the CJK fallbacks) would make the glyphs
         // measured here depend on the machine.
-        ctx.set_fonts(crate::theme::font_definitions(pliego_fonts::CRAFT_FONTS, "ar"));
+        ctx.set_fonts(crate::theme::font_definitions(pliego_fonts::NODALIA_FONTS, "ar"));
         ctx.begin_pass(egui::RawInput { max_texture_side: Some(8192), ..Default::default() });
         test(&ctx);
         let mut output = ctx.end_pass();

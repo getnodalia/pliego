@@ -10,9 +10,9 @@ use hayro_syntax::object::{Array, Dict, Name, Object, ObjectIdentifier, Stream};
 use hayro_syntax::page::Resources;
 use hayro_syntax::reader::ReaderExt;
 
-use craft_pdf::write::WriteError;
-use craft_pdf::write::backend as krilla;
-use craft_pdf::write::print::{self, PrintColor};
+use nodalia_pdf::write::WriteError;
+use nodalia_pdf::write::backend as krilla;
+use nodalia_pdf::write::print::{self, PrintColor};
 
 use crate::transitions::{find, int_after, object, rfind};
 
@@ -29,7 +29,7 @@ pub(crate) fn print_settings(intent: bool) -> crate::Result<(krilla::SerializeSe
 /// [`print_settings`] for the working spaces of `cms`.
 pub(crate) fn print_settings_with(cms: &pliego_color::cms::Cms, intent: bool) -> crate::Result<(krilla::SerializeSettings, Option<String>)> {
     let write = |color: PrintColor<'_>| if intent { print::settings(color) } else { print::cmyk_blending(color.profile) };
-    let fogra39 = || write(PrintColor::fogra39(craft_cms::builtin::COATED_FOGRA39_ICC));
+    let fogra39 = || write(PrintColor::fogra39(nodalia_cms::builtin::COATED_FOGRA39_ICC));
     let Ok(space) = cms.output_intent() else { return Ok((fogra39()?, None)) };
     let registered = space.identifier != "Custom";
     let color = PrintColor {

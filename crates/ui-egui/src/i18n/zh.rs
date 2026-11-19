@@ -750,7 +750,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "此文档使用了不可用的字体。请选择替换字体，或选择“完成”以使用备用字体继续。",
     ),
     ("This file is from a newer version (format {n})", "此文件来自较新版本(格式 {n})"),
-    ("This is not a craft-keymap file", "这不是 craft-keymap 文件"),
+    ("This is not a nodalia-keymap file", "这不是 nodalia-keymap 文件"),
     ("This is not a shortcut set file", "这不是快捷键集文件"),
     ("This page", "此页"),
     ("This page is", "此页为"),

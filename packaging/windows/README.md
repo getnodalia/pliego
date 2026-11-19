@@ -1,11 +1,11 @@
 # Windows installer UI
 
 `installer-ui.wxs` is generated from the shared `craft-installer` crate in
-[craft-libs](https://github.com/getnodalia/foundation/tree/main/crates/installer).
+[nodalia-libs](https://github.com/getnodalia/foundation/tree/main/crates/installer).
 `package.ps1` compiles it with this app's package source. The common UI provides progress,
 repair/remove, and explicit install/uninstall/repair success, cancellation and failure screens.
 
-Regenerate or check from a sibling craft-libs checkout:
+Regenerate or check from a sibling nodalia-libs checkout:
 
 ```sh
 cargo run --locked -p craft-installer -- --write --app pliego ../pliego/packaging/windows/installer-ui.wxs
@@ -22,7 +22,7 @@ Source/profile checks and native fixture MSI linking/UI table checks passed for 
 ARM64. All 14 profiles passed full UI install, missing-file repair and cached uninstall, and
 x86 silent install/removal. Folder upgrades, desktop choices and all six launch profiles also
 passed their Windows fixture checks. See the
-[Windows verification record](../../../craft-libs/docs/windows-installer-verification.md) for
+[Windows verification record](../../../nodalia-libs/docs/windows-installer-verification.md) for
 interactive results, scope validation and remaining acceptance checks with real release payloads.
 The shared crate includes reusable linking, full UI, option/upgrade/launch and x86 test runners.
 Windows Settings now uses a separate MSI-owned entry whose uninstall command selects full UI,

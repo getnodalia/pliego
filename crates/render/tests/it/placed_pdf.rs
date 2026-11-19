@@ -1,4 +1,4 @@
-//! Placed PDFs are drawn through craft-pdf's patched Hayro crates. Calculator functions whose `idiv`
+//! Placed PDFs are drawn through nodalia-pdf's patched Hayro crates. Calculator functions whose `idiv`
 //! divides by zero or overflows, stitching functions nested a hundred thousand deep, and mesh
 //! shadings with points far off the page, ten thousand overlapping triangles or forty thousand
 //! patches do not panic, overflow the stack or take more than a minute, and the rest of the page is
@@ -9,9 +9,9 @@ use std::sync::Arc;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
 
-use craft_pdf::interpret::Function;
-use craft_pdf::syntax::Pdf;
-use craft_pdf::syntax::object::{Object, ObjectIdentifier};
+use nodalia_pdf::interpret::Function;
+use nodalia_pdf::syntax::Pdf;
+use nodalia_pdf::syntax::object::{Object, ObjectIdentifier};
 use pliego_compose::Cache;
 use pliego_doc::build::NewDocument;
 use pliego_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, PdfCrop, Shape, SpreadRef};

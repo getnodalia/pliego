@@ -50,7 +50,7 @@ presets or tables are copied. Our default mojikumi and kinsoku tables are built 
 | Languages | Japanese, Korean, Simplified and Traditional Chinese reach the shaper (`locl`), font fallback, line breaking and typographer's quotes; IDML language names are kept as written; locale codes (`ja_JP`, `ko-KR`, `de_DE_2006`) are their language and region, and Chinese is also recognised in its common spellings ("Simplified Chinese", "Chinese (Traditional)", `zh_CN`, `zh-Hant`) |
 | Missing glyphs | as in InDesign: characters the applied font lacks are drawn as its missing-glyph box (screen and PDF) and listed by Preflight; the document setting Draw Missing Glyphs from Fallback Fonts (Preferences › Composition, off in new documents and IDML imports, on in documents saved before it existed) draws them from fallback fonts instead |
 | Font menus | Western families first, then Japanese, Simplified Chinese, Traditional Chinese and Korean groups (from the font's `meta` languages, CJK family names, OS/2 code pages, else its coverage); CJK families under their native names unless Preferences › Type › Show Font Names in English; the order is recalled from InDesign, not observed |
-| CJK fonts | Japanese faces (Shippori Mincho first) from the optional craft-fonts build input, in the font menus for users to apply; fallback by language (with fallback fonts on) (Japanese: the craft-fonts faces, then system fonts; Simplified and Traditional Chinese, Korean: system fonts); document fonts: the fonts of a `Document Fonts` folder beside an opened file belong to that document (composition, export, font menus), ahead of installed fonts of the same name, and are forgotten when it closes; Package copies every font file that draws text, fallback fonts included (licence permitting). Font files stay in memory for the session (reopening a document reuses them) and aren't read on the web |
+| CJK fonts | Japanese faces (Shippori Mincho first) from the optional nodalia-fonts build input, in the font menus for users to apply; fallback by language (with fallback fonts on) (Japanese: the nodalia-fonts faces, then system fonts; Simplified and Traditional Chinese, Korean: system fonts); document fonts: the fonts of a `Document Fonts` folder beside an opened file belong to that document (composition, export, font menus), ahead of installed fonts of the same name, and are forgotten when it closes; Package copies every font file that draws text, fallback fonts included (licence permitting). Font files stay in memory for the session (reopening a document reuses them) and aren't read on the web |
 | Interface | Preferences › Type › Show CJK Features (`cjkFeatures`; until set, on for a Japanese, Chinese or Korean interface) shows the CJK-only menu items (Type › Tate-Chu-Yoko, Ruby…, Kenten, Warichu); layout, IDML and commands work either way |
 | Everything else below | missing |
 
@@ -165,11 +165,11 @@ Jidori, tsume, aki before and after, em-box alignment and the other leading mode
   Pliego does the same, with a document setting (Draw Missing Glyphs from Fallback Fonts)
   that draws such characters from fallback fonts instead.
 - **Language-aware fallback** (when that setting is on): Japanese, Simplified Chinese, Traditional
-  Chinese and Korean each have their own fallback chain of system fonts (Japanese: the craft-fonts
+  Chinese and Korean each have their own fallback chain of system fonts (Japanese: the nodalia-fonts
   Japanese faces first); `locl` follows the character language (IDML language names).
 - **No CJK fonts in the repo.** CJK fonts are large (15–25 MB each even subset) and documents
   should name the fonts they use. The Japanese UI and document faces come from the optional
-  craft-fonts build input when Pliego is built with it (release builds are).
+  nodalia-fonts build input when Pliego is built with it (release builds are).
 - **Document fonts**: fonts in a `Document Fonts` folder beside an opened `.pliego` or
   `.idml` file are available to that document only, ahead of system fonts, and unloaded when it
   closes. File › Package copies the document's fonts into the package's `Document Fonts` folder
@@ -252,7 +252,7 @@ Total: roughly 100–150 agent hours.
 2. Language list: "Chinese: Simplified", "Chinese: Traditional", "Korean", "Japanese" (IDML
    names), with quotes and spelling/hyphenation off for them.
 3. Fallback chains by language in `FontDb::fallback_for` (system fonts per platform; the
-   craft-fonts Japanese faces first for Japanese); tests with stand-in fonts and a fake catalog.
+   nodalia-fonts Japanese faces first for Japanese); tests with stand-in fonts and a fake catalog.
 4. Document fonts: opening a document loads the fonts in its `Document Fonts` folder for that
    document; Package copies used fonts there (licence permitting) and reports the ones it
    couldn't copy; tests with a synthetic package folder.
@@ -260,7 +260,7 @@ Total: roughly 100–150 agent hours.
    for character breaking; test with a Korean sentence.
 6. `FontFace::v_advance/v_origin/em_box` from `vmtx`/`vhea`/`VORG`/`BASE`; upright glyphs in
    vertical lines use them; tests against synthetic fonts with and without `vmtx` (without, the
-   em box), and Shippori Mincho's tables when built with craft-fonts.
+   em box), and Shippori Mincho's tables when built with nodalia-fonts.
 7. Upright runs shaped top-to-bottom (`vert`, `vkrn`, `vpal` apply); `vrt2` never on turned
    runs; test that a full-width comma takes its vertical form and position.
 8. Story direction at story level (frames of a story agree; IDML maps both ways); arrow keys move
@@ -278,7 +278,7 @@ Each follows what an InDesign user expects.
    ActualText) rather than vertical CID fonts (`Identity-V`).
 4. **No CJK fonts in the repo**; documents carry theirs in `Document Fonts`, scoped to the
    document as in InDesign. Pliego embeds Japanese UI and document faces only when built with
-   the optional craft-fonts input (release builds are).
+   the optional nodalia-fonts input (release builds are).
 5. **Package copies every font that draws text**, fallback fonts included (when the document
    draws missing glyphs from them), so a package reproduces what is on screen.
 6. **Korean fallback is serif first** (Myungjo), as Chinese and Japanese fall back to Song and

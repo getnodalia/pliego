@@ -3,8 +3,8 @@ allow-expect-in-tests = true
 allow-panic-in-tests = true
 allow-indexing-slicing-in-tests = true
 disallowed-types = [
-    { path = "egui::ComboBox", reason = "use craft_ui::ComboBox: egui's combo box menu can't grow back while open (egui#5225)" },
-    { path = "rfd::FileDialog", reason = "use DesignApp::ask_open/ask_save (craft-dialogs): a blocking dialog inside the frame aborts the app on macOS" },
-    { path = "rfd::MessageDialog", reason = "use craft-dialogs' ask_message: a blocking dialog inside the frame aborts the app on macOS" },
+    { path = "egui::ComboBox", reason = "use nodalia_ui::ComboBox: egui's combo box menu can't grow back while open (egui#5225)" },
+    { path = "rfd::FileDialog", reason = "use DesignApp::ask_open/ask_save (nodalia-dialogs): a blocking dialog inside the frame aborts the app on macOS" },
+    { path = "rfd::MessageDialog", reason = "use nodalia-dialogs' ask_message: a blocking dialog inside the frame aborts the app on macOS" },
 ]
 cognitive-complexity-threshold = 30

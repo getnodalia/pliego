@@ -311,7 +311,7 @@ fn x1a_refuses_to_leave_images_out() {
 /// Spot inks past the flattener's ink set lose their tints: the warning says they won't print.
 #[test]
 fn x1a_dropped_inks_warning_says_they_wont_print() {
-    let mut totals = craft_prepress::flatten::FlattenTotals::default();
+    let mut totals = nodalia_prepress::flatten::FlattenTotals::default();
     totals.dropped_inks = 3;
     let warnings = crate::pdfx1a::flatten_warnings(&totals, 300.0);
     assert!(warnings.iter().any(|w| w.contains("3 tint(s)") && w.contains("dropped and won't print")), "{warnings:?}");

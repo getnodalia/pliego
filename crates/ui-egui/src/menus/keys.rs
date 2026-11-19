@@ -13,19 +13,19 @@ pub fn paste_chord_command(app: &DesignApp, modifiers: egui::Modifiers) -> Optio
         return None;
     }
     let platform = app.keymap.platform();
-    let held = craft_keymap::Mods::from_egui(&modifiers, platform);
-    let pressed = craft_keymap::Chord::new(held, craft_keymap::Key::V);
+    let held = nodalia_keymap::Mods::from_egui(&modifiers, platform);
+    let pressed = nodalia_keymap::Chord::new(held, nodalia_keymap::Key::V);
     // A shortcut the user set is the menu bar's key equivalent once the bar carries it.
     let on_bar = app
         .native_shortcuts
         .get(id)
-        .and_then(|sc| craft_keymap::Binding::parse(sc).ok())
+        .and_then(|sc| nodalia_keymap::Binding::parse(sc).ok())
         .is_some_and(|b| !b.trigger.double && b.trigger.chord.effective(platform) == pressed);
     if app.native_menu && on_bar {
         return None;
     }
     let bound =
-        app.keymap.bindings(&craft_keymap::CommandRef::new(id)).iter().any(|b| !b.trigger.double && b.trigger.chord.effective(platform) == pressed);
+        app.keymap.bindings(&nodalia_keymap::CommandRef::new(id)).iter().any(|b| !b.trigger.double && b.trigger.chord.effective(platform) == pressed);
     bound.then_some(id)
 }
 
@@ -42,10 +42,10 @@ pub fn shortcuts(app: &mut DesignApp, ctx: &egui::Context) {
     run_keys(app, ctx, keys, typing);
 }
 
-/// Keys that a floating panel in its own OS window left over (craft-ui's
+/// Keys that a floating panel in its own OS window left over (nodalia-ui's
 /// `DockOutput::forwarded_events`, with the modifiers held in that window): they run the main
 /// window's shortcuts, clipboard and tool keys in the frame they arrive, so the keyboard works
-/// while a floating window has focus. craft-ui forwards nothing while one of that window's
+/// while a floating window has focus. nodalia-ui forwards nothing while one of that window's
 /// widgets has keyboard focus.
 pub fn forwarded_shortcuts(app: &mut DesignApp, ctx: &egui::Context, events: Vec<egui::Event>, modifiers: egui::Modifiers) {
     if events.is_empty() || keys_taken(app, ctx) {
@@ -79,7 +79,7 @@ fn keys_taken(app: &DesignApp, ctx: &egui::Context) -> bool {
 struct Keys {
     /// Presentation keys in order: `None` leaves Presentation, `Some(step)` moves through the spreads.
     presentation: Vec<Option<isize>>,
-    hits: Vec<craft_keymap::egui::Hit>,
+    hits: Vec<nodalia_keymap::egui::Hit>,
     /// An Esc press that nothing took.
     escape: bool,
 }
@@ -89,7 +89,7 @@ struct Keys {
 fn take_keys(app: &mut DesignApp, input: &mut egui::InputState, typing: bool) -> Keys {
     let presentation = if app.ui.screen_mode == ScreenMode::Presentation { presentation_keys(input) } else { Vec::new() };
     let contexts: &[&str] = if typing { &[crate::keys::TEXT_CONTEXT] } else { &[] };
-    let active = craft_keymap::Active { panel: None, contexts, typing };
+    let active = nodalia_keymap::Active { panel: None, contexts, typing };
     let native = &app.native_shortcuts;
     // Presses the dispatcher leaves alone: Clear (the active tool deletes) and the keys the
     // native menu's accelerators already handled. An item holds one key equivalent, its
@@ -97,10 +97,11 @@ fn take_keys(app: &mut DesignApp, input: &mut egui::InputState, typing: bool) ->
     // in for = never reaches it, and a command's other bindings run here.
     // Copy, Cut and Paste stay too (the dispatcher's default): the canvas and text tools
     // handle them, and Paste carries the text.
-    let accept = |hit: &craft_keymap::egui::Hit| {
+    let accept = |hit: &nodalia_keymap::egui::Hit| {
         let c = &hit.command;
-        let on_bar =
-            || c.params.is_null() && native.get(&c.id).and_then(|sc| craft_keymap::Binding::parse(sc).ok()).is_some_and(|b| b.trigger == hit.trigger);
+        let on_bar = || {
+            c.params.is_null() && native.get(&c.id).and_then(|sc| nodalia_keymap::Binding::parse(sc).ok()).is_some_and(|b| b.trigger == hit.trigger)
+        };
         let leave = hit.exact && hit.cycle.is_empty() && (c.id == "edit.clear" || on_bar());
         !leave
     };

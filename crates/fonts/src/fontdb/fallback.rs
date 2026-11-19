@@ -51,7 +51,7 @@ pub(super) const SYSTEM_FALLBACKS: &[&str] = &[
 /// CJK fallback chains: the families tried first (user-added, else installed) for characters of
 /// each language that the primary font lacks. Each lists macOS, then Windows, then Linux /
 /// cross-platform families, serif first; a platform only has its own installed. Japanese tries
-/// the craft-fonts Japanese faces before these ([`japanese_chain`]).
+/// the nodalia-fonts Japanese faces before these ([`japanese_chain`]).
 const JAPANESE_FALLBACKS: &[&str] = &[
     "Hiragino Mincho ProN",
     "YuMincho",
@@ -182,8 +182,8 @@ pub(super) fn script_chain(c: char) -> Option<&'static [&'static str]> {
     }
 }
 
-/// The Japanese fallback chain: the craft-fonts Japanese faces' families in document order
-/// (Mincho first; none without craft-fonts), then [`JAPANESE_FALLBACKS`].
+/// The Japanese fallback chain: the nodalia-fonts Japanese faces' families in document order
+/// (Mincho first; none without nodalia-fonts), then [`JAPANESE_FALLBACKS`].
 fn japanese_chain() -> &'static [&'static str] {
     static CHAIN: std::sync::OnceLock<Vec<&str>> = std::sync::OnceLock::new();
     CHAIN.get_or_init(|| {

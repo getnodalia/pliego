@@ -237,7 +237,7 @@ fn shadow_coverage_composites_back() {
     assert_eq!(super::shadow_coverage(10, 20), 0);
 }
 
-/// PDF/X-1a through craft-prepress: a soft drop shadow over a spot, a 50% object and a
+/// PDF/X-1a through nodalia-prepress: a soft drop shadow over a spot, a 50% object and a
 /// knockout group leave no transparency and no RGB; the shadow is flattened in the page's
 /// inks (Black over the spot), not exported as an RGB image of the object; text stays text and
 /// overprint stays `/op`; `flatten` sets the resolution.

@@ -1,11 +1,11 @@
-//! The document's inks as a [`craft_prepress::InkSet`]: the four process inks, each spot swatch
+//! The document's inks as a [`nodalia_prepress::InkSet`]: the four process inks, each spot swatch
 //! with its color as the alternate, and the Ink Manager settings (aliases, spots to process).
 //!
 //! The document saves the Ink Manager by swatch name ([`pliego_doc::InkManager`]); the set
 //! is built from it whenever output needs it, so renaming or editing a swatch never leaves a
 //! stale copy.
 
-use craft_prepress::{Alternate, Ink, InkId, InkSet, Spot};
+use nodalia_prepress::{Alternate, Ink, InkId, InkSet, Spot};
 use pliego_color::swatch::{ColorType, Swatch, SwatchValue};
 use pliego_doc::Document;
 

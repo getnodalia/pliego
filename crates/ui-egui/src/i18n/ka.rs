@@ -2768,7 +2768,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("Y offset", "Y წანაცვლება"),
     ("  Save  ", "  შენახვა  "),
     ("  Update  ", "  განახლება  "),
-    // Keyboard shortcut sets (craft-keymap), docking and new commands.
+    // Keyboard shortcut sets (nodalia-keymap), docking and new commands.
     ("(cycles)", "(ციკლურად)"),
     ("(modified)", "(შეცვლილი)"),
     ("+Bin", "+Bin"),
@@ -2893,7 +2893,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("There are too many sets", "ნაკრები ძალიან ბევრია"),
     ("This command is unknown", "ეს ბრძანება უცნობია"),
     ("This file is from a newer version (format {n})", "ეს ფაილი უფრო ახალი ვერსიისაა (ფორმატი {n})"),
-    ("This is not a craft-keymap file", "ეს craft-keymap ფაილი არ არის"),
+    ("This is not a nodalia-keymap file", "ეს nodalia-keymap ფაილი არ არის"),
     ("This is not a shortcut set file", "ეს მალსახმობების ნაკრების ფაილი არ არის"),
     ("Too many shortcuts are assigned", "მინიჭებულია ძალიან ბევრი მალსახმობი"),
     ("Tools", "ხელსაწყოები"),

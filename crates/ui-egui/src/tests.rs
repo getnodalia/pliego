@@ -81,10 +81,10 @@ fn save_dialogs_start_beside_the_document_or_in_the_last_folder() {
     let mut app = DesignApp::new(pliego_engine::Session::new(), Services::default());
     let (seen, reply) = (asked.clone(), answer.clone());
     app.answer_dialogs(move |request| {
-        let craft_dialogs::Request::File(dialog) = request else { return craft_dialogs::Answer::Cancelled };
+        let nodalia_dialogs::Request::File(dialog) = request else { return nodalia_dialogs::Answer::Cancelled };
         let name = dialog.file_name.clone().unwrap_or_default();
         seen.borrow_mut().push(dialog.directory.as_ref().map_or_else(|| name.clone(), |folder| folder.join(&name).to_string_lossy().to_string()));
-        reply.borrow().clone().map_or(craft_dialogs::Answer::Cancelled, |path| craft_dialogs::Answer::Paths(vec![path.into()]))
+        reply.borrow().clone().map_or(nodalia_dialogs::Answer::Cancelled, |path| nodalia_dialogs::Answer::Paths(vec![path.into()]))
     });
     app.services.write = Some(Box::new(|_: &str, _: &[u8]| Ok(())));
     let last = |asked: &Rc<RefCell<Vec<String>>>| asked.borrow().last().cloned().unwrap_or_default();

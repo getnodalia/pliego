@@ -458,8 +458,8 @@ mod native_gui_document_fonts_tests {
     /// The production font scope contains the canonical bundled and Japanese faces in their existing order, including bundled Hebrew/Devanagari faces, without system or injected fonts.
     #[test]
     fn native_gui_canonical_document_faces_load_without_system_or_added_fonts() {
-        if crate::CRAFT_FONTS.is_empty() {
-            assert!(std::env::var_os("CRAFT_FONTS_REQUIRED").is_none(), "required canonical fonts were not embedded");
+        if crate::NODALIA_FONTS.is_empty() {
+            assert!(std::env::var_os("NODALIA_FONTS_REQUIRED").is_none(), "required canonical fonts were not embedded");
             return; // Optional-input builds retain their supported Latin-only database.
         }
         let db = FontDb::with_font_dirs(Vec::new());
@@ -479,7 +479,7 @@ mod native_gui_document_fonts_tests {
         assert_eq!(scope.face("Unavailable Native GUI Family", "Regular").family, FALLBACK_FAMILY);
     }
 
-    fn canonical_bundled_faces(japanese: &[&crate::CraftFont]) -> Vec<(String, String)> {
+    fn canonical_bundled_faces(japanese: &[&crate::NodaliaFont]) -> Vec<(String, String)> {
         BUNDLED
             .iter()
             .copied()
@@ -493,7 +493,7 @@ mod native_gui_document_fonts_tests {
         db.read_faces().iter().map(|face| (face.family.clone(), face.style.clone())).collect()
     }
 
-    fn assert_existing_document_faces_keep_order(db: &FontDb, japanese: &[&crate::CraftFont]) {
+    fn assert_existing_document_faces_keep_order(db: &FontDb, japanese: &[&crate::NodaliaFont]) {
         let expected = canonical_bundled_faces(japanese);
         let loaded = loaded_faces(db);
         assert!(loaded.len() >= expected.len(), "existing bundled/Japanese faces disappeared");
@@ -507,7 +507,7 @@ mod native_gui_document_fonts_tests {
         }
     }
 
-    fn assert_japanese_fonts_keep_priority(japanese: &[&crate::CraftFont]) {
+    fn assert_japanese_fonts_keep_priority(japanese: &[&crate::NodaliaFont]) {
         assert!(!japanese.is_empty(), "the required central manifest includes the existing Japanese faces");
         assert!(japanese[0].family.contains("Mincho"));
         assert_eq!(crate::japanese_ui_fonts(false)[0].family, "BIZ UDPGothic");
@@ -526,7 +526,7 @@ mod native_gui_document_fonts_tests {
     fn assert_canonical_script_fonts(db: &FontDb, scope: &ScopedFonts<'_>, latin_face_id: u32) -> Vec<(String, String)> {
         let mut admitted = Vec::new();
         for (family, text) in [("Noto Sans Hebrew", "שלום עולם"), ("Noto Sans Devanagari", "नमस्ते दुनिया")] {
-            let embedded: Vec<_> = crate::CRAFT_FONTS.iter().filter(|font| font.family == family && font.style == "Regular").collect();
+            let embedded: Vec<_> = crate::NODALIA_FONTS.iter().filter(|font| font.family == family && font.style == "Regular").collect();
             assert_eq!(embedded.len(), 1, "exactly one canonical {family} Regular input");
             assert_script_face_registered(db, scope, family, embedded[0].bytes);
             let face = scope.face(family, "Regular");

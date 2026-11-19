@@ -2931,7 +2931,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("There are too many sets", "Há conjuntos demais"),
     ("This command is unknown", "Este comando é desconhecido"),
     ("This file is from a newer version (format {n})", "Este arquivo é de uma versão mais recente (formato {n})"),
-    ("This is not a craft-keymap file", "Este não é um arquivo craft-keymap"),
+    ("This is not a nodalia-keymap file", "Este não é um arquivo nodalia-keymap"),
     ("This is not a shortcut set file", "Este não é um arquivo de conjunto de atalhos"),
     ("Threshold", "Limiar"),
     ("Title", "Título"),

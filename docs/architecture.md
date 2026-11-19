@@ -17,11 +17,11 @@ lines of Rust, 1,122 tests (2026-10-10). Pure Rust, no C dependencies by default
 | L0 | `geom` | kurbo re-export, units and measurement parsing (`1p6`, `12mm`, `3in+2p`), corner shapes, polygons, transforms, hit testing | 2.5k |
 | L0 | `color` | CMYK/RGB/Gray (Lab in CMS), swatches, tints, gradients, blend modes, ASE, ICC colour management (`cms/`), colour harmony | 2.9k |
 | L1 | `doc` | the document model: spreads, pages, parents, layers, items, stories (text + run lists), tables, notes, styles of five kinds, swatches, sections, variables, CJK and Arabic attributes | 10.2k |
-| L1 | `fonts` | font database (bundled OFL fonts, system fonts, document fonts, optional craft-fonts), metrics, outlines (skrifa), shaping (harfrust), variable instances, font classification for menus | 3.5k |
+| L1 | `fonts` | font database (bundled OFL fonts, system fonts, document fonts, optional nodalia-fonts), metrics, outlines (skrifa), shaping (harfrust), variable instances, font classification for menus | 3.5k |
 | L2 | `compose` | the text engine: style resolution, shaping, Knuth–Plass and single-line breaking, Liang hyphenation, justification, tabs, keeps, columns, span/split, baseline grid, vertical justification, wrap, threading, overset, anchored objects, footnotes, tables, bidi, CJK (ruby, warichu, kinsoku), caret and hit testing | 11.7k |
 | L2 | `images` | decoding placed graphics (PNG, JPEG, GIF, WebP, TIFF incl. CMYK, BMP, PSD composite, EPS preview) | 1.6k |
 | L3 | `render` | document to pixels with vello_cpu (SIMD, multithreaded): items, composed text, images with mips, gradients, effects, damage regions, placed PDF via hayro | 3.5k |
-| L3 | `pdf` | PDF export through craft-pdf with Krilla: real text with subset fonts, CMYK and spot, bleed and marks, tagged PDF, links, forms, transitions, PDF/X-4 and PDF/A-2b | 5.0k |
+| L3 | `pdf` | PDF export through nodalia-pdf with Krilla: real text with subset fonts, CMYK and spot, bleed and marks, tagged PDF, links, forms, transitions, PDF/X-4 and PDF/A-2b | 5.0k |
 | L3 | `idml` | IDML import and export (designmap, spreads, parents, stories, styles, graphics, preferences; CJK and Arabic attributes) | 8.0k |
 | L3 | `epub` | EPUB 3 reflowable and fixed-layout export | 0.9k |
 | L3 | `textimport` | Word (.docx), RTF, Excel (.xlsx), Tagged Text import; text export | 1.8k |
@@ -85,7 +85,7 @@ Native `.pliego` (zip + JSON); IDML both ways; PDF, EPUB, HTML, PNG/JPEG, text, 
 placed graphics through `images` (PDF/AI pages through hayro); Word/RTF/Excel/Tagged Text through
 `textimport`. INDD is not readable. Details: [file-format-parity.md](file-format-parity.md).
 
-PDF authoring uses the independently pinned `craft-pdf` writer and patched Krilla. Document,
+PDF authoring uses the independently pinned `nodalia-pdf` writer and patched Krilla. Document,
 booklet and merge entry points guard the full export; a failed native drawing unwind returns
 an error and incomplete backend state cannot serialize. Layout, shaping, PDF/X processing and
 print preparation remain app-owned. Reader dependencies and the UI/print pins are unchanged.
@@ -114,4 +114,4 @@ builds (on manifest changes), packaging lint and the release workflow; `xtask ci
 | 2026-10-12 | minor | Documented orderly native exit recovery and the remaining cancelable Dock Quit gap |
 | 2026-10-10 | major | Created from the code on main (92649ff) and `plan/architecture.md` |
 
-PDF parsing and placed-page rasterization use the pinned `craft-pdf` reader. Pliego retains document, placement, layer and export policy; dependency checks and bounds are described in [pdf-backend.md](pdf-backend.md).
+PDF parsing and placed-page rasterization use the pinned `nodalia-pdf` reader. Pliego retains document, placement, layer and export policy; dependency checks and bounds are described in [pdf-backend.md](pdf-backend.md).

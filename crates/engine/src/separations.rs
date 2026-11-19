@@ -1,14 +1,14 @@
 //! Separations Preview: the plates the print PDF puts on film, read back from that PDF.
 //!
 //! A spread is exported as Export PDF writes it (one PDF page for the spread, with the
-//! document bleed) into memory, and `craft_prepress::plates` separates that page: one 8-bit
+//! document bleed) into memory, and `nodalia_prepress::plates` separates that page: one 8-bit
 //! plane per ink, the four process inks and every spot ink the page paints, after the Ink
 //! Manager's aliases and spots to process. The preview shows those plates, so it shows what
 //! the PDF prints, not what the document model intends.
 
 use std::sync::Arc;
 
-use craft_prepress::{CmsConversion, Fallback, InkId, Options, Plates, Process};
+use nodalia_prepress::{CmsConversion, Fallback, InkId, Options, Plates, Process};
 use pliego_compose::Cache;
 use pliego_doc::{Document, PageSide};
 use pliego_geom::Rect;
@@ -17,7 +17,7 @@ pub use pliego_pdf::Standard;
 
 use crate::{EngineError, Result};
 
-/// The highest resolution a preview separates at, in pixels per inch. craft-prepress further
+/// The highest resolution a preview separates at, in pixels per inch. nodalia-prepress further
 /// lowers it to fit 4 megapixels per plate.
 pub const MAX_DPI: f32 = 300.0;
 /// The lowest resolution a preview separates at.
@@ -94,7 +94,7 @@ pub fn separate(doc: &Document, cache: &Cache, si: usize, dpi: f32, print: &Prin
     let report = crate::cmd::print_pdf(doc, cache, &opts, print.flatten)?;
     let dpi = if dpi.is_finite() { dpi.clamp(MIN_DPI, MAX_DPI) } else { MIN_DPI };
     let (fallback, cms) = printing_condition();
-    let plates = craft_prepress::plates(&report.bytes, 0, dpi, &Options { overprint: true, fallback })
+    let plates = nodalia_prepress::plates(&report.bytes, 0, dpi, &Options { overprint: true, fallback })
         .map_err(|e| EngineError::Other(format!("separations: {e}")))?;
     Ok(Sheet { spread: si, area, plates, cms, warnings: report.warnings })
 }

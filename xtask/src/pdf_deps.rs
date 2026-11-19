@@ -5,9 +5,9 @@ use std::process::Command;
 use serde_json::Value;
 
 const REPO: &str = "https://github.com/getnodalia/foundation";
-const REV: &str = "92d392cff132eaf53e13afff77f38b5c11b73aa0";
+const REV: &str = "65a463571dd29bc67bee88b9c096b96888c2c3c3";
 const PACKAGES: &[(&str, &str)] = &[
-    ("craft-pdf", "0.1.0"),
+    ("nodalia-pdf", "0.1.0"),
     ("krilla", "0.8.2"),
     ("hayro", "0.7.1"),
     ("hayro-interpret", "0.7.0"),
@@ -45,12 +45,12 @@ fn validate(metadata: &Value) -> Result<(), String> {
         }
     }
     let nodes = metadata.pointer("/resolve/nodes").and_then(Value::as_array).ok_or("cargo metadata has no resolved nodes")?;
-    let facade = packages.iter().find(|p| p["name"] == "craft-pdf").ok_or("craft-pdf: missing package")?;
-    let node = nodes.iter().find(|n| n["id"] == facade["id"]).ok_or("craft-pdf: missing resolved node")?;
-    let features = node["features"].as_array().ok_or("craft-pdf: missing features")?;
+    let facade = packages.iter().find(|p| p["name"] == "nodalia-pdf").ok_or("nodalia-pdf: missing package")?;
+    let node = nodes.iter().find(|n| n["id"] == facade["id"]).ok_or("nodalia-pdf: missing resolved node")?;
+    let features = node["features"].as_array().ok_or("nodalia-pdf: missing features")?;
     for required in ["read", "interpret", "raster", "write", "write-pdf"] {
         if !features.iter().any(|f| f.as_str() == Some(required)) {
-            return Err(format!("craft-pdf: missing required {required} feature"));
+            return Err(format!("nodalia-pdf: missing required {required} feature"));
         }
     }
     Ok(())
@@ -63,7 +63,7 @@ mod tests {
 
     fn metadata() -> Value {
         json!({"packages": PACKAGES.iter().map(|(name, version)| json!({"id":name,"name":name,"version":version,
-            "source":format!("git+{REPO}?rev={REV}#{REV}")})).collect::<Vec<_>>(), "resolve": {"nodes": [{"id": "craft-pdf", "features": ["read", "interpret", "raster", "write", "write-pdf"]}]}})
+            "source":format!("git+{REPO}?rev={REV}#{REV}")})).collect::<Vec<_>>(), "resolve": {"nodes": [{"id": "nodalia-pdf", "features": ["read", "interpret", "raster", "write", "write-pdf"]}]}})
     }
 
     #[test]

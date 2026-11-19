@@ -29,7 +29,7 @@
 //! - **Marks:** crop marks, bleed marks and a page-information line, drawn in `[Registration]`.
 //! - **Standards:** PDF/A-2b through krilla's validator and PDF/X-4 output intent/identification
 //!   with built-in conformance checks. PDF/X-1a:2003 is the PDF/X-4 print file flattened by
-//!   craft-prepress (no transparency, only DeviceCMYK, DeviceGray, Separation and DeviceN) and
+//!   nodalia-prepress (no transparency, only DeviceCMYK, DeviceGray, Separation and DeviceN) and
 //!   written by krilla as PDF 1.4 with the PDF/X-1a identification. `pliego-cli validate-pdf` exposes those checks for CI.
 //!
 //! Not yet: tagged PDF, bookmarks, hyperlinks, layers as optional content.
@@ -145,7 +145,7 @@ pub struct PdfOptions {
     pub tagged: bool,
     /// Interactive PDF: placed video and sound are embedded and play in Screen annotations.
     pub media: bool,
-    /// PDF/X-1a: the resolution (pixels per inch) craft-prepress's flattener rasterizes complex
+    /// PDF/X-1a: the resolution (pixels per inch) nodalia-prepress's flattener rasterizes complex
     /// transparent regions at.
     pub flatten_dpi: f32,
     /// Soft drop shadows drawn as their shadow color through a coverage mask, by item id (spread
@@ -246,8 +246,8 @@ pub fn parse_page_range(s: &str, count: usize) -> Result<Vec<usize>> {
     Ok(out)
 }
 
-impl From<craft_pdf::write::WriteError> for PdfError {
-    fn from(error: craft_pdf::write::WriteError) -> Self {
+impl From<nodalia_pdf::write::WriteError> for PdfError {
+    fn from(error: nodalia_pdf::write::WriteError) -> Self {
         Self::Write(error.to_string())
     }
 }

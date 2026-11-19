@@ -2910,7 +2910,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "يستخدم هذا المستند خطوطًا غير متاحة. اختر بدائل، أو اختر «تم» للمتابعة بخطوط احتياطية.",
     ),
     ("This file is from a newer version (format {n})", "هذا الملف من إصدار أحدث (التنسيق {n})"),
-    ("This is not a craft-keymap file", "هذا ليس ملف craft-keymap"),
+    ("This is not a nodalia-keymap file", "هذا ليس ملف nodalia-keymap"),
     ("This is not a shortcut set file", "هذا ليس ملف مجموعة اختصارات"),
     ("This page", "هذه الصفحة"),
     ("This page is", "هذه الصفحة هي"),

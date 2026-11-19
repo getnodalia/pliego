@@ -5,13 +5,13 @@
 //! The file lists items under `Product area : <area>` headers, one per line:
 //! `<name> --- [none defined]` or `<name> --- <context>: <keys>, <context>: <keys>`. Item names
 //! use `: ` between submenu levels. This module reads the file into a
-//! [`craft_keymap::ForeignSet`]; `craft_keymap::import` matches and applies it. Default keys bind
+//! [`nodalia_keymap::ForeignSet`]; `nodalia_keymap::import` matches and applies it. Default keys bind
 //! in the command's home scope; an item without Default keys takes its Text keys.
 
 use std::collections::BTreeMap;
 
-use craft_keymap::import::{MAX_IMPORT_ENTRIES, MAX_IMPORT_TEXT};
-use craft_keymap::{CommandRef, ContextRule, Flavor, ForeignEntry, ForeignKey, ForeignSet, ImportOptions, ImportReport};
+use nodalia_keymap::import::{MAX_IMPORT_ENTRIES, MAX_IMPORT_TEXT};
+use nodalia_keymap::{CommandRef, ContextRule, Flavor, ForeignEntry, ForeignKey, ForeignSet, ImportOptions, ImportReport};
 use serde_json::{Value, json};
 
 use crate::DesignApp;
@@ -147,7 +147,7 @@ fn strip_suffix_ignore_case<'a>(s: &'a str, suffix: &str) -> Option<&'a str> {
     s.get(at..).filter(|end| end.eq_ignore_ascii_case(suffix)).and_then(|_| s.get(..at))
 }
 
-/// The set as `craft_keymap::import` reads it. An area named `<menu> Menu` is that menu; the
+/// The set as `nodalia_keymap::import` reads it. An area named `<menu> Menu` is that menu; the
 /// Tools area is the Tools menu, where items named `… Tool` select tools. Items of the Panel Menus
 /// area name their panel first (`Character: All Caps`) and match a command under that panel.
 /// Items of other areas (text and tables, views) have no menu, so they match only by a one-segment
@@ -203,7 +203,7 @@ pub fn import_options(remembered: BTreeMap<String, CommandRef>) -> ImportOptions
     }
 }
 
-/// Reads a set's text for craft-keymap's importer. Items past [`MAX_IMPORT_ENTRIES`] are not read;
+/// Reads a set's text for nodalia-keymap's importer. Items past [`MAX_IMPORT_ENTRIES`] are not read;
 /// the set counts them as truncated.
 pub fn read_set(text: &str) -> Result<ForeignSet, String> {
     if text.len() > MAX_BYTES {
@@ -221,7 +221,7 @@ pub fn import(app: &mut DesignApp, text: &str) -> Result<Value, String> {
     let set = read_set(text)?;
     app.sync_keymap();
     let options = import_options(app.shortcut_answers.clone());
-    let plan = craft_keymap::plan(&set, &app.keymap, &options);
+    let plan = nodalia_keymap::plan(&set, &app.keymap, &options);
     let (name, report) = app.ui.shortcut_sets.import_plan(&plan, &app.keymap, None, &crate::shortcuts_dialog::BUILTINS).map_err(|e| e.to_string())?;
     crate::shortcuts_dialog::load_active_set(app);
     let mut out = report_json(&report);

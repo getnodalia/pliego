@@ -1,4 +1,4 @@
-//! How documents, exports and other user files reach the disk: through `craft-atomic`, which
+//! How documents, exports and other user files reach the disk: through `nodalia-atomic`, which
 //! never writes the destination in place. It stages the bytes in a temporary file beside the
 //! destination, flushes it, renames it over the destination and flushes the folder (Unix), so a
 //! failed save leaves the old file whole. A new file gets the permissions ordinary file creation
@@ -14,7 +14,7 @@ use std::path::Path;
 
 /// Atomically replace (or create) `path` with `bytes`. See the module docs.
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    craft_atomic::atomic_write(path, bytes)
+    nodalia_atomic::atomic_write(path, bytes)
 }
 
 /// Atomically replace (or create) `path` with what `fill` writes into the temporary file. When
@@ -22,7 +22,7 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
 /// the error is returned. A panic in `fill` is returned as an error too, so the temporary file is
 /// removed then as well.
 pub fn write_atomic_with(path: &Path, fill: impl FnOnce(&mut File) -> io::Result<()>) -> io::Result<()> {
-    craft_atomic::atomic_write_with(path, |file| {
+    nodalia_atomic::atomic_write_with(path, |file| {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| fill(file)))
             .unwrap_or_else(|_| Err(io::Error::other("the file writer stopped unexpectedly")))
     })
@@ -35,7 +35,7 @@ mod tests {
     use std::io::Write as _;
     use std::path::PathBuf;
 
-    use craft_atomic::{RenameRetry, retry_rename};
+    use nodalia_atomic::{RenameRetry, retry_rename};
 
     use super::*;
 

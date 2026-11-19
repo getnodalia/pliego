@@ -14,9 +14,9 @@ pliego-color = { workspace = true }
 pliego-doc = { workspace = true }
 pliego-fonts = { workspace = true }
 pliego-compose = { workspace = true }
-craft-pdf = { workspace = true, features = ["write-pdf"] }
-craft-prepress = { workspace = true }
-craft-cms = { workspace = true }
+nodalia-pdf = { workspace = true, features = ["write-pdf"] }
+nodalia-prepress = { workspace = true }
+nodalia-cms = { workspace = true }
 krilla-svg = { workspace = true }
 pliego-images = { workspace = true }
 image = { workspace = true }

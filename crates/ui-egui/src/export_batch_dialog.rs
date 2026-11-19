@@ -83,7 +83,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui, d: &mut Dialog) {
     ui.horizontal(|ui| {
         crate::rtl::label(ui, tr("Preset:"));
         let shown = if preset.is_empty() { tr("[Custom]") } else { preset.clone() };
-        craft_ui::ComboBox::from_id_salt("export_batch_preset").selected_text(shown).width(200.0).show_ui(ui, |ui| {
+        nodalia_ui::ComboBox::from_id_salt("export_batch_preset").selected_text(shown).width(200.0).show_ui(ui, |ui| {
             for p in &all {
                 if ui.selectable_label(p.name == preset, &p.name).clicked() {
                     job = p.job.clone();
@@ -167,7 +167,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui, d: &mut Dialog) {
         ui.push_id(("export_version", i), |ui| {
             ui.horizontal(|ui| {
                 ui.add(egui::TextEdit::singleline(&mut v.name).desired_width(170.0).hint_text(tr("Folder name")));
-                craft_ui::ComboBox::from_id_salt("format").selected_text(v.format.ext().to_uppercase().replace("JPG", "JPEG")).width(70.0).show_ui(
+                nodalia_ui::ComboBox::from_id_salt("format").selected_text(v.format.ext().to_uppercase().replace("JPG", "JPEG")).width(70.0).show_ui(
                     ui,
                     |ui| {
                         for (f, label) in [(ExportFormat::Pdf, "PDF"), (ExportFormat::Png, "PNG"), (ExportFormat::Jpeg, "JPEG")] {
@@ -186,7 +186,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui, d: &mut Dialog) {
                             "screen" => tr("Screen"),
                             _ => tr("Custom"),
                         };
-                        craft_ui::ComboBox::from_id_salt("pdf_kind").selected_text(label(kind)).width(150.0).show_ui(ui, |ui| {
+                        nodalia_ui::ComboBox::from_id_salt("pdf_kind").selected_text(label(kind)).width(150.0).show_ui(ui, |ui| {
                             for k in ["print", "bleed", "screen", "custom"] {
                                 if ui.selectable_label(kind == k, label(k)).clicked() {
                                     expanded.retain(|x| *x != i as u64);
@@ -225,7 +225,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui, d: &mut Dialog) {
                     ui.checkbox(&mut v.marks.page_info, crate::rtl::widget(ui, tr("Page Information")));
                     ui.checkbox(&mut v.compress_images, crate::rtl::widget(ui, tr("Compress Images")));
                     ui.checkbox(&mut v.spreads, crate::rtl::widget(ui, tr("Spreads")));
-                    craft_ui::ComboBox::from_id_salt("standard")
+                    nodalia_ui::ComboBox::from_id_salt("standard")
                         .selected_text(match v.standard.as_str() {
                             "x4" => "PDF/X-4",
                             "a2b" => "PDF/A-2b",

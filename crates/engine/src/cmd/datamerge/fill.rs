@@ -600,7 +600,7 @@ mod image_path_tests {
         assert!(image_candidates("img/x.png", None, None).is_empty(), "not beside the working directory");
     }
 
-    /// The Windows shapes `craft-docpath` refuses, asserted where they have meaning: the extended
+    /// The Windows shapes `nodalia-docpath` refuses, asserted where they have meaning: the extended
     /// UNC prefix, a device namespace path, and a legacy device name (with an extension, since a
     /// reserved name is reserved whatever follows it).
     #[cfg(windows)]
@@ -613,7 +613,7 @@ mod image_path_tests {
     }
 
     /// An extended-length path is not one of them: `\\?\C:\x` names a local file, the same one
-    /// `C:\x` names, and `craft-docpath`'s own suite classifies it `PathKind::Local`. A data file
+    /// `C:\x` names, and `nodalia-docpath`'s own suite classifies it `PathKind::Local`. A data file
     /// could already give the plain spelling, so refusing this one would shut out long paths
     /// without shutting anything out (noted in review).
     #[cfg(windows)]

@@ -20,7 +20,7 @@ graphics driver loses the user entirely. Overall numbers: [target-app-parity.md]
 | HiDPI / Retina | ✓ | ✓ | ✓ (drags across monitors with different scales keep the window's size: winit pinned to the rust-windowing/winit#4694 backport) | ✓ | ✓ |
 | UI scaling | ✓ | ✓ (menus and dialogs usable at larger scales, #281) | ✓ | ✓ | ✓ |
 | Multi-monitor, floating document windows | ✓ | ~ one window; New Window for the same document; the window may span monitors up to the GPU's largest texture (16384 px on DirectX 12, Vulkan and Metal hardware), and beyond it draws wrongly instead of closing | ~ | ~ | ✗ |
-| Printing | system print with PPDs, PostScript, separations | PDF to CUPS (`craft-print`) | Windows PDF raster spooler (`craft-print`) | PDF to CUPS (`craft-print`) | browser download |
+| Printing | system print with PPDs, PostScript, separations | PDF to CUPS (`nodalia-print`) | Windows PDF raster spooler (`nodalia-print`) | PDF to CUPS (`nodalia-print`) | browser download |
 | Colour-managed display (monitor profile) | ✓ | ✗ (working CMYK profile simulated; monitor profile not applied) | ✗ | ✗ | ✗ |
 | Touch / pen | Touch workspace (Windows), gestures | trackpad pinch/scroll | ~ | ~ | ~ |
 | Multi-core composition | single-threaded composer per story (documented by Adobe as mostly single-threaded) | parallel story composition (rayon), 6.7× on the sample | ✓ | ✓ | single-threaded |
@@ -57,6 +57,6 @@ the developers don't use daily.
 | 2026-10-12 | trivial | Windows: dragging across monitors with different display scales doesn't grow the window and crash (winit pinned to the rust-windowing/winit#4694 backport); a window wider or taller than 8192 px keeps its surface, and a wgpu error logs instead of closing the app |
 | 2026-10-10 | major | Created from the code, InDesign 2026's GPU Performance features and the issue tracker |
 
-Windows submission now uses shared craft-print. It selects matching or default driver paper,
+Windows submission now uses shared nodalia-print. It selects matching or default driver paper,
 shrinks oversized sheets to the printable area without enlarging smaller ones, and preserves
 the queue's duplex default; printer-driver options UI and physical output validation remain open.

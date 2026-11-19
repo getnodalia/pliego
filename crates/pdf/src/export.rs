@@ -7,8 +7,6 @@ pub(crate) mod registration_tests;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
-use craft_pdf::write::{self, Metadata, Writer};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Archival, PdfVersion};
 use krilla::geom::{Path, PathBuilder, Size, Transform};
@@ -18,6 +16,8 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, Stroke, StrokeDash};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, Identifier, Tag, TagGroup, TagTree};
+use nodalia_pdf::write::backend as krilla;
+use nodalia_pdf::write::{self, Metadata, Writer};
 use pliego_color::swatch::{ColorType, SwatchValue};
 use pliego_color::{BlendMode as DcBlend, Color, GradientKind};
 use pliego_compose::Cache;
@@ -60,7 +60,7 @@ impl std::hash::Hasher for ConstantImageHasher {
 pub(crate) struct Exporter<'a> {
     pub doc: &'a Document,
     /// The document's inks with its Ink Manager settings.
-    pub(crate) inks: craft_prepress::InkSet,
+    pub(crate) inks: nodalia_prepress::InkSet,
     pub cache: &'a Cache,
     /// Each story's composition per page it is shown on, for this export: the document doesn't
     /// change while it runs, and asking the cache checks every frame of the story again.

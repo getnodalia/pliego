@@ -2919,7 +2919,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Ez a dokumentum nem elérhető betűtípusokat használ. Válassz helyettesítőket, vagy a Kész gombbal folytasd a tartalék betűtípusokkal.",
     ),
     ("This file is from a newer version (format {n})", "Ez a fájl újabb verzióból származik ({n}. formátum)"),
-    ("This is not a craft-keymap file", "Ez nem craft-keymap fájl"),
+    ("This is not a nodalia-keymap file", "Ez nem nodalia-keymap fájl"),
     ("This is not a shortcut set file", "Ez nem billentyűparancs-készlet fájl"),
     ("This page", "Ez az oldal"),
     ("This page is", "Ez az oldal:"),

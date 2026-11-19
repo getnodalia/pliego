@@ -202,11 +202,11 @@ fn file_info_dialog_stores_the_fields_and_titles_the_pdf() {
     let names: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let asked = names.clone();
     app.answer_dialogs(move |request| match request {
-        craft_dialogs::Request::File(dialog) => {
+        nodalia_dialogs::Request::File(dialog) => {
             asked.lock().unwrap().push(dialog.file_name.clone().unwrap_or_default());
-            craft_dialogs::Answer::Paths(vec!["/tmp/pliego-file-info.pdf".into()])
+            nodalia_dialogs::Answer::Paths(vec!["/tmp/pliego-file-info.pdf".into()])
         }
-        craft_dialogs::Request::Message(_) => craft_dialogs::Answer::Message(craft_dialogs::MessageResult::Yes),
+        nodalia_dialogs::Request::Message(_) => nodalia_dialogs::Answer::Message(nodalia_dialogs::MessageResult::Yes),
     });
     open_pdf_export(&mut app);
     confirm(&mut app).unwrap();
@@ -2000,7 +2000,7 @@ fn find_scope_dialog_native_pdf_replacement_releases_bounds() {
         app.answer_dialogs(move |request| {
             assert_eq!(place_filter(request), Some("Graphics and text"));
             seen_pick.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            craft_dialogs::Answer::Paths(vec![pick_path.clone().into()])
+            nodalia_dialogs::Answer::Paths(vec![pick_path.clone().into()])
         });
         app.services.read = Some(Box::new(move |path| {
             assert_eq!(path, read_path);
@@ -2068,8 +2068,8 @@ fn find_scope_dialog_native_pdf_replacement_releases_bounds() {
 }
 
 /// The first file type an open dialog offers: Place's is "Graphics and text".
-fn place_filter(request: &craft_dialogs::Request) -> Option<&str> {
-    let craft_dialogs::Request::File(dialog) = request else { return None };
+fn place_filter(request: &nodalia_dialogs::Request) -> Option<&str> {
+    let nodalia_dialogs::Request::File(dialog) = request else { return None };
     dialog.filters.first().map(|filter| filter.name.as_str())
 }
 
@@ -2082,7 +2082,7 @@ fn find_scope_dialog_native_picker_cancel_retains_bounds() {
     app.answer_dialogs(move |request| {
         assert_eq!(place_filter(request), Some("Graphics and text"));
         seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        craft_dialogs::Answer::Cancelled
+        nodalia_dialogs::Answer::Cancelled
     });
     let read = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let seen_read = read.clone();
@@ -2625,7 +2625,7 @@ fn arabic_new_document_fields_remain_reachable_and_editable() {
         for _ in 0..3 {
             dialog_frame(&mut app, &ctx, screen, vec![]);
         }
-        // With craft-fonts' Noto Sans Arabic the rows above are taller, so at the smallest size the
+        // With nodalia-fonts' Noto Sans Arabic the rows above are taller, so at the smallest size the
         // Height field starts partly below the body's clip: scroll to it like the other fields.
         let labels = dialog_frame(&mut app, &ctx, screen, vec![]);
         let (_, _, body) = labels.iter().find(|(text, _, _)| text.trim() == "66p1").expect("66p1 is painted");

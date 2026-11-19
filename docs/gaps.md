@@ -120,7 +120,7 @@ Kind: **F** feature · **U** UI/UX · **T** typography · **FF** file format · 
   beyond the built-in profile, PDF/UA validation; soft effects other than the drop shadow reach
   the PDF/X-1a flattener as RGB images; #159, #32.
 - **Have:** PDF/X-4 with output intent and a validator (`#200`), PDF/X-1a:2003 through
-  craft-prepress's flattener with its own checks, PDF/A-2b, tagged PDF, CMYK and spot, marks and
+  nodalia-prepress's flattener with its own checks, PDF/A-2b, tagged PDF, CMYK and spot, marks and
   bleed, the options dialog with remembered settings (#196). File ▸ Export Layouts and Versions
   (`file.exportBatch`): several outputs at once (PDF with any marks/bleed, PNG, JPEG), per
   alternate layout or combined, in a folder per version, saved as export presets
@@ -142,7 +142,7 @@ Kind: **F** feature · **U** UI/UX · **T** typography · **FF** file format · 
 ### 10. Printing (H, F)
 - **Missing:** PostScript, a printer-driver options UI, separations to device, print presets, or trapping.
 - **Have:** `file.print` exports selected pages/spreads with marks and bleed, then submits through
-  craft-print: CUPS on macOS/Linux and the Windows PDF raster spooler. Physical printer fidelity
+  nodalia-print: CUPS on macOS/Linux and the Windows PDF raster spooler. Physical printer fidelity
   remains a hardware check.
 - **Estimate:** 25–45 h. **Doc:** [hardware-parity.md](hardware-parity.md)
 

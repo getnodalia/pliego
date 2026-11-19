@@ -256,7 +256,7 @@ pub(super) const TABLE: &[(&str, [&str; 5])] = &[
     ),
     ("Minimize", ["Minimieren", "Réduire", "Minimizar", "最小化", "最小化"]),
     ("Collapse to Icons", ["Auf Symbole minimieren", "Réduire en icônes", "Contraer a iconos", "アイコンパネルに折りたたむ", "折叠为图标"]),
-    // Docking chrome (craft-ui labels in Pliego's wording, `panel_docking::DOCK_LABELS`).
+    // Docking chrome (nodalia-ui labels in Pliego's wording, `panel_docking::DOCK_LABELS`).
     ("Group with", ["Gruppieren mit", "Grouper avec", "Agrupar con", "次とグループ化", "编组到"]),
     ("Panels", ["Bedienfelder", "Panneaux", "Paneles", "パネル", "面板"]),
     (

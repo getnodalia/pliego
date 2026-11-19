@@ -49,13 +49,13 @@ pub fn default_shortcut(id: &str) -> Option<&'static str> {
 
 /// The shortcut in effect for a command (the user's, else the default), as stored ("Cmd+Alt+K").
 pub fn shortcut_of(app: &DesignApp, id: &str) -> Option<String> {
-    crate::keys::shortcut(&app.keymap, &craft_keymap::CommandRef::new(id))
+    crate::keys::shortcut(&app.keymap, &nodalia_keymap::CommandRef::new(id))
 }
 
 /// The shortcut a menu row shows: its own binding (a panel's), else its command's.
 pub fn shortcut_label(app: &DesignApp, id: &str, params: &Value) -> Option<String> {
     let cmd = crate::keys::command_ref(id, params);
-    let cmd = if app.keymap.bindable(&cmd).is_some() { cmd } else { craft_keymap::CommandRef::new(id) };
+    let cmd = if app.keymap.bindable(&cmd).is_some() { cmd } else { nodalia_keymap::CommandRef::new(id) };
     crate::keys::shortcut_display(&app.keymap, &cmd)
 }
 
@@ -66,7 +66,7 @@ pub fn tool_shortcut_label(app: &DesignApp, tool: &str) -> Option<String> {
 
 /// A shortcut for display: ⌃⌥⇧⌘K on macOS, Ctrl+Alt+Shift+K elsewhere.
 pub fn shortcut_text(sc: &str) -> String {
-    match craft_keymap::Binding::parse(sc) {
+    match nodalia_keymap::Binding::parse(sc) {
         Ok(b) => b.trigger.display(crate::keys::platform()),
         Err(_) => sc.to_string(),
     }

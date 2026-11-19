@@ -165,7 +165,7 @@ fn shadow_only(it: &pliego_doc::Item) -> bool {
 }
 
 /// For PDF/X-1a: the coverage of each spread object's soft drop shadow at `ppi`, so the PDF draws
-/// the shadow in its own swatch's inks through a mask (which craft-prepress flattens per ink)
+/// the shadow in its own swatch's inks through a mask (which nodalia-prepress flattens per ink)
 /// instead of an RGB image of the object. Objects whose only soft effect is the drop shadow.
 ///
 /// The coverage comes from the object drawn alone, at full opacity and Normal blending, with its

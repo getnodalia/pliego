@@ -1,6 +1,6 @@
 use super::*;
 use crate::DesignApp;
-use craft_ui::docking::{Column, Node, Side};
+use nodalia_ui::docking::{Column, Node, Side};
 use serde_json::json;
 
 fn populated() -> UiState {
@@ -255,7 +255,7 @@ fn floating_stacks_of_groups_load_as_split_windows() {
     assert!(read.intact);
     let layout = read.ui.docking.clone().unwrap();
     dock(&layout);
-    let Node::Split { axis: craft_ui::layout::SplitAxis::Vertical, size: craft_ui::layout::SplitSize::Ratio(ratio), first, second } =
+    let Node::Split { axis: nodalia_ui::layout::SplitAxis::Vertical, size: nodalia_ui::layout::SplitSize::Ratio(ratio), first, second } =
         &layout.floating[0].root
     else {
         panic!("expected a vertical split: {:?}", layout.floating[0]);
@@ -279,7 +279,7 @@ fn an_old_layout_that_cannot_be_converted_is_reported() {
     assert_eq!(read.ui.docking, None);
 }
 
-/// `dockingHidden` as an object keyed by panel (files before craft-ui's `Workspace::hidden`
+/// `dockingHidden` as an object keyed by panel (files before nodalia-ui's `Workspace::hidden`
 /// list) loads as the list, drops only its unreadable entries and saves as the list.
 #[test]
 fn hidden_panels_keyed_by_panel_load_as_the_workspace_list() {
@@ -295,9 +295,9 @@ fn hidden_panels_keyed_by_panel_load_as_the_workspace_list() {
     assert_eq!(ui.custom_workspaces[0].docking_hidden.keys().collect::<Vec<_>>(), ["stroke"]);
     let written = serde_json::to_value(&ui).unwrap();
     assert_eq!(written["dockingHidden"][0][0], "color");
-    let workspace: craft_ui::docking::Workspace<String> =
+    let workspace: nodalia_ui::docking::Workspace<String> =
         serde_json::from_value(json!({"layout": {"root": null, "floating": []}, "hidden": written["dockingHidden"]})).unwrap();
-    assert_eq!(workspace.hidden, ui.docking_hidden.0, "the same shape as craft-ui's Workspace::hidden");
+    assert_eq!(workspace.hidden, ui.docking_hidden.0, "the same shape as nodalia-ui's Workspace::hidden");
     let mut app = DesignApp::new(pliego_engine::Session::new(), Default::default());
     app.ui = ui;
     app.run("window.panel", json!({"panel": "color"})).unwrap();
