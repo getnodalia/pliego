@@ -1,14 +1,14 @@
 # Pliego app icon
 
-**Figure:** Johannes Gutenberg. He introduced movable-type printing, the origin of page layout.
+**Figure:** Benjamin Franklin (1706–1790), printer, publisher and author: a working printer who made pages for a living.
 
 **Style:** a black-and-white portrait cut out over a full-bleed colour field, head and shoulders, in
 the Nodalia icon family (one historical figure per app, one colour per app).
 
 **Tile:** 512 × 512 viewBox, rounded square `rx=112`, clipped; no border or roundel.
 
-**Provenance:** the portrait is "Portret van Johannes Gutenberg, RP-P-1914-4009.jpg" from
-[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Portret_van_Johannes_Gutenberg,_RP-P-1914-4009.jpg) (CC0). The figure was separated from its
+**Provenance:** the portrait is the 1785 oil portrait by Joseph-Siffred Duplessis, "Joseph Siffrein Duplessis - Benjamin Franklin - Google Art Project.jpg", from
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Joseph_Siffrein_Duplessis_-_Benjamin_Franklin_-_Google_Art_Project.jpg) (public domain). The figure was separated from its
 background, converted to black and white and placed over the app colour.
 Licence: see [LICENSE.txt](LICENSE.txt).
 

@@ -1,4 +1,4 @@
-//! Pliego's own mark: the app icon (`assets/app-icon/`, Johannes Gutenberg), decoded once and kept
+//! Pliego's own mark: the app icon (`assets/app-icon/`, Benjamin Franklin), decoded once and kept
 //! as a texture, for the Home screen and About.
 
 const ICON: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/dev.danielmiguelt.Pliego.png");

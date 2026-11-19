@@ -58,7 +58,7 @@ cargo run --release -p pliego
 | Area | State |
 |---|---|
 | Package and binary names | Done: the desktop binary is called `pliego` |
-| App icon | Done: portrait of Johannes Gutenberg |
+| App icon | Done: portrait of Benjamin Franklin |
 | Nodalia interface | Done: Nodalia Design with the creator suite's app bar and Home, NDL window controls and the desktop's global menu on Linux |
 | Shared interface resources | Done: theme, icons and Home come from nodalia-design |
 | Installable packages | From 0.1.0: AppImage, .deb, .rpm, .tar.gz, DMG, MSI and portable zip |
@@ -66,7 +66,7 @@ cargo run --release -p pliego
 ## App icon
 
 Nodalia app icons are black-and-white portraits of historical figures over the app colour.
-Pliego's is Johannes Gutenberg, who introduced movable-type printing. Provenance and licence are in [`assets/app-icon/`](assets/app-icon/).
+Pliego's is Benjamin Franklin, printer, publisher and author. Provenance and licence are in [`assets/app-icon/`](assets/app-icon/).
 
 ## The Nodalia suite
 
