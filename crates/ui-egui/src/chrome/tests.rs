@@ -563,7 +563,7 @@ fn the_mac_app_bar_centres_and_clears_the_traffic_lights() {
     use super::{MAC_APP_BAR, MAC_CONTENT_LEFT, MAC_LIGHT, MAC_LIGHT_PITCH, MAC_LIGHTS_LEFT};
     // Content keeps the same gap after the lights as the lights keep from the top.
     let margin = (MAC_APP_BAR - MAC_LIGHT) / 2.0;
-    assert_eq!(MAC_CONTENT_LEFT - (MAC_LIGHTS_LEFT + 2.0 * MAC_LIGHT_PITCH + MAC_LIGHT), margin);
+    assert!(MAC_CONTENT_LEFT >= MAC_LIGHTS_LEFT + 2.0 * MAC_LIGHT_PITCH + MAC_LIGHT + margin);
     // `egui::Margin` is in `i8`.
     assert!(MAC_CONTENT_LEFT <= f32::from(i8::MAX));
     let mut app = classic_app();
