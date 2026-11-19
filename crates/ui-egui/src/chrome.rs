@@ -45,8 +45,11 @@ pub const MAC_APP_BAR: f32 = 28.0;
 /// The traffic lights as AppKit lays them out: button diameter, centre-to-centre pitch and the
 /// first button's left edge (8–10 pt depending on the macOS version; the larger value keeps the
 /// gap after them from shrinking).
+#[cfg(test)]
 const MAC_LIGHT: f32 = 12.0;
+#[cfg(test)]
 const MAC_LIGHT_PITCH: f32 = 20.0;
+#[cfg(test)]
 const MAC_LIGHTS_LEFT: f32 = 10.0;
 /// Where the bar's content starts to the right of the traffic lights: the end of the three lights
 /// plus the same gap the lights keep from the top of the window.
