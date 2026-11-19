@@ -1,4 +1,4 @@
-//! File and message dialogs that never block the frame (craft-dialogs).
+//! File and message dialogs that never block the frame (nodalia-dialogs).
 //!
 //! A blocking dialog runs the platform's modal loop inside the frame. On macOS an event that
 //! arrives meanwhile (a file dragged from Finder and held over the window) re-enters winit's
@@ -32,7 +32,7 @@ pub(crate) enum Bound {
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone, PartialEq)]
 pub(crate) struct AskKey {
-    request: craft_dialogs::Request,
+    request: nodalia_dialogs::Request,
     /// The document active when the dialog was asked for, when the answer depends on it.
     doc: Option<u64>,
     /// The code that asked (`#[track_caller]` through the asking helpers): Place, Place with
@@ -72,7 +72,7 @@ enum Step {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub type Dialogs = craft_dialogs::Dialogs<Asked>;
+pub type Dialogs = nodalia_dialogs::Dialogs<Asked>;
 
 /// A dialog that can't show (no window, no platform dialog) and the reason.
 #[cfg(not(target_arch = "wasm32"))]
@@ -85,7 +85,7 @@ const NO_PICKER: &str = "needs a file picker";
 /// The dialogs, with a wake-up that repaints once the first frame has given it the context.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn new_dialogs(ctx: std::sync::Arc<std::sync::OnceLock<egui::Context>>) -> Dialogs {
-    craft_dialogs::Dialogs::new(std::sync::Arc::new(move || {
+    nodalia_dialogs::Dialogs::new(std::sync::Arc::new(move || {
         if let Some(ctx) = ctx.get() {
             ctx.request_repaint();
         }
@@ -104,7 +104,7 @@ impl DesignApp {
     ) -> Result<Value, String> {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut dialog = craft_dialogs::FileDialog::open();
+            let mut dialog = nodalia_dialogs::FileDialog::open();
             for filter in open_filters(purpose) {
                 dialog = dialog.filter(filter.name, filter.extensions);
             }
@@ -129,7 +129,7 @@ impl DesignApp {
     ) -> Result<Value, String> {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut dialog = craft_dialogs::FileDialog::folder().title(title);
+            let mut dialog = nodalia_dialogs::FileDialog::folder().title(title);
             if let Some(folder) = self.session.active().and_then(|d| d.path.as_deref()).and_then(folder_of) {
                 dialog = dialog.directory(folder);
             }
@@ -161,7 +161,7 @@ impl DesignApp {
             let suggested = self.suggested_save_path(name);
             let (folder, name) = save_dialog_start(&suggested);
             let ext = suggested_extension(&name).map(str::to_string);
-            let mut dialog = craft_dialogs::FileDialog::save().file_name(name.as_str());
+            let mut dialog = nodalia_dialogs::FileDialog::save().file_name(name.as_str());
             if let Some(folder) = folder {
                 dialog = dialog.directory(folder);
             }
@@ -201,9 +201,9 @@ impl DesignApp {
     /// that panel to the front instead of showing a second one.
     #[cfg(not(target_arch = "wasm32"))]
     #[track_caller]
-    fn ask_file(&mut self, dialog: craft_dialogs::FileDialog, bound: Bound, step: Step) {
+    fn ask_file(&mut self, dialog: nodalia_dialogs::FileDialog, bound: Bound, step: Step) {
         let key =
-            AskKey { request: craft_dialogs::Request::File(dialog.clone()), doc: self.bound_doc(bound), origin: std::panic::Location::caller() };
+            AskKey { request: nodalia_dialogs::Request::File(dialog.clone()), doc: self.bound_doc(bound), origin: std::panic::Location::caller() };
         if self.asked.contains(&key) {
             self.file_dialogs.raise();
             return;
@@ -240,7 +240,7 @@ impl DesignApp {
     /// egui dialog in their way has closed.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn handle_file_dialog_answers(&mut self) {
-        use craft_dialogs::{Answer, MessageResult};
+        use nodalia_dialogs::{Answer, MessageResult};
         for held in std::mem::take(&mut self.held_answers) {
             self.continue_in(held);
         }
@@ -279,13 +279,13 @@ impl DesignApp {
     fn ask_replace(&mut self, key: AskKey, dialog: Option<String>, path: std::path::PathBuf, then: Then) {
         let lang = &self.ui.language;
         let file = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        let message = craft_dialogs::Message {
-            level: craft_dialogs::MessageLevel::Warning,
+        let message = nodalia_dialogs::Message {
+            level: nodalia_dialogs::MessageLevel::Warning,
             title: crate::i18n::tr(lang, "Replace File?").to_string(),
             description: crate::i18n::tr(lang, "“{file}” already exists. Do you want to replace it?").replace("{file}", &file),
-            buttons: craft_dialogs::MessageButtons::YesNo,
+            buttons: nodalia_dialogs::MessageButtons::YesNo,
         };
-        let key = AskKey { request: craft_dialogs::Request::Message(message.clone()), ..key };
+        let key = AskKey { request: nodalia_dialogs::Request::Message(message.clone()), ..key };
         self.asked.push(key.clone());
         let path = path.to_string_lossy().to_string();
         self.file_dialogs.ask_message(message, Asked { key, dialog, step: Step::Replace { path, then } });
@@ -436,7 +436,7 @@ fn save_dialog_start(suggested: &str) -> (Option<std::path::PathBuf>, String) {
 
 #[cfg(test)]
 pub(crate) mod testing {
-    use craft_dialogs::{Answer, MessageResult, Request};
+    use nodalia_dialogs::{Answer, MessageResult, Request};
 
     use super::DesignApp;
 

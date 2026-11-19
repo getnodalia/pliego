@@ -2956,7 +2956,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Tento dokument používá nedostupná písma. Vyberte náhrady, nebo pokračujte volbou Hotovo s náhradními písmy.",
     ),
     ("This file is from a newer version (format {n})", "Tento soubor pochází z novější verze (formát {n})"),
-    ("This is not a craft-keymap file", "Toto není soubor craft-keymap"),
+    ("This is not a nodalia-keymap file", "Toto není soubor nodalia-keymap"),
     ("This is not a shortcut set file", "Toto není soubor sady zkratek"),
     ("This page", "Tato stránka"),
     ("This page is", "Tato stránka je"),

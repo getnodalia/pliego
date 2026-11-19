@@ -41,7 +41,7 @@ come as Middle East editions with an English or French interface and right-to-le
 | French | fr | ✓ | 1,438 (83%) | menus, panels, most dialogs; no help | Latin ✓; French hyphenation ✓ (hyph-fr) | no | partial | 6–10 |
 | Portuguese (Brazil) | pt-br | ✓ (pt) | 2,936 of 2,939 (~100%, 2026-11-04 missing-translations report) | whole interface but the Control panel's `IT`, `VA` and `Y:` captions; no help | Latin ✓; Portuguese hyphenation ✓ | no | partial | 1–2 |
 | Indonesian | id | ✗ | 0 (0%) | none | Latin ✓ | no | none | 12–18 |
-| Japanese | ja | ✓ | 1,644 (95%) | whole interface (#272), vertical-type commands; no help | vertical text, kinsoku, aki, ruby, warichu ✓ (partial depth, cjk.md); canvas IME ✓, not checked by hand (#322); Japanese UI and Mincho fonts from craft-fonts | no | partial | 6–10 (+ IME checks, shared with zh) |
+| Japanese | ja | ✓ | 1,644 (95%) | whole interface (#272), vertical-type commands; no help | vertical text, kinsoku, aki, ruby, warichu ✓ (partial depth, cjk.md); canvas IME ✓, not checked by hand (#322); Japanese UI and Mincho fonts from nodalia-fonts | no | partial | 6–10 (+ IME checks, shared with zh) |
 | German | de | ✓ | 1,438 (83%) | menus, panels, most dialogs; no help | Latin ✓; German 2006 hyphenation ✓ (hyph-de-1996, MIT) | no | partial | 6–10 |
 | Korean | ko | ✓ | 0 (0%) | none | Korean line breaking at spaces ✓; canvas IME ✓, not checked by hand (#322) | no | none | 15–25 |
 | Vietnamese | vi | ✗ | 0 (0%) | none | Latin with stacked diacritics via harfrust, untested | no | none | 12–18 |
@@ -52,7 +52,7 @@ string is translated and its script renders and edits correctly; none but Englis
 Japanese follow-up (2026-10-11): print ranges, imported style handling, the built-in `(import)`
 caption, table row/column movement and row-height distribution now use the existing translation
 catalog. Print, import options and an active table were rendered in Japanese and English with
-craft-fonts. The language totals above retain their dated measurement; this is a targeted fix.
+nodalia-fonts. The language totals above retain their dated measurement; this is a targeted fix.
 
 Hungarian interface (2026-11-01): `hu.rs` contains **1,906 entries and four context-specific
 captions**, including all 37 tool names. The initial catalog was prepared with AI assistance
@@ -66,7 +66,7 @@ The interface uses bundled **Source Sans 3 Regular** and **Source Sans 3 Semibol
 labels use **JetBrains Mono Regular** (`assets/fonts/`, registered by `theme::font_definitions`).
 `hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts` checks the actual configured font
 bytes, every Latin letter used by the catalog and all Hungarian accented vowels in both cases,
-including **ŐőŰű**, with system and optional craft-fonts fallbacks disabled. No new font asset
+including **ŐőŰű**, with system and optional nodalia-fonts fallbacks disabled. No new font asset
 or font dependency is needed.
 
 Hungarian regressions cover placeholder/context integrity, formal address and count/column

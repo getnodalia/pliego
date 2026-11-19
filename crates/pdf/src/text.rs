@@ -16,13 +16,13 @@ use std::collections::HashMap;
 use std::ops::Range;
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
 use krilla::paint::{Fill, FillRule, Paint, Stroke};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag};
 use krilla::text::{Font, GlyphId, KrillaGlyph};
+use nodalia_pdf::write::backend as krilla;
 use pliego_compose::{ComposedStory, FrameText, PlacedGlyph};
 use pliego_fonts::{FontDb, FontFace};
 use pliego_geom::kurbo::Shape as _;
@@ -186,7 +186,7 @@ impl Exporter<'_> {
             .or_insert_with(|| {
                 // Keep the existing outline fallback and warning when embedding fails.
                 let variations = face.is_variable().then_some(face.coords.as_slice());
-                craft_pdf::write::font(face.data(), face.index(), variations)
+                nodalia_pdf::write::font(face.data(), face.index(), variations)
                     .inspect_err(|error| log::warn!("PDF font `{} {}` could not be embedded: {error}", face.family, face.style))
                     .ok()
             })

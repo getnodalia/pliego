@@ -43,7 +43,7 @@ struct App {
     /// Documents and quit requests from Finder, the Dock and Open With.
     #[cfg(target_os = "macos")]
     apple_events: fmv_macos_events::Inbox,
-    /// The window's `movable` flag as last set; see `craft_window::title_bar`.
+    /// The window's `movable` flag as last set; see `nodalia_window::title_bar`.
     #[cfg(target_os = "macos")]
     movable: Option<bool>,
     /// Frames begun so far.
@@ -111,7 +111,7 @@ impl eframe::App for App {
             discard_marked_text();
         }
         #[cfg(target_os = "macos")]
-        craft_window::title_bar::sync_movable(ui.ctx(), &mut self.movable);
+        nodalia_window::title_bar::sync_movable(ui.ctx(), &mut self.movable);
         // After the frame, never inside it: the dialog answers on a later frame. On macOS Save and
         // message boxes are sheets on this window.
         self.app.show_file_dialogs(Some(&*frame));

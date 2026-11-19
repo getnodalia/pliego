@@ -2,7 +2,7 @@
 //! view center puts on film, each ink's percentage under the pointer, one plate or all inks,
 //! and the ink limit.
 
-use craft_prepress::{Alternate, Ink, Process};
+use nodalia_prepress::{Alternate, Ink, Process};
 use serde_json::json;
 
 use crate::DesignApp;

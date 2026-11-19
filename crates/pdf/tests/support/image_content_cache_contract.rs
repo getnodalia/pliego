@@ -3,7 +3,7 @@
 //! All images and placed PDFs are tiny procedural fixtures.
 use std::sync::Arc;
 
-use craft_pdf::write::backend as krilla;
+use nodalia_pdf::write::backend as krilla;
 
 use pliego_compose::Cache;
 use pliego_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Shape, SpreadRef};

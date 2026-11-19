@@ -2691,7 +2691,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Dieses Dokument verwendet nicht verfügbare Schriften. Wählen Sie Ersatzschriften aus oder wählen Sie „Fertig“, um mit Ersatzschriften fortzufahren.",
     ),
     ("This file is from a newer version (format {n})", "Diese Datei stammt aus einer neueren Version (Format {n})"),
-    ("This is not a craft-keymap file", "Das ist keine craft-keymap-Datei"),
+    ("This is not a nodalia-keymap file", "Das ist keine nodalia-keymap-Datei"),
     ("This is not a shortcut set file", "Das ist keine Tastaturbefehlssatz-Datei"),
     ("This page", "Diese Seite"),
     ("This page is", "Diese Seite ist"),

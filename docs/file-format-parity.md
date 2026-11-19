@@ -41,7 +41,7 @@ layer survive interchange; literal XML and round-trip tests are in
 
 | Format | Ext | InDesign | Pliego | Fidelity / tests | Weight |
 |---|---|---|---|---|---|
-| PDF (print) | `.pdf` | ✓ all presets, PDF/X-1a/3/4, PDF/A, PDF/UA | ✓ krilla: real text with subset fonts, DeviceCMYK/RGB, spot Separations, bleed/slug, marks, spreads, compression options, remembered settings (#196); **PDF/X-4** with output intent and a validator (#223, #200); **PDF/A-2b**; tagged PDF; **PDF/X-1a:2003** flattened in its inks by craft-prepress | 53 tests in `crates/pdf`; no PDF/X-3; no presets / `.joboptions`; no external validator (veraPDF / callas) in CI | 18% |
+| PDF (print) | `.pdf` | ✓ all presets, PDF/X-1a/3/4, PDF/A, PDF/UA | ✓ krilla: real text with subset fonts, DeviceCMYK/RGB, spot Separations, bleed/slug, marks, spreads, compression options, remembered settings (#196); **PDF/X-4** with output intent and a validator (#223, #200); **PDF/A-2b**; tagged PDF; **PDF/X-1a:2003** flattened in its inks by nodalia-prepress | 53 tests in `crates/pdf`; no PDF/X-3; no presets / `.joboptions`; no external validator (veraPDF / callas) in CI | 18% |
 | PDF (interactive) | `.pdf` | ✓ | ✓ links, bookmarks, buttons, AcroForm fields, page transitions, object states | | 2% |
 | JPEG / PNG | `.jpg`, `.png` | ✓ | PNG from the UI; JPEG from the CLI only | no resolution / colour space options dialog for JPEG | 3% |
 | EPUB reflowable | `.epub` | ✓ | ✓ stories in article order, tables, footnotes and endnotes, CSS from styles, images, nav | the cover is the first page, or a PNG or JPEG file named in EPUB Export Options (#1934) | 2% |
@@ -52,7 +52,7 @@ layer survive interchange; literal XML and round-trip tests are in
 | EPS export | `.eps` | ✓ | ✗ | | <1% |
 | Text Only / RTF / Tagged Text | `.txt`, `.rtf` | ✓ | ✓ (`file.exportText` txt, rtf, tagged) | | 1% |
 | XML | `.xml` | ✓ | ✓ export and import, DTD validate | depth unmeasured | 1% |
-| Print / PostScript | | ✓ printers, PPDs, separations | ~ PDF to CUPS/Windows (craft-print; no PostScript) | | 3% |
+| Print / PostScript | | ✓ printers, PPDs, separations | ~ PDF to CUPS/Windows (nodalia-print; no PostScript) | | 3% |
 | Package | folder | ✓ fonts, links, IDML, PDF, report | ✓ (#340: IDML inside links to absolute paths) | PDF export warnings appear in the result and report. Frame and text-range hyperlinks keep their source bounds through rasterization, including inside groups. Synthetic shadow/feather/link regression in `crates/engine/src/cmd/package/tests.rs` | 2% |
 
 PDF/X-4 export warns about unembedded fonts that draw visible text, including inside placed PDF

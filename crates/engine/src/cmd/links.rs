@@ -588,7 +588,7 @@ fn update(s: &mut Session, p: &Value) -> Result<Value> {
     let images = &mut s.image_link_checks;
     let (only_asset, only_story) = (p.get("asset").and_then(Value::as_u64), story_param(p));
     let all = only_asset.is_none() && only_story.is_none();
-    // A link craft-docpath refuses is missing, so it is never read or refreshed.
+    // A link nodalia-docpath refuses is missing, so it is never read or refreshed.
     let resolved = |link: &str| crate::io::document_path(link, document).ok();
     let texts: Vec<(StoryId, String, std::path::PathBuf)> = d
         .stories

@@ -10,9 +10,9 @@ description = "Pliego egui frontend (InDesign-style UI); swappable — nothing b
 workspace = true
 
 [dependencies]
-craft-ui = { workspace = true, features = ["native-windows"] }
-craft-window = { workspace = true }
-craft-keymap = { workspace = true }
+nodalia-ui = { workspace = true, features = ["native-windows"] }
+nodalia-window = { workspace = true }
+nodalia-keymap = { workspace = true }
 pliego-geom = { workspace = true }
 pliego-color = { workspace = true }
 pliego-doc = { workspace = true }
@@ -23,7 +23,7 @@ pliego-tools = { workspace = true }
 pliego-engine = { workspace = true }
 pliego-images = { workspace = true }
 pliego-textimport = { workspace = true }
-craft-prepress = { workspace = true }
+nodalia-prepress = { workspace = true }
 nodalia-theme = { workspace = true, features = ["creator"] }
 # The UI draws monochrome icon glyphs from egui's bundled emoji faces (☰, ⚠, 📋); 0.37 moved
 # them behind this feature. They stay bundled copies of OSI/CC0 faces from `epaint_default_fonts`.
@@ -54,5 +54,5 @@ toml = "1"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 nodalia-update = { workspace = true }
 # File and message dialogs that never block the frame; the browser build uses its own path.
-craft-dialogs = { workspace = true }
+nodalia-dialogs = { workspace = true }
 raw-window-handle = { workspace = true }

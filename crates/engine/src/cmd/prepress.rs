@@ -57,10 +57,10 @@ fn separations(s: &mut Session, p: &Value) -> Result<Value> {
         .map(|((_, ink), st)| json!({"name": ink.name(), "spot": ink.is_spot(), "max": st.max, "mean": st.mean, "area": st.area}))
         .collect();
     let conversion = match &pl.conversion {
-        craft_prepress::Conversion::OutputIntent { profile, .. } => format!("output intent: {profile}"),
-        craft_prepress::Conversion::Fallback { profile } => profile.clone(),
-        craft_prepress::Conversion::DeviceFormulas => "device formulas".into(),
-        // `Conversion` is non-exhaustive; a later craft-prepress conversion reports its debug form.
+        nodalia_prepress::Conversion::OutputIntent { profile, .. } => format!("output intent: {profile}"),
+        nodalia_prepress::Conversion::Fallback { profile } => profile.clone(),
+        nodalia_prepress::Conversion::DeviceFormulas => "device formulas".into(),
+        // `Conversion` is non-exhaustive; a later nodalia-prepress conversion reports its debug form.
         other => format!("{other:?}"),
     };
     let pt = |x: u32, y: u32| {

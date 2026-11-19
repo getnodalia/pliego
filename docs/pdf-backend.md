@@ -1,8 +1,8 @@
 # Shared PDF backend
 
-Pliego pins `craft-pdf`, patched Krilla 0.8.2 and the six Hayro reader crates (with
-`hayro-cmap` and `hayro-postscript`) to craft-libs revision `92d392cff132eaf53e13afff77f38b5c11b73aa0`. `craft-ui`,
-`craft-print` and the other craft-libs crates are pinned to the same revision. The reader migration is reviewed on top of the separate writer change.
+Pliego pins `nodalia-pdf`, patched Krilla 0.8.2 and the six Hayro reader crates (with
+`hayro-cmap` and `hayro-postscript`) to nodalia-libs revision `65a463571dd29bc67bee88b9c096b96888c2c3c3`. `nodalia-ui`,
+`nodalia-print` and the other nodalia-libs crates are pinned to the same revision. The reader migration is reviewed on top of the separate writer change.
 
 ## Writing
 
@@ -28,7 +28,7 @@ facade at the same full immutable commit, including Krilla reached through `kril
 Local path replacements are suitable only for development and should not be committed.
 
 The vendored Krilla patch ledger, per-file hashes, licence texts and four unchanged CC0
-Compact ICC profiles live in craft-libs (`vendor/krilla`, `licenses/pdf-writer`, and
+Compact ICC profiles live in nodalia-libs (`vendor/krilla`, `licenses/pdf-writer`, and
 `ATTRIBUTION.md`). No fonts or binary PDF fixtures are added to Pliego by this migration.
 
 Tests cover metadata key presence, hostile page selection, successful PDF export and native
@@ -38,11 +38,11 @@ Windows/Linux runtime and PDF/A/PDF/X certification remain separate acceptance w
 
 ## Reading
 
-Placed-PDF geometry, layers and raster output use `craft-pdf` with its explicit `raster`
-feature. The facade and four patched Hayro crates are pinned to one immutable craft-libs
+Placed-PDF geometry, layers and raster output use `nodalia-pdf` with its explicit `raster`
+feature. The facade and four patched Hayro crates are pinned to one immutable nodalia-libs
 revision. The backend source was transferred from Papel revision
 `7437bde378f43856eada40af25b983812e615e8a`; the per-crate `vendor/SOURCE.json` manifests and `vendor/README.craft-reader.md`
-record the transfer and subsequent craft-libs patches. Asset provenance and hashes
+record the transfer and subsequent nodalia-libs patches. Asset provenance and hashes
 are recorded separately in ASSETS.md.
 `cargo xtask pdf-deps` checks unique resolved packages, exact versions and sources.
 
@@ -62,8 +62,8 @@ report known backend warnings; they do not certify all PDF fidelity.
 Pliego uses a 512 MiB reader input bound, checked before parsing or copying.
 Raster output has shared geometry/allocation bounds. Native unwind guards turn escaped
 backend panics into errors; WASM aborts and process-wide allocation failures are not recoverable.
-Application fonts, image assets, editing and export presets remain app-owned. craft-ui and
-craft-print are pinned separately. The reader migration builds on the independently qualified writer change.
+Application fonts, image assets, editing and export presets remain app-owned. nodalia-ui and
+nodalia-print are pinned separately. The reader migration builds on the independently qualified writer change.
 
 The shared commit must be published before a fresh public checkout can resolve these pins.
 No sibling checkout is required. Licences and existing backend asset notices are recorded in

@@ -139,7 +139,7 @@ pub(crate) fn print_pdf(
     opts: &PdfOptions,
     ppi: Option<f64>,
 ) -> Result<pliego_pdf::ExportReport> {
-    // PDF/X-1a: craft-prepress flattens the PDF in its inks; `ppi` sets its resolution.
+    // PDF/X-1a: nodalia-prepress flattens the PDF in its inks; `ppi` sets its resolution.
     let x1a = opts.standard == Standard::PdfX1a;
     let mut opts = opts.clone();
     if x1a {

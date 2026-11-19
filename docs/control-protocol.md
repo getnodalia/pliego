@@ -96,7 +96,7 @@ panels (or the workspace's named groups) in the iconic column and its floating w
 hidden-panel positions kept. A `ui.json` the app cannot read in full is copied to
 `ui.unreadable.json` before it is saved again.
 
-The `window.panel.*`, `window.workspace.*` and `ui.dock` commands are craft-ui's shared
+The `window.panel.*`, `window.workspace.*` and `ui.dock` commands are nodalia-ui's shared
 docking commands (`DockCommand`), with the same ids and params in every craft app. `panel`,
 `anchor`, `target` and `before` take a panel ID or its English name in any case; `onto` is
 read as `anchor`.
@@ -106,8 +106,8 @@ read as `anchor`.
   `above` or `below`; `before` reorders tabs by panel ID (`null` appends). Beside a panel in a
   dock column, `top` and `bottom` add a group above or below its group and `left` and `right`
   add a column on that side; in a floating window, `top` and `bottom` add a group and `left`
-  and `right` are errors (craft-ui's `Placement::for_zone`). `group: true` moves the panel's
-  whole tab group; `placement` is a serialized craft-ui `Placement` and takes precedence over
+  and `right` are errors (nodalia-ui's `Placement::for_zone`). `group: true` moves the panel's
+  whole tab group; `placement` is a serialized nodalia-ui `Placement` and takes precedence over
   `zone` and `before`.
 - `window.panel.float {panel, x?, y?, width?, height?, group?, column?}` (and
   `window.floatPanel`) detaches a panel, its tab group (`group`) or its dock column
@@ -189,13 +189,13 @@ closes it too.
               {"hit": {"Icon": "stroke"}, "rect": [1243.0, 14.0, 37.0, 30.0]}, …]}
 ```
 
-`layout` is craft-ui's serialized `Layout`; `customized` is false while the workspace's
+`layout` is nodalia-ui's serialized `Layout`; `customized` is false while the workspace's
 default layout is in use; `focused` is the panel (or `canvas`) last clicked or selected, or
 null; `flyout` is the panel whose iconic-column flyout is open (as drawn in the last frame,
 or as a command that opens one sets it); `autoCollapse` is the
 Auto-Collapse Iconic Panels setting; `hidden` lists closed panels that remember their place.
-`hitRects` lists where each docking gesture starts in the last frame, from craft-ui's
-`DockArea::hit_rects`: `hit` is a serialized craft-ui `Hit` (`Tab`, `DragBar`, `Border`,
+`hitRects` lists where each docking gesture starts in the last frame, from nodalia-ui's
+`DockArea::hit_rects`: `hit` is a serialized nodalia-ui `Hit` (`Tab`, `DragBar`, `Border`,
 `Overflow`, `ColumnBar`, `Collapse`, `StackToggle`, `Title`, `Close`, `Icon`, `IconGrip`,
 `Resize` with its edge, or `Divider`), naming groups, columns and windows by their first panel;
 `rect` is `[x, y, width, height]` in points. Drag from a rect's centre with `ui.drag`, or click

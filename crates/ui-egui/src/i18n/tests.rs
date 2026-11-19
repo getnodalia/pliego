@@ -120,7 +120,7 @@ fn hungarian_catalog_preserves_placeholders_context_and_counts() {
 }
 
 /// Checks every Latin catalog letter and all Hungarian accented vowels against the
-/// configured bundled UI faces, with system and optional craft-fonts fallbacks disabled.
+/// configured bundled UI faces, with system and optional nodalia-fonts fallbacks disabled.
 #[test]
 fn hungarian_catalog_glyphs_exist_in_the_bundled_ui_fonts() {
     let definitions = crate::theme::font_definitions(&[], "hu");
@@ -466,7 +466,7 @@ fn interface_strings() -> HashSet<&'static str> {
     keys.extend(crate::about::SIBLINGS.iter().map(|(_, _, what)| *what));
     keys.extend(crate::credits::NameMode::ALL.iter().map(|mode| mode.label()));
     keys.extend(crate::credits::SortKey::ALL.iter().flat_map(|key| [key.label().0, key.label().1]));
-    // Docking chrome labels reach `tr` through craft-ui's localizer.
+    // Docking chrome labels reach `tr` through nodalia-ui's localizer.
     keys.extend(crate::panel_docking::DOCK_LABELS.iter().map(|(_, english)| *english));
     // File › New's Units list passes each unit's name to `tr`.
     keys.extend(crate::new_document::NEW_DOCUMENT_UNITS.map(|unit| unit.label()));
@@ -573,7 +573,7 @@ fn interface_strings() -> HashSet<&'static str> {
         "{name}: import cancelled while a dialog is open; choose the file again",
         "{name}: {count} step(s) done",
     ]);
-    // The Keyboard Shortcuts dialog's strings (craft-keymap) reach `tr` too.
+    // The Keyboard Shortcuts dialog's strings (nodalia-keymap) reach `tr` too.
     keys.extend(crate::shortcuts_dialog::strings());
     keys
 }

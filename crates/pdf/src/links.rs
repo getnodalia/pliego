@@ -1,11 +1,11 @@
 //! Interactive PDF: hyperlink annotations (frames and text ranges → URLs, e-mail, pages) and the
 //! bookmark outline.
 
-use craft_pdf::write::backend as krilla;
 use krilla::action::{Action, LinkAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::destination::XyzDestination;
 use krilla::outline::{Outline, OutlineNode};
+use nodalia_pdf::write::backend as krilla;
 use pliego_doc::{Bookmark, Document, HyperlinkDest, HyperlinkSource, SpreadRef};
 use pliego_geom::{Affine, Rect};
 

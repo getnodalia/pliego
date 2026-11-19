@@ -15,10 +15,10 @@ agent/model/tool attribution.
 This plan covers only `getnodalia/pliego`. It records the work needed to move the
 Pliego desktop, web and UI crates from the current coherent 0.36.2 dependency set to
 egui 0.37.0, the final reviewed suite fork and the matching final reviewed winit revision.
-Shared-library work remains in `storytold/craft-libs`; this plan consumes it but does not
+Shared-library work remains in `getnodalia/foundation (nodalia/libs)`; this plan consumes it but does not
 redefine it. Candidate `aiongg` revisions below are comparison inputs only. A production
 manifest must name the final reviewed `storytold` revisions, which do not exist until the
-fork/winit/craft-libs publication is reviewed and approved.
+fork/winit/nodalia-libs publication is reviewed and approved.
 
 Capture acceptance follows the suite contract: a queued-not-issued hidden request and
 each settling frame must request `RequestPaintWhileHidden` from logic; only an issued
@@ -42,15 +42,15 @@ in-flight and completed images together.
 | Lockfile | `Cargo.lock`, format version 4 |
 | Current egui family | `egui`, `epaint`, `ecolor`, `emath`, `eframe`, `egui-wgpu`, `egui-winit`, `egui_kittest`, `epaint_default_fonts` all `0.36.2` from crates.io |
 | Current winit | `git+https://github.com/getnodalia/foundation?rev=3d51077fd1a966f84df9ef287839dc84fd5b4ca7` (0.30.13, W1–W14) |
-| Current `craft-ui` | `git+https://github.com/getnodalia/foundation?rev=5c874d51eeb3de70e735c8ce87a59a7dedd47675#5c874d51...` |
+| Current `nodalia-ui` | `git+https://github.com/getnodalia/foundation?rev=5c874d51eeb3de70e735c8ce87a59a7dedd47675#5c874d51...` |
 | Upstream egui 0.37.0 | `841a328ba2dd8f6996beb7189ebb7fc00e668a2a` (release commit, not the annotated-tag object) |
 | Candidate egui fork (comparison only) | `aiongg/egui` `craft/0.37` = `a4f9a17f64a6bae61350fb85804c9df0d9865916` (E1–E21; E21b/P7b still to be added) |
 | Candidate winit (comparison only) | `aiongg/winit` `craft/0.30.13-lang` = `8b35388bd719e8cc86a95971ba0bc026c9a8f058` (W1–W27; W15P still to be added) |
 | Final storytold egui pin | **Unknown until approved publication**: a reviewed immutable `storytold/egui` revision containing the complete P8 handoff: E1–E21, E21b/P7b, E4/P2b, P7 key pairing and P7c fixes. Never ship the candidate hash. |
 | Final storytold winit pin | **Unknown until approved publication**: a reviewed immutable `storytold/winit` revision containing W1–W27 plus native W15P PRIMARY. Never ship the candidate hash. |
-| Final `craft-ui` pin | **Unknown until approved publication**: `<FINAL_CRAFT_UI_REV>`, the reviewed CL-2F revision (including CL-1, and CL-3 if it has landed) derived from current craft-libs, not a PR head. D1 uses the reviewed CL-1 + CL-2 provisional revision as a pilot; CL-2F follows the Pliego/Celdas adapter reviews. |
+| Final `nodalia-ui` pin | **Unknown until approved publication**: `<FINAL_CRAFT_UI_REV>`, the reviewed CL-2F revision (including CL-1, and CL-3 if it has landed) derived from current nodalia-libs, not a PR head. D1 uses the reviewed CL-1 + CL-2 provisional revision as a pilot; CL-2F follows the Pliego/Celdas adapter reviews. |
 | Published predecessor | `storytold/egui` `craft/0.36.2` = `767b1cad294120689a514bb4bd68c077e46679b9`; published `storytold/winit` = `ffae5198770d7730e718043f035a772b7dbc3b1b` |
-| craft-libs PR 199 | head `b68de8c5f4f1c060904d211a7b1320aa0f7bce78`; audit tree `ec8840af8c5fda695cf195cdd05e5ae078415c07`. Both are **stale trees, not bases**: they omit `crates/platform` and revert current security/settings/docking/printer fixes. Apply only the API-port hunks from `8614e4a04fae516fba16c22b31ff1008cb6be10b` (and relevant README changes from `1764bca`) onto current craft-libs `49190884278f16c9a9f5823d7698a8ffb5deb062`. |
+| nodalia-libs PR 199 | head `b68de8c5f4f1c060904d211a7b1320aa0f7bce78`; audit tree `ec8840af8c5fda695cf195cdd05e5ae078415c07`. Both are **stale trees, not bases**: they omit `crates/platform` and revert current security/settings/docking/printer fixes. Apply only the API-port hunks from `8614e4a04fae516fba16c22b31ff1008cb6be10b` (and relevant README changes from `1764bca`) onto current nodalia-libs `49190884278f16c9a9f5823d7698a8ffb5deb062`. |
 | Related language work | `storytold/craft-libs#198`, delivered through fork E5/E9/E12–E17/E19–E21, E21b and winit W17–W27 plus W15P |
 
 Authoritative lifecycle evidence for this plan is
@@ -78,7 +78,7 @@ acceptance, and the current source may differ. They do show the first API breaks
 
 | Target | Kind | Relevant manifest | Notes |
 | --- | --- | --- | --- |
-| `pliego-ui-egui` | library | `crates/ui-egui/Cargo.toml` | The swappable L6 UI. Production depends on `craft-ui`, `egui`; dev depends on `egui_kittest` (`wgpu`, `snapshot`) and `pliego-fonts` (`testing`). D1 adds an explicit `egui/default_fonts` dev feature (see §3.7). Build script only bakes contributor credits. |
+| `pliego-ui-egui` | library | `crates/ui-egui/Cargo.toml` | The swappable L6 UI. Production depends on `nodalia-ui`, `egui`; dev depends on `egui_kittest` (`wgpu`, `snapshot`) and `pliego-fonts` (`testing`). D1 adds an explicit `egui/default_fonts` dev feature (see §3.7). Build script only bakes contributor credits. |
 | `pliego` | binary | `apps/pliego/Cargo.toml` | eframe features `default_fonts`, `wgpu`, `accesskit`, `wayland`, `x11`, `links`. D1 adds `clipboard` to preserve Copy/Cut and Paste on 0.37 (0.36.2 forced it through eframe; see §3.5). Native-only `rfd`, `arboard`, `winit`; macOS `muda`, `objc2*`, `fmv-macos-events`; Windows `winsafe`. |
 | `pliego-web` | wasm binary | `apps/pliego-web/Cargo.toml` | `eframe` features `default_fonts`, `wgpu`, `accesskit`; `rfd`, `wasm-bindgen`, `web-sys`; `trunk` build. Browser clipboard/drop paths are web-specific. |
 | `pliego-cli` | binary | `apps/pliego-cli/Cargo.toml` | No egui/eframe/winit/rfd; headless and MCP. |
@@ -119,7 +119,7 @@ with `finish` after reviews.
   `cargo fetch --locked` and `cargo metadata --locked --format-version 1` against the final
   storytold revisions. A missing/unreachable revision or a machine-local path fails the gate.
 - CI workflow `.github/workflows/ci.yml` runs `cargo xtask ci` on Ubuntu 24.04 with pinned
-  craft-fonts `abb83316d96aa59c1cf64784289e378fe9fa5695`, nextest, and the apt/winit build
+  nodalia-fonts `abb83316d96aa59c1cf64784289e378fe9fa5695`, nextest, and the apt/winit build
   dependencies.
 - `windows-arm64.yml` packages and installs ARM64; `freebsd.yml` runs the workspace in a
   FreeBSD VM; `release.yml` uses the shared release workflow.
@@ -384,15 +384,15 @@ queues `(token, at, frames)` in `queued_shots`, sends
 `user_data.downcast_ref::<u64>()`. All of that changes.
 
 Shared contract: the suite selects one bounded, cancelable completion slot per admitted
-request. Eleven existing craft-ui creative consumers adopt its helper; Lámina, Trama and Nodalia Native keep a
-small local contract-compatible adapter. Pliego uses craft-ui. The helper is staged as
+request. Eleven existing nodalia-ui creative consumers adopt its helper; Lámina, Trama and Nodalia Native keep a
+small local contract-compatible adapter. Pliego uses nodalia-ui. The helper is staged as
 CL-2 (provisional) and frozen as CL-2F after Pliego and Celdas adapters are reviewed.
 
 Pliego request record:
 
 - Keep the existing token counter, path, reply channel, 8 s deadline and 120 ms/3-frame
   settling rule in `Pliego`. These are app-owned.
-- Each `pending_shots` record owns one `craft_ui::capture::CaptureSlot` (provisional API;
+- Each `pending_shots` record owns one `nodalia_ui::capture::CaptureSlot` (provisional API;
   final name/API after CL-2F). The slot holds the request id, target `ViewportId`, deadline,
   a weak wake handle and at most one `Arc<ColorImage>`.
 - `issue_screenshots` sends
@@ -528,7 +528,7 @@ there is no saved egui PanelState migration. Preserve app-owned UiState/docking 
 `save_prefs` and test its save/reopen behavior and panel rectangles. Keep the docking identity
 `pliego-panel-docking` unchanged for saved layout and live drag state.
 
-`craft-ui` CL-1:
+`nodalia-ui` CL-1:
 
 - Do not use PR199's `b68de8c`/`ec8840a` trees as a base. They are stale relative to current
   `4919088`, omit `crates/platform`, and revert current security/settings/docking/printer
@@ -561,7 +561,7 @@ deferred-child behavior while the root is occluded/minimized/overdue and while
 ### 3.7 Fonts, glyphs, RTL and accessibility
 
 `theme::font_definitions` builds `FontDefinitions` from bundled Source Sans 3/JetBrains
-Mono plus optional craft-fonts (`CRAFT_FONTS_DIR`) and installed system faces selected by
+Mono plus optional nodalia-fonts (`NODALIA_FONTS_DIR`) and installed system faces selected by
 `SYSTEM_UI_FONTS`. `install_fonts` returns false while the background font scan is
 running and the app reinstalls when `system_fonts_ready()` becomes true. This must stay the
 source of truth.
@@ -585,16 +585,16 @@ Concrete changes:
   unsupported scripts use `HarnessBuilder::allow_missing_glyphs()` with a named reason; tests
   proving coverage keep the panic policy. Do not set tofu globally in production tests
   merely to silence a regression.
-- Test fixtures use the licensed fonts pinned in the egui plan §10.6 (craft-fonts
+- Test fixtures use the licensed fonts pinned in the egui plan §10.6 (nodalia-fonts
   `2481a8a`, Noto Sans Arabic/Thai/CJK, BIZ UDPGothic; Noto Sans Hebrew and Noto Color Emoji
   from their upstream OFL sources with the recorded SHA256/licences). Pliego keeps its
-  own policy: Latin UI/document fonts stay in `assets/fonts/`; central craft-fonts remains an
-  optional `CRAFT_FONTS_DIR` input; do not copy new font binaries into this repository.
+  own policy: Latin UI/document fonts stay in `assets/fonts/`; central nodalia-fonts remains an
+  optional `NODALIA_FONTS_DIR` input; do not copy new font binaries into this repository.
   Fetch fixtures into the task's explicit fixture directory and retain licences.
 - Add a glyph-coverage test over every `i18n` catalog string and every UI font family,
   using `FontDb` faces, not egui's `has_glyph` alone (it can report false for the face
-  that supplies the replacement glyph). Gate craft-fonts-specific CJK expectations on
-  `CRAFT_FONTS`; when absent, assert the built-in coverage and skip CJK glyph assertions
+  that supplies the replacement glyph). Gate nodalia-fonts-specific CJK expectations on
+  `NODALIA_FONTS`; when absent, assert the built-in coverage and skip CJK glyph assertions
   explicitly. Existing Ukrainian/Russian tests in `theme.rs` are the model.
 
 RTL/bidi single owner:
@@ -627,7 +627,7 @@ ids, commands or persisted workspace data. `Context::language` is the fallback o
 web if eframe does not set it.
 
 Do not enable `Style::right_to_left` (E9). Pliego keeps an LTR panel/docking model with
-RTL text inside labels, matching the persisted `craft_ui::docking::Layout` and existing
+RTL text inside labels, matching the persisted `nodalia_ui::docking::Layout` and existing
 workspaces. Enabling E9 would mirror menus, scrollbars and docking chrome without a product
 decision and would double-mirror shaped text. The explicit `DockArea::direction(LeftToRight)`
 above is the only docking direction policy in this migration.
@@ -654,7 +654,7 @@ an input (`Role::Button`, `TextInput`, `CheckBox`, `Slider`, `SpinButton`, `Comb
   matching its selectable row behavior; object-control label → `Role::Label`; combo/dropdown →
   `Role::ComboBox`; numeric field → `Role::SpinButton`; text field → `Role::TextInput`;
   checkbox → `Role::CheckBox`; tab → `Role::Tab`; split/resize → `Role::Splitter`.
-- `craft_ui::docking::DockArea` already names tab/overflow/resize controls after CL-1/CL-3;
+- `nodalia_ui::docking::DockArea` already names tab/overflow/resize controls after CL-1/CL-3;
   keep `Role::Tab`, `Role::Button`, `Role::Splitter` and labels stable.
 - `Response::labelled_by` is preferred when a visible label exists;
   `Response::accessible_name` for icon-only controls; `Ui::name_inputs` only for
@@ -693,7 +693,7 @@ pliego / pliego-web / pliego-ui-egui
   -> egui_kittest 0.37.0  git <FINAL_STORYTOLD_EGUI_REV>   (dev)
   -> epaint/ecolor/emath/epaint_default_fonts  git <FINAL_STORYTOLD_EGUI_REV>
   -> winit 0.30.13        git <FINAL_STORYTOLD_WINIT_REV>  (W1-W27 plus W15P PRIMARY)
-  -> craft-ui             git <FINAL_CRAFT_UI_REV>         (CL-2F after adapter review; includes CL-1/CL-3)
+  -> nodalia-ui             git <FINAL_CRAFT_UI_REV>         (CL-2F after adapter review; includes CL-1/CL-3)
   -> wgpu 30.0.1          registry
   -> accesskit 0.25.1     registry
 ```
@@ -753,7 +753,7 @@ After generating a lockfile through the managed build workflow, verify:
   automatic failure.
 - `cargo xtask layers` still reports `pliego-ui-egui` as the only egui consumer
   below L7, and `cargo xtask wasm` includes `pliego-ui-egui`.
-- `cargo xtask ci` passes with the exact lock and with and without `CRAFT_FONTS_DIR` for
+- `cargo xtask ci` passes with the exact lock and with and without `NODALIA_FONTS_DIR` for
   the font tests that support both.
 - Clean checkout: `cargo fetch --locked` and `cargo metadata --locked --format-version 1`
   succeed without local overrides. Negative fixture: replacing the final egui/winit revision
@@ -761,25 +761,25 @@ After generating a lockfile through the managed build workflow, verify:
 
 The root `[patch.crates-io]` also contains the unrelated PDF entries. Keep
 `krilla`, `hayro`, `hayro-interpret`, `hayro-syntax` and `hayro-jbig2` at
-`storytold/craft-libs` `89dcbb3060377a26c99a6d80caa16084366704c4` unchanged. They are not
+`getnodalia/foundation (nodalia/libs)` `89dcbb3060377a26c99a6d80caa16084366704c4` unchanged. They are not
 egui vendors and have their own provenance, tests and removal conditions.
 
-### 4.4 craft-libs CL-1/CL-2 and language work
+### 4.4 nodalia-libs CL-1/CL-2 and language work
 
 CL-1 is a rebased API port, not a merge of PR 199's tree. Start from current
 `4919088`, apply only the `8614e4a` hunks (plus relevant `1764bca` README changes), and
 preserve `d66e345`/`fd9cf54`, `crates/platform`, security/settings/printing and unrelated
 crates. Review the diff against both `5c874d51` (Pliego's current pin) and `4919088`.
 The corrected revision must:
-- keep `craft-ui` production source compatible with **stock** egui 0.37.0;
+- keep `nodalia-ui` production source compatible with **stock** egui 0.37.0;
 - expose the same docking transaction model and `DockArea` API Pliego uses, plus the
   CL-3 opt-in direction API;
 - provide the CL-2 capture slot and CL-2F frozen API used by Pliego's screenshot adapter;
 - pass its registry-egui 0.37 check, all-feature clippy and tests;
 - publish an immutable revision that Pliego can pin.
 
-Pliego does not take fork-only API from `craft-ui`: the fork lives in the dependency
-patch table, not in `craft-ui`'s manifest. This keeps `craft-ui` publishable and lets
+Pliego does not take fork-only API from `nodalia-ui`: the fork lives in the dependency
+patch table, not in `nodalia-ui`'s manifest. This keeps `nodalia-ui` publishable and lets
 Pliego choose the fork independently.
 
 Language work (#198) enters Pliego only through the final fork pin and the selected app
@@ -794,11 +794,11 @@ Pliego has no `vendor/` directory. Its relevant non-registry inputs are:
 | --- | --- | --- | --- | --- |
 | `winit` | `storytold/winit` `3d51077f...` (W1–W14) | storytold/winit `craft/0.30.13`; X11 `with_x11`, macOS `with_close_requested_on_terminate`, `mac_window::sync_movable` | Replace with `<FINAL_STORYTOLD_WINIT_REV>` (W1–W27 plus W15P). W12/W14 remain; W15/W15P/W25/W26/W27 are needed by E4/E19/E21. | Upstream winit 0.30/0.31 contains the equivalent patches and the suite no longer needs the fork. |
 | `egui`/`eframe`/`egui-winit`/`egui-wgpu`/`egui_kittest`/`epaint`/`ecolor`/`emath` | registry 0.36.2 | crates.io | Replace by `<FINAL_STORYTOLD_EGUI_REV>` containing E1–E21, E21b and E4/P2b in D1 after the isolated stock-0.37 comparison, including P7c/P8. Candidate `a4f9a17f` is comparison input, not the pin. | Upstream egui release contains the equivalent behavior (or the suite drops each patch when its `PATCHES.md` condition is met). |
-| `egui_extras` | registry 0.36.2, only in `craft-ui` dev-dependencies | crates.io; not used by Pliego | Leave alone. Do not add a patch entry unless a Pliego crate directly uses it. | No removal needed. |
-| `krilla` | craft-libs `89dcbb30...`, version `=0.8.2` | PDF backend vendor patch in craft-libs; unrelated to egui | Keep exactly. | Its own PDF backend gate. |
-| `hayro`, `hayro-interpret`, `hayro-syntax`, `hayro-jbig2` | craft-libs `89dcbb30...`, pinned versions | PDF parser vendor patches in craft-libs | Keep exactly. | Their own PDF parser gates. |
-| `craft-ui` | `5c874d51...` | craft-libs published revision | Move to the reviewed CL-1/`<CL-2_PROVISIONAL_REV>` in the D1 capture pilot, then `<FINAL_CRAFT_UI_REV>` (CL-2F/CL-3). | Replaced by the final reviewed revisions. |
-| `craft-pdf`, `craft-atomic`, `craft-cms`, `craft-docpath`, `craft-print` | individual craft-libs revisions | Shared libraries, not egui | Keep. Do not conflate their revisions with the UI migration. | Their own release cadence. |
+| `egui_extras` | registry 0.36.2, only in `nodalia-ui` dev-dependencies | crates.io; not used by Pliego | Leave alone. Do not add a patch entry unless a Pliego crate directly uses it. | No removal needed. |
+| `krilla` | nodalia-libs `89dcbb30...`, version `=0.8.2` | PDF backend vendor patch in nodalia-libs; unrelated to egui | Keep exactly. | Its own PDF backend gate. |
+| `hayro`, `hayro-interpret`, `hayro-syntax`, `hayro-jbig2` | nodalia-libs `89dcbb30...`, pinned versions | PDF parser vendor patches in nodalia-libs | Keep exactly. | Their own PDF parser gates. |
+| `nodalia-ui` | `5c874d51...` | nodalia-libs published revision | Move to the reviewed CL-1/`<CL-2_PROVISIONAL_REV>` in the D1 capture pilot, then `<FINAL_CRAFT_UI_REV>` (CL-2F/CL-3). | Replaced by the final reviewed revisions. |
+| `nodalia-pdf`, `nodalia-atomic`, `nodalia-cms`, `nodalia-docpath`, `nodalia-print` | individual nodalia-libs revisions | Shared libraries, not egui | Keep. Do not conflate their revisions with the UI migration. | Their own release cadence. |
 
 Do not delete an unrelated vendor or patch merely because the lockfile changes. Do not copy
 `aiongg/egui`'s workspace `[patch]` section into Pliego's manifest; only the root
@@ -813,8 +813,8 @@ Do not delete an unrelated vendor or patch merely because the lockfile changes. 
 - Run native tests with `PLIEGO_NO_PREFS=1` and a dedicated
   `PLIEGO_CONFIG_DIR`, or an explicit empty override, so preferences and recovery do
   not leak between runs.
-- Build with the pinned craft-fonts ref `abb83316d96aa59c1cf64784289e378fe9fa5695` for
-  release/font evidence, and also without `CRAFT_FONTS_DIR` to keep the bundled-font path
+- Build with the pinned nodalia-fonts ref `abb83316d96aa59c1cf64784289e378fe9fa5695` for
+  release/font evidence, and also without `NODALIA_FONTS_DIR` to keep the bundled-font path
   tested. Use the §10.6 font fixtures for Arabic/Thai/CJK/Japanese/Hebrew/color-emoji
   coverage with their recorded SHA256/licences; keep them out of app source.
 - Use fixed window sizes 1440×900 and 1280×800, at 1× and 2× `pixels_per_point`, and
@@ -845,7 +845,7 @@ Do not delete an unrelated vendor or patch merely because the lockfile changes. 
 | Second window | `second_window_opens_closes_and_keeps_main_focus` | Popout exists, close request removes it, main pane focus returns; main close can still be cancelled. |
 | Hidden child (#8748) | `hidden_parent_child_viewport_updates_and_closes` | With the parent occluded/minimized/overdue and with `visible() == None`, the child opens/updates/closes and acknowledges without restoring the parent. |
 | Accessibility | `every_visible_input_has_an_accessible_name` | `Harness::unnamed_widgets()` is empty; specific roles/labels for tabs, icon buttons, numeric fields, combo boxes, layer rows, swatches and text fields. |
-| Glyphs | `every_catalog_character_has_a_face_or_a_declared_gap` | Bundled fonts cover Latin/Cyrillic catalogs; craft-fonts CJK assertions run when present; tests use panic policy for covered text and explicit tofu only for deliberate gaps. |
+| Glyphs | `every_catalog_character_has_a_face_or_a_declared_gap` | Bundled fonts cover Latin/Cyrillic catalogs; nodalia-fonts CJK assertions run when present; tests use panic policy for covered text and explicit tofu only for deliberate gaps. |
 | IME exact bytes | `ime_replacement_deletes_exact_bytes_in_one_undo_step` | `DeleteSurroundingBytes` replaces a combining mark/letter and Undo restores the exact prior text in one step; `DeleteSurrounding` character path still works; caps/UTF-8/track changes are enforced. |
 | IME surrounding text | `outgoing_surrounding_text_is_logical_and_bounded` | Pliego canvas emits logical model text after delete+commit/deletion-only; preedit excluded; <=4000 bytes at UTF-8 boundaries; focus/password/no-IME clears; no `None` placeholder; latest completed pass including None replaces the descriptor/payload atomically; owner remains present for Unavailable and W27 clear/epoch/serial behavior follows P7b. |
 | IME composition | existing `canvas`/`story_editor` preedit-commit-cancel tests | Marked text does not duplicate, click-away discards on macOS, no undo step for a cancelled composition. |
@@ -939,7 +939,7 @@ Before accepting the suite, temporarily break each behavior and confirm the test
 ### 7.1 Baseline timing and environment
 
 Record a baseline **before** changing production code, from the exact current SHA
-`e74208dd...`, lockfile, feature set and craft-ui revision. Run the candidate from the
+`e74208dd...`, lockfile, feature set and nodalia-ui revision. Run the candidate from the
 exact migration revision. Use separate fresh processes for each sample; do not compare a
 warm process with a cold one.
 
@@ -953,7 +953,7 @@ timings; neither is a sample source.
 
 Record with every result:
 - source SHA (baseline/candidate/stock-0.37 control), `Cargo.lock` SHA-256, feature list,
-  `CRAFT_FONTS_DIR` and craft-fonts ref, fixture name/hash;
+  `NODALIA_FONTS_DIR` and nodalia-fonts ref, fixture name/hash;
 - OS and version, CPU/GPU, driver, backend (`Vulkan`/`DX12`/`Metal`/`GL`/`WebGPU`),
   renderer type (hardware vs WARP/llvmpipe), display scale, window size, pixels-per-point;
 - profile (`release` unless a debug-only diagnostic is named), warmups, repetitions,
@@ -991,7 +991,7 @@ macOS and physical Windows/audio remain separate rows.
 6. **#8736 DX12**: Windows clone; time renderer/pipeline/shader construction separately from
    first frame, with predictable filtering disabled/enabled as applicable. Record adapter
    and driver.
-7. **#8512 fonts**: cold process with bundled fonts, with `CRAFT_FONTS_DIR` and with a
+7. **#8512 fonts**: cold process with bundled fonts, with `NODALIA_FONTS_DIR` and with a
    test-only system provider fixture; compare discovery/startup and glyph coverage. Do not
    enable the system provider in production to win the measurement.
 8. **#8763/#8764 selection**: select text then click a toolbar/context action; record
@@ -1051,15 +1051,15 @@ The dependency DAG is:
 ```text
 plans land -> baseline harness + measurements
 completed winit -> egui P8 (P2b/P7/P7b/P7c included)
-  -> craft-libs CL-1 -> CL-2 reviewed capture prototype
+  -> nodalia-libs CL-1 -> CL-2 reviewed capture prototype
       -> Pliego D1 / Celdas G1 pilot adapters -> CL-2F API freeze
 Pliego D1 -> D2 lifecycle -> D3 extended native/language qualification
-craft-libs CL-3 + D1 -> D4 docking/accessibility
+nodalia-libs CL-3 + D1 -> D4 docking/accessibility
 D2/D3/D4 -> D5 visual/workflow acceptance -> D6 final platform/performance evidence
 ```
 
 - **D1 — atomic final-fork compatibility pilot.** Pin the complete final storytold
-  egui/winit graph and reviewed craft-ui CL-1/CL-2 prototype; regenerate the lock.
+  egui/winit graph and reviewed nodalia-ui CL-1/CL-2 prototype; regenerate the lock.
   Apply roles/IDs/FontData/wheel changes, explicit native clipboard and test fonts,
   strict minimum names/glyphs, the shared capture-slot adapter and its cancellation/
   bounds/wake tests, parent-salted test lookup keys, and the required E21/E21b custom
@@ -1084,7 +1084,7 @@ D2/D3/D4 -> D5 visual/workflow acceptance -> D6 final platform/performance evide
 - **D4 — accessibility and glyph contracts.** Add the remaining names/roles, full role
   file list, explicit `DockArea::direction(LeftToRight)`, and coverage tests. Gate:
   `unnamed_widgets()` empty, explicit role/label queries, glyph coverage with and without
-  craft-fonts, direction geometry/hit/drag and saved-layout tests. Rollback: revert the
+  nodalia-fonts, direction geometry/hit/drag and saved-layout tests. Rollback: revert the
   label/direction changes; no document or command behavior changes.
 - **D5 — visual/geometry baselines and workflows.** Review every intended 0.37 visual
   delta, update fixtures only with explanation, add the save/reopen/dock/popout, native
@@ -1107,7 +1107,7 @@ results at the reviewed revision. No PR is published without fresh direct human 
    `storytold/winit` revisions do not exist yet. Candidate `aiongg` hashes are comparison
    inputs only. D1 cannot ship until the complete P8 handoff and winit revisions are published with E1–E21,
    E21b, E4/P2b, W1–W27 and W15P, and a clean checkout fetches them `--locked`.
-2. **craft-libs CL-1/CL-2F revisions.** The 0.37-compatible craft-ui revision must be the
+2. **nodalia-libs CL-1/CL-2F revisions.** The 0.37-compatible nodalia-ui revision must be the
    `8614e4a` port onto current `4919088`, preserving `d66e345`/`fd9cf54`, `crates/platform`
    and unrelated fixes. PR199's `b68de8c`/`ec8840a` trees are not bases. The capture API
    freezes only after the Pliego/Celdas adapter review.
@@ -1193,7 +1193,7 @@ results at the reviewed revision. No PR is published without fresh direct human 
       host counters tested; visibility is not used as a phase.
 - [ ] No egui PanelState persistence is invented; parent-salted test keys, panel order/rects and app-owned workspace
       restore.
-- [ ] Screenshots use the craft-ui completion slot: weak callback, viewport-aware wakeup,
+- [ ] Screenshots use the nodalia-ui completion slot: weak callback, viewport-aware wakeup,
       one-shot, timeout/cancel/close, out-of-order, bounded aggregate bytes and no strong
       `Context` cycle.
 - [ ] Commands, undo transactions, save/reopen, workspace persistence, clipboard privacy
@@ -1205,7 +1205,7 @@ results at the reviewed revision. No PR is published without fresh direct human 
 - [ ] Fork E5/E12 is the only bidi owner for egui UI/label text (the document composer
       remains the document-text owner); no display-bidi text reaches UI shaping or clipboard.
 - [ ] Accessibility role/name assertions pass under strict kittest; glyph coverage is
-      explicit with and without craft-fonts.
+      explicit with and without nodalia-fonts.
 - [ ] Visual baselines have explained intended deltas; geometry/hit/direction/dock tests
       pass; #8763/#8764 and #8748 tests have the documented expected outcome.
 - [ ] Paired performance results meet the predefined thresholds with >=10 warmups/30
@@ -1233,10 +1233,10 @@ Primary source inspected locally (read-only; no checkout switch):
 - Candidate winit for comparison: `aiongg/winit` `craft/0.30.13-lang` =
   `8b35388bd719e8cc86a95971ba0bc026c9a8f058`, including `PATCHES.md` (W1–W27; W15P still
   to be added). This is not the production pin.
-- `storytold/craft-libs` PR 199 head =
+- `getnodalia/foundation (nodalia/libs)` PR 199 head =
   `b68de8c5f4f1c060904d211a7b1320aa0f7bce78`; audit merge
   `ec8840af8c5fda695cf195cdd05e5ae078415c07`; API-port source
-  `8614e4a04fae516fba16c22b31ff1008cb6be10b`; current craft-libs baseline
+  `8614e4a04fae516fba16c22b31ff1008cb6be10b`; current nodalia-libs baseline
   `49190884278f16c9a9f5823d7698a8ffb5deb062`.
 - `storytold/egui` published 0.36.2 =
   `767b1cad294120689a514bb4bd68c077e46679b9`; `storytold/winit` published 0.30.13 =
@@ -1251,10 +1251,10 @@ Primary source inspected locally (read-only; no checkout switch):
   `/home/codex/work/ssd2/task-evidence/egui037-migration-20261022/ime-surrounding-gap.md`
   (E21b/P7b gap and custom-editor inventory).
 - Shared suite contract:
-  `/home/codex/work/CraftApps/egui037-migration-20261022/craft-libs/docs/egui-037-suite-rollout.md`
+  `/home/codex/work/CraftApps/egui037-migration-20261022/nodalia-libs/docs/egui-037-suite-rollout.md`
   (completion slot, DockArea direction, performance sample counts, stock-0.37 control,
-  platform evidence) and `craft-libs/docs/egui-037-migration-plan.md` (§7.7, §7.8, §10).
-- Font fixtures: `egui/docs/egui-037-migration-plan.md` §10.6 (craft-fonts `2481a8a`,
+  platform evidence) and `nodalia-libs/docs/egui-037-migration-plan.md` (§7.7, §7.8, §10).
+- Font fixtures: `egui/docs/egui-037-migration-plan.md` §10.6 (nodalia-fonts `2481a8a`,
   Noto Sans Arabic/Thai/CJK, BIZ UDPGothic, Noto Sans Hebrew, Noto Color Emoji; exact
   SHA256/licences). No font binaries are added by this plan.
 - Historical diagnostics:
@@ -1293,10 +1293,10 @@ The complete static delta review and exact old/new object identities are retaine
 
 ### Local pinned font inputs (2026-10-23)
 
-Parent fetched and verified all eight manifest fonts at `getnodalia/foundation (vendor/craft-fonts/main)`
+Parent fetched and verified all eight manifest fonts at `getnodalia/foundation (nodalia/fonts)`
 `2481a8a324b986a45954e90045ed1f8f2efaaf3c` into
-`/home/codex/work/CraftApps/egui037-migration-20261022/fixtures/craft-fonts`.
-Use this exact directory as the optional `CRAFT_FONTS_DIR` build input. All
+`/home/codex/work/CraftApps/egui037-migration-20261022/fixtures/nodalia-fonts`.
+Use this exact directory as the optional `NODALIA_FONTS_DIR` build input. All
 manifest SHA256 hashes match; licenses retained. This does not waive the
 required no-corpus test configuration. The separately pinned Hebrew fixture
 is at `/home/codex/work/CraftApps/egui037-migration-20261022/fixtures/noto-sans-hebrew/NotoSansHebrew.ttf`
@@ -1319,12 +1319,12 @@ the parent through the managed `task.py` workflow and are cited as evidence, not
 | --- | --- |
 | egui family (`egui`, `epaint`, `ecolor`, `emath`, `eframe`, `egui-wgpu`, `egui-winit`, `egui_kittest`, `egui_extras`, `epaint_default_fonts`) | `storytold/egui` `6d518fc799681571963842f95b55a6b68431b15a` |
 | winit | `storytold/winit` `a517b3846ee8457d84ee4975110bfda6797c44dc` |
-| craft-libs (`craft-ui`, `craft-print`) | `storytold/craft-libs` `25da1314d443171b4adeaad2cd9454b273f35c6f` |
-| CI craft-fonts | `getnodalia/foundation (vendor/craft-fonts/main)` `b076417b5880bd4154bd22f00695b1d28c6bea83` |
+| nodalia-libs (`nodalia-ui`, `nodalia-print`) | `getnodalia/foundation (nodalia/libs)` `25da1314d443171b4adeaad2cd9454b273f35c6f` |
+| CI nodalia-fonts | `getnodalia/foundation (nodalia/fonts)` `d4f57e6b31d7c7526b539f7aaaa07312c9908bb8` |
 
 `Cargo.toml` and `Cargo.lock` resolve one egui family and one winit from these storytold revisions;
 the lock has no registry 0.36.2 egui family and no candidate `aiongg` source. `crates/fonts/build.rs`
-continues to treat craft-fonts as an optional `CRAFT_FONTS_DIR` input, not a manifest dependency.
+continues to treat nodalia-fonts as an optional `NODALIA_FONTS_DIR` input, not a manifest dependency.
 
 ### Exact dirty union
 

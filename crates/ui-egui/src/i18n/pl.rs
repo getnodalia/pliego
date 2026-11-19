@@ -2926,7 +2926,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Ten dokument używa niedostępnych czcionek. Wybierz zamienniki lub kliknij Gotowe, aby kontynuować z czcionkami zastępczymi.",
     ),
     ("This file is from a newer version (format {n})", "Ten plik pochodzi z nowszej wersji (format {n})"),
-    ("This is not a craft-keymap file", "To nie jest plik craft-keymap"),
+    ("This is not a nodalia-keymap file", "To nie jest plik nodalia-keymap"),
     ("This is not a shortcut set file", "To nie jest plik zestawu skrótów"),
     ("This page", "Ta strona"),
     ("This page is", "Ta strona jest"),

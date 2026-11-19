@@ -1,4 +1,4 @@
-use craft_pdf::write::backend as krilla;
+use nodalia_pdf::write::backend as krilla;
 use std::sync::Arc;
 
 use hayro_syntax::object::{Name, Object};

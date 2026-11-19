@@ -5132,8 +5132,8 @@ fn language_picks_localized_forms_through_the_word_cache() {
 
 #[test]
 fn chinese_and_japanese_take_their_localized_forms() {
-    // Noto Sans CJK SC (craft-fonts) draws 直 differently for Japanese (`locl`).
-    let Some(noto) = pliego_fonts::CRAFT_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else { return };
+    // Noto Sans CJK SC (nodalia-fonts) draws 直 differently for Japanese (`locl`).
+    let Some(noto) = pliego_fonts::NODALIA_FONTS.iter().find(|f| f.family == "Noto Sans CJK SC") else { return };
     FontDb::global().add_font(noto.bytes.to_vec());
     let gid = |language: &str| {
         let (mut d, sid, _) = doc_with("直", Rect::new(36.0, 36.0, 300.0, 100.0), ParaAttrs::default());
@@ -5169,7 +5169,7 @@ fn cjk_fallback_follows_the_language() {
         (face_at(0), face_at(1))
     };
     assert_eq!(faces_of("Chinese: Simplified").1.family, "Songti SC");
-    // Japanese: the craft-fonts faces lead the chain (Mincho first), then the system fonts.
+    // Japanese: the nodalia-fonts faces lead the chain (Mincho first), then the system fonts.
     let japanese = pliego_fonts::japanese_document_fonts().first().map_or("Hiragino Mincho ProN", |f| f.family);
     assert_eq!(faces_of("Japanese").1.family, japanese);
     // Without a CJK language, the language-blind search.
@@ -5479,16 +5479,16 @@ fn vertical_test_font() -> &'static str {
     FAMILY
 }
 
-/// Shippori Mincho (vertical forms, `vpal`) when built with craft-fonts; else `None`, with a note.
+/// Shippori Mincho (vertical forms, `vpal`) when built with nodalia-fonts; else `None`, with a note.
 fn shippori() -> Option<&'static str> {
     if !pliego_fonts::japanese_fonts().any(|f| f.family == "Shippori Mincho") {
-        eprintln!("skipped Shippori Mincho: built without craft-fonts (set CRAFT_FONTS_DIR to a checkout)");
+        eprintln!("skipped Shippori Mincho: built without nodalia-fonts (set NODALIA_FONTS_DIR to a checkout)");
         return None;
     }
     Some("Shippori Mincho")
 }
 
-/// The fonts vertical layout is checked in: the synthetic one, and Shippori Mincho with craft-fonts.
+/// The fonts vertical layout is checked in: the synthetic one, and Shippori Mincho with nodalia-fonts.
 fn vertical_families() -> Vec<&'static str> {
     std::iter::once(vertical_test_font()).chain(shippori()).collect()
 }

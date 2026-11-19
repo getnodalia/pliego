@@ -1,6 +1,6 @@
 //! Compatibility recovery at the saved-preferences boundary. Command deserialization stays strict.
 
-use craft_ui::docking::{Layout, Location};
+use nodalia_ui::docking::{Layout, Location};
 use serde_json::Value;
 
 use crate::{HiddenPanels, SavedWorkspace, UiState, panel_docking};
@@ -15,7 +15,7 @@ pub struct ReadPreferences {
 
 impl UiState {
     /// Read saved preferences, discarding only unreadable optional docking metadata.
-    /// A layout from a newer craft-ui version must not reset unrelated settings or named workspaces.
+    /// A layout from a newer nodalia-ui version must not reset unrelated settings or named workspaces.
     pub fn from_preferences_json(bytes: &[u8]) -> serde_json::Result<Self> {
         Self::read_preferences(bytes).map(|read| read.ui)
     }
@@ -27,7 +27,7 @@ impl UiState {
         let mut saved: Value = serde_json::from_slice(bytes)?;
         let mut intact = recover_docking(&mut saved);
         // Shortcut sets this version cannot read load as none (`lenient_sets`): keep the file.
-        intact &= saved.get("shortcutSets").is_none_or(|v| v.is_null() || serde_json::from_value::<craft_keymap::Profiles>(v.clone()).is_ok());
+        intact &= saved.get("shortcutSets").is_none_or(|v| v.is_null() || serde_json::from_value::<nodalia_keymap::Profiles>(v.clone()).is_ok());
         if let Some(workspaces) = saved.get_mut("customWorkspaces").and_then(Value::as_array_mut) {
             for workspace in workspaces {
                 intact &= recover_docking(workspace);
@@ -55,7 +55,7 @@ impl UiState {
 pub(crate) mod saved_shortcuts {
     use std::collections::BTreeMap;
 
-    use craft_keymap::{MAX_BINDINGS, Overrides};
+    use nodalia_keymap::{MAX_BINDINGS, Overrides};
     use serde::ser::SerializeMap;
     use serde::{Deserialize, Deserializer, Serializer};
 
@@ -100,7 +100,7 @@ pub(crate) mod saved_shortcuts {
 
 /// `UiState::shortcut_sets`: anything that does not read as shortcut sets (a later format, a
 /// hand edit) loads as none, keeping the rest of ui.json and the `shortcuts` the keymap uses.
-pub(crate) fn lenient_sets<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<craft_keymap::Profiles, D::Error> {
+pub(crate) fn lenient_sets<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<nodalia_keymap::Profiles, D::Error> {
     let value = <Value as serde::Deserialize>::deserialize(deserializer)?;
     Ok(serde_json::from_value(value).unwrap_or_default())
 }

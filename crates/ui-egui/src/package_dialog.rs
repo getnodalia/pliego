@@ -292,7 +292,7 @@ pub fn show(app: &DesignApp, ui: &mut egui::Ui, d: &mut Dialog) {
                             ui.add_space(24.0);
                             let name = crate::rtl::label(ui, tr("PDF Preset:"));
                             let cur = d.s("pdfPreset");
-                            craft_ui::ComboBox::from_id_salt("package_pdf_preset")
+                            nodalia_ui::ComboBox::from_id_salt("package_pdf_preset")
                                 .selected_text(crate::rtl::widget(ui, tr(&cur)))
                                 .width(180.0)
                                 .show_ui(ui, |ui| {

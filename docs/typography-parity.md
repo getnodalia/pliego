@@ -18,7 +18,7 @@ There is no oracle yet. What exists: unit tests of break points and invariants i
 in InDesign 2026 by hand, and user reports comparing the two (#179, #180, #181, #282–#295).
 
 **Needed (gap 4 in [gaps.md](gaps.md)):** a set of synthetic stories (our own text and fonts:
-Source Serif 4, Inter, Shippori Mincho from craft-fonts) covering each row below, set in InDesign
+Source Serif 4, Inter, Shippori Mincho from nodalia-fonts) covering each row below, set in InDesign
 2026 by observation on the owner's Mac (results under `plan/`, never committed), exported as IDML;
 Pliego opens the IDML and a test compares per paragraph: line count, break positions (by
 character offset), last-line width, overset and frame fit. Report the share of paragraphs whose

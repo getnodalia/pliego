@@ -254,7 +254,7 @@ impl Document {
 }
 
 /// Ink Manager settings for output, by swatch name. Output applies them through a
-/// `craft_prepress::InkSet` built from the document (`pliego_pdf::inks`).
+/// `nodalia_prepress::InkSet` built from the document (`pliego_pdf::inks`).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct InkManager {

@@ -6,10 +6,10 @@
 //! overprint mode doesn't apply to shadings (ISO 32000-2 §8.6.7), so a DeviceCMYK shading's
 //! zero components would knock out the plates beneath.
 
-use craft_pdf::write::backend as krilla;
 use krilla::color::device_n::{self, Colorant, DeviceNSpace, Process};
 use krilla::color::separation::{self, SeparationColorant, SeparationSpace};
 use krilla::paint::Stop;
+use nodalia_pdf::write::backend as krilla;
 use pliego_color::swatch::{ColorType, SwatchValue, apply_tint};
 use pliego_color::{Color, Gradient};
 

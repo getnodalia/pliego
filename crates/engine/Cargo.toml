@@ -9,8 +9,8 @@ description = "Pliego engine: session, documents, history, selection, command re
 workspace = true
 
 [dependencies]
-craft-print = { workspace = true }
-craft-docpath = { workspace = true }
+nodalia-print = { workspace = true }
+nodalia-docpath = { workspace = true }
 pliego-images = { workspace = true }
 pliego-geom = { workspace = true }
 pliego-color = { workspace = true }
@@ -23,7 +23,7 @@ pliego-epub = { workspace = true }
 pliego-pptx = { workspace = true }
 pliego-textimport = { workspace = true }
 pliego-pdf = { workspace = true }
-craft-prepress = { workspace = true }
+nodalia-prepress = { workspace = true }
 pliego-tools = { workspace = true }
 pliego-idml = { workspace = true }
 indd = { workspace = true }
@@ -36,7 +36,7 @@ caseless = { workspace = true }
 unicode-segmentation = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-craft-atomic = { workspace = true }
+nodalia-atomic = { workspace = true }
 tempfile = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]

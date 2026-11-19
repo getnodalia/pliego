@@ -2917,7 +2917,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Questo documento usa font non disponibili. Scegli i sostituti oppure seleziona Fine per continuare con i font di riserva.",
     ),
     ("This file is from a newer version (format {n})", "Questo file proviene da una versione più recente (formato {n})"),
-    ("This is not a craft-keymap file", "Questo non è un file craft-keymap"),
+    ("This is not a nodalia-keymap file", "Questo non è un file nodalia-keymap"),
     ("This is not a shortcut set file", "Questo non è un file di set di scorciatoie"),
     ("This page", "Questa pagina"),
     ("This page is", "Questa pagina è"),

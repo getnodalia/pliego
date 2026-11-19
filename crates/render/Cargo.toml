@@ -17,7 +17,7 @@ pliego-compose = { workspace = true }
 vello_cpu = { workspace = true }
 vello_common = { workspace = true }
 image = { workspace = true }
-craft-pdf = { workspace = true, features = ["raster"] }
+nodalia-pdf = { workspace = true, features = ["raster"] }
 pliego-images = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }

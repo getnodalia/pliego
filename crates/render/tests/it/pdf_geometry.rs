@@ -34,7 +34,7 @@ fn empty_media_box_preserves_the_parsers_default_page_repair() {
 
 #[test]
 fn pdf_input_limit_is_actionable_before_placement() {
-    let error = pliego_render::check_pdf_input_size(craft_pdf::MAX_INPUT_BYTES + 1).unwrap_err();
+    let error = pliego_render::check_pdf_input_size(nodalia_pdf::MAX_INPUT_BYTES + 1).unwrap_err();
     assert!(matches!(error, pliego_render::PdfRasterError::Input(_)));
     assert!(error.to_string().contains("input limit"));
 }

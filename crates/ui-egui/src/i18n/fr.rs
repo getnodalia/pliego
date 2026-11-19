@@ -829,7 +829,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Ce document utilise des polices indisponibles. Choisissez des remplacements ou sélectionnez Terminé pour continuer avec des polices de secours.",
     ),
     ("This file is from a newer version (format {n})", "Ce fichier provient d'une version plus récente (format {n})"),
-    ("This is not a craft-keymap file", "Ce n'est pas un fichier craft-keymap"),
+    ("This is not a nodalia-keymap file", "Ce n'est pas un fichier nodalia-keymap"),
     ("This is not a shortcut set file", "Ce n'est pas un fichier de jeu de raccourcis"),
     ("This page", "Cette page"),
     ("This page is", "Cette page est"),

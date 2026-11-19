@@ -2499,14 +2499,14 @@ fn native_gui_outside_press_and_open_menu_do_not_click_through() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_gui_font_inventory_keeps_exact_regular_and_missing_style_diagnostics() {
-    if pliego_fonts::CRAFT_FONTS.is_empty() {
-        assert!(std::env::var_os("CRAFT_FONTS_REQUIRED").is_none(), "required canonical fonts were not embedded");
+    if pliego_fonts::NODALIA_FONTS.is_empty() {
+        assert!(std::env::var_os("NODALIA_FONTS_REQUIRED").is_none(), "required canonical fonts were not embedded");
         return; // The supported optional-input build has no central document fonts.
     }
     let mut app = DesignApp::new(pliego_engine::Session::new(), crate::Services::default());
     app.run("file.new", json!({})).unwrap();
     for (family, text) in [("Noto Sans Hebrew", "שלום"), ("Noto Sans Devanagari", "नमस्ते")] {
-        assert!(pliego_fonts::CRAFT_FONTS.iter().any(|f| f.family == family && f.style == "Regular"), "canonical {family} Regular absent");
+        assert!(pliego_fonts::NODALIA_FONTS.iter().any(|f| f.family == family && f.style == "Regular"), "canonical {family} Regular absent");
         for style in ["Regular", "Unavailable Native GUI Style"] {
             let frame = app.run("frame.create", json!({"rect": [36, 36, 300, 120], "content": "text", "text": text})).unwrap();
             app.run("text.select", json!({"story": frame["story"], "anchor": 0, "focus": text.len()})).unwrap();

@@ -2750,7 +2750,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "このドキュメントは利用できないフォントを使用しています。置換フォントを選択するか、「完了」を選んで代替フォントで続行してください。",
     ),
     ("This file is from a newer version (format {n})", "このファイルは新しいバージョンのものです(フォーマット{n})"),
-    ("This is not a craft-keymap file", "これはcraft-keymapファイルではありません"),
+    ("This is not a nodalia-keymap file", "これはnodalia-keymapファイルではありません"),
     ("This is not a shortcut set file", "これはショートカットセットファイルではありません"),
     ("This page", "このページ"),
     ("This page is", "このページは"),

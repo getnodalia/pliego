@@ -357,7 +357,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
         "ui.dock",
         "Change Panel Layout",
         None,
-        "{action} | {operation: open|close|activate|float|moveFloating|move|setStackOpen|resizeStack|resizeSplit, …} — craft-ui's shared ui.dock shape",
+        "{action} | {operation: open|close|activate|float|moveFloating|move|setStackOpen|resizeStack|resizeSplit, …} — nodalia-ui's shared ui.dock shape",
     ),
     ("ui.dock.reset", "Reset Workspace", None, "{} — window.workspace.reset"),
     ("window.collapseToIcons", "Collapse to Icons", None, "{} — the panel dock shrinks to its column of icons"),

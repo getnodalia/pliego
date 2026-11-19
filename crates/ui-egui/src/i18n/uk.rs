@@ -2906,7 +2906,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
         "Цей документ використовує недоступні шрифти. Виберіть заміни або натисніть «Готово», щоб продовжити з резервними шрифтами.",
     ),
     ("This file is from a newer version (format {n})", "Цей файл створено в новішій версії (формат {n})"),
-    ("This is not a craft-keymap file", "Це не файл craft-keymap"),
+    ("This is not a nodalia-keymap file", "Це не файл nodalia-keymap"),
     ("This is not a shortcut set file", "Це не файл набору скорочень"),
     ("This page", "Ця сторінка"),
     ("This page is", "Ця сторінка"),

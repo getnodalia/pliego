@@ -2780,7 +2780,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("There are too many sets", "Det finns för många uppsättningar"),
     ("This command is unknown", "Det här kommandot är okänt"),
     ("This file is from a newer version (format {n})", "Den här filen kommer från en nyare version (format {n})"),
-    ("This is not a craft-keymap file", "Det här är inte en craft-keymap-fil"),
+    ("This is not a nodalia-keymap file", "Det här är inte en nodalia-keymap-fil"),
     ("This is not a shortcut set file", "Det här är inte en fil med en kortkommandouppsättning"),
     ("Too many shortcuts are assigned", "För många kortkommandon är tilldelade"),
     ("Tools", "Verktyg"),

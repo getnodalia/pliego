@@ -903,7 +903,7 @@ fn run_ui_part4(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
                 Some(_) => return Some(Err("shortcut: a string or null".into())),
             };
             let steal = p.get("steal").and_then(Value::as_bool).unwrap_or(false);
-            let policy = if steal { craft_keymap::Policy::Steal } else { craft_keymap::Policy::Keep };
+            let policy = if steal { nodalia_keymap::Policy::Steal } else { nodalia_keymap::Policy::Keep };
             let taken = match crate::keys::set(app, &cmd, shortcut, policy) {
                 Ok(t) => t,
                 Err(e) => return Some(Err(e)),

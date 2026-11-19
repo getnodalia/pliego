@@ -9,13 +9,13 @@ pub fn is_pdf(bytes: &[u8]) -> bool {
 
 /// Page count of a PDF.
 pub fn pdf_page_count(bytes: &[u8]) -> Option<usize> {
-    let pdf = craft_pdf::open_slice(bytes, None).ok()?;
+    let pdf = nodalia_pdf::open_slice(bytes, None).ok()?;
     Some(pdf.pages().len())
 }
 
 /// Size of PDF page `page` (0-based), in points, as it shows (crop box, rotation applied).
 pub fn pdf_page_size(bytes: &[u8], page: usize) -> Option<(f64, f64)> {
-    let pdf = craft_pdf::open_slice(bytes, None).ok()?;
+    let pdf = nodalia_pdf::open_slice(bytes, None).ok()?;
     let p = pdf.pages().get(page)?;
     let (w, h) = p.render_dimensions();
     Some((w as f64, h as f64))
@@ -23,7 +23,7 @@ pub fn pdf_page_size(bytes: &[u8], page: usize) -> Option<(f64, f64)> {
 
 /// Sizes of every page of a PDF, as [`pdf_page_size`] gives each: the file is opened once.
 pub fn pdf_page_sizes(bytes: &[u8]) -> Option<Vec<(f64, f64)>> {
-    let pdf = craft_pdf::open_slice(bytes, None).ok()?;
+    let pdf = nodalia_pdf::open_slice(bytes, None).ok()?;
     Some(
         pdf.pages()
             .iter()
@@ -39,9 +39,9 @@ pub fn pdf_page_sizes(bytes: &[u8]) -> Option<Vec<(f64, f64)>> {
 #[derive(Debug, thiserror::Error)]
 pub enum PdfRasterError {
     #[error("{0}")]
-    Input(#[source] craft_pdf::OpenError),
+    Input(#[source] nodalia_pdf::OpenError),
     #[error("{0}")]
-    Render(#[from] craft_pdf::raster::Error),
+    Render(#[from] nodalia_pdf::raster::Error),
     #[error("the PDF page could not be read or rendered")]
     InvalidPage,
     #[error("PDF page {page} is unavailable; choose an existing page in Image Import Options or place the replacement PDF again")]
@@ -60,7 +60,7 @@ pub enum PdfRasterError {
 
 /// Reject oversized PDFs before placement, layer rewriting or output allocation.
 pub fn check_pdf_input_size(size: usize) -> Result<(), PdfRasterError> {
-    craft_pdf::check_input_size(size).map_err(PdfRasterError::Input)
+    nodalia_pdf::check_input_size(size).map_err(PdfRasterError::Input)
 }
 
 /// PDF page `page` as PNG, its longer side about `max_side` pixels, with the `hidden` layers off.
@@ -119,7 +119,7 @@ pub fn render_pdf_page(bytes: &[u8], page: usize, max_side: u32) -> Option<Pixma
     Some(raster_pixmap(&raster))
 }
 
-fn raster_pixmap(raster: &craft_pdf::raster::Raster) -> Pixmap {
+fn raster_pixmap(raster: &nodalia_pdf::raster::Raster) -> Pixmap {
     let data = raster.bytes().as_chunks::<4>().0.iter().map(|c| vello_cpu::color::PremulRgba8 { r: c[0], g: c[1], b: c[2], a: c[3] }).collect();
     Pixmap::from_parts(data, raster.width as u16, raster.height as u16)
 }
@@ -130,19 +130,19 @@ thread_local! {
     pub(crate) static PDF_RENDERS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-fn render_pdf_raster(bytes: &[u8], page: usize, max_side: u32) -> Result<craft_pdf::raster::Raster, PdfRasterError> {
-    let pdf = craft_pdf::open_slice(bytes, None).map_err(|e| match e {
-        craft_pdf::OpenError::Load(_) => PdfRasterError::InvalidPage,
+fn render_pdf_raster(bytes: &[u8], page: usize, max_side: u32) -> Result<nodalia_pdf::raster::Raster, PdfRasterError> {
+    let pdf = nodalia_pdf::open_slice(bytes, None).map_err(|e| match e {
+        nodalia_pdf::OpenError::Load(_) => PdfRasterError::InvalidPage,
         other => PdfRasterError::Input(other),
     })?;
     let p = pdf.pages().get(page).ok_or(PdfRasterError::MissingPage { page: page.saturating_add(1) })?;
     let (w, h) = p.render_dimensions();
     let scale = (max_side as f32 / w.max(h).max(1.0)).min(8.0);
-    craft_pdf::raster::render(
+    nodalia_pdf::raster::render(
         p,
-        &craft_pdf::raster::RenderCache::new(),
-        &craft_pdf::interpret::InterpreterSettings::default(),
-        &craft_pdf::raster::Options { scale: [scale; 2], ..Default::default() },
+        &nodalia_pdf::raster::RenderCache::new(),
+        &nodalia_pdf::interpret::InterpreterSettings::default(),
+        &nodalia_pdf::raster::Options { scale: [scale; 2], ..Default::default() },
     )
     .map_err(PdfRasterError::Render)
 }
@@ -151,8 +151,8 @@ fn render_pdf_raster(bytes: &[u8], page: usize, max_side: u32) -> Result<craft_p
 /// from the top-left of the page as rendered (its visible crop box); missing boxes fall back to the
 /// crop box, as PDF readers do.
 pub fn pdf_page_box(bytes: &[u8], page: usize, kind: &str) -> Option<(f64, f64, f64, f64)> {
-    use craft_pdf::syntax::object::{Rect as PRect, dict::keys};
-    let pdf = craft_pdf::open_slice(bytes, None).ok()?;
+    use nodalia_pdf::syntax::object::{Rect as PRect, dict::keys};
+    let pdf = nodalia_pdf::open_slice(bytes, None).ok()?;
     let p = pdf.pages().get(page)?;
     let visible = p.intersected_crop_box();
     let page_box = match kind {
@@ -178,10 +178,10 @@ pub fn pdf_page_box(bytes: &[u8], page: usize, kind: &str) -> Option<(f64, f64, 
 /// are the bounds of what the page draws, found from its drawing operations without rendering it
 /// (the whole page when it draws nothing).
 pub fn pdf_crop_box(bytes: &[u8], page: usize, crop: pliego_doc::PdfCrop) -> Option<([f64; 4], (f64, f64))> {
-    use craft_pdf::syntax::object::{Rect as PRect, dict::keys};
+    use nodalia_pdf::syntax::object::{Rect as PRect, dict::keys};
     use pliego_doc::PdfCrop;
     const WHOLE: [f64; 4] = [0.0, 0.0, 1.0, 1.0];
-    let pdf = craft_pdf::open_slice(bytes, None).ok()?;
+    let pdf = nodalia_pdf::open_slice(bytes, None).ok()?;
     let p = pdf.pages().get(page)?;
     let (w, h) = p.render_dimensions();
     let (w, h) = (f64::from(w), f64::from(h));

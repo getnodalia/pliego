@@ -1,4 +1,4 @@
-//! Keyboard shortcuts on `craft-keymap`: the catalog (UI commands, engine commands, panels and
+//! Keyboard shortcuts on `nodalia-keymap`: the catalog (UI commands, engine commands, panels and
 //! tools with their default keys and menu paths), shortcut text, and the edits that
 //! `window.setShortcut` and the shortcut-set importer make.
 
@@ -6,7 +6,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU8, Ordering};
 
-use craft_keymap::{AssignError, Bindable, Binding, Chord, CommandRef, Key, Keymap, Kind, Mods, Overrides, Platform, Policy, Scope, Scopes, Trigger};
+use nodalia_keymap::{
+    AssignError, Bindable, Binding, Chord, CommandRef, Key, Keymap, Kind, Mods, Overrides, Platform, Policy, Scope, Scopes, Trigger,
+};
 use serde_json::{Value, json};
 
 use crate::DesignApp;
@@ -124,7 +126,7 @@ pub fn platform() -> Platform {
 /// Records the platform egui reports, which the web build reads from the browser's user agent.
 pub fn note_platform(ctx: &egui::Context) {
     if cfg!(target_arch = "wasm32") {
-        WEB_PLATFORM.store(platform_code(craft_keymap::egui::platform(ctx)), Ordering::Relaxed);
+        WEB_PLATFORM.store(platform_code(nodalia_keymap::egui::platform(ctx)), Ordering::Relaxed);
     }
 }
 
@@ -137,7 +139,7 @@ pub fn new_keymap(overrides: Overrides) -> Keymap {
 /// imported set can take them.
 pub fn keymap_for(platform: Platform, overrides: Overrides) -> Keymap {
     Keymap::new(catalog().to_vec(), Scopes::new().with_context(TEXT_CONTEXT), platform)
-        .with_reserved(craft_keymap::reserved::system(platform))
+        .with_reserved(nodalia_keymap::reserved::system(platform))
         .with_overrides(overrides)
 }
 
@@ -166,7 +168,7 @@ fn build_catalog() -> (Vec<Bindable>, HashSet<&'static str>) {
     // An engine command's own menu placement counts only where no menu row stands: a row there
     // runs a UI command in its place (File › Save is the Save dialog when needed), and two
     // commands on one path leave the importer unable to pick either.
-    let normalized = |path: &[String]| path.iter().map(|s| craft_keymap::import::normalize_label(s)).collect::<Vec<_>>();
+    let normalized = |path: &[String]| path.iter().map(|s| nodalia_keymap::import::normalize_label(s)).collect::<Vec<_>>();
     let rows: HashSet<Vec<String>> = paths.values().flatten().map(|p| normalized(p)).collect();
     let app = Scope::app();
     let mut out = Vec::new();
@@ -443,7 +445,7 @@ mod tests {
         let ctx = egui::Context::default();
         let of = |ua: &str| {
             ctx.set_os(Os::from_user_agent(ua));
-            craft_keymap::egui::platform(&ctx)
+            nodalia_keymap::egui::platform(&ctx)
         };
         let mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
         let ipad = "Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1";
