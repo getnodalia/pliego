@@ -560,7 +560,7 @@ fn preflight_reports_overset_and_missing_fonts() {
 fn hyperlinks_and_bookmarks_reach_the_pdf() {
     let mut s = Session::new();
     s.execute("file.newSample", &json!({})).unwrap();
-    s.execute("selection.set", &json!({"ids": [39]})).unwrap();
+    s.execute("selection.set", &json!({"ids": [40]})).unwrap();
     s.execute("hyperlink.create", &json!({"url": "https://example.com/pliego"})).unwrap();
     let d = s.execute("document.inspect", &json!({})).unwrap();
     let sid = d["stories"][0]["id"].as_u64().unwrap();
@@ -656,7 +656,7 @@ fn new_document_caps_the_column_count() {
 fn snippets_roundtrip_between_documents() {
     let mut s = Session::new();
     s.execute("file.newSample", &json!({})).unwrap();
-    s.execute("selection.set", &json!({"ids": [39]})).unwrap();
+    s.execute("selection.set", &json!({"ids": [40]})).unwrap();
     let snip = s.execute("snippet.export", &json!({})).unwrap();
     s.execute("file.new", &json!({})).unwrap();
     let r = s.execute("snippet.place", &json!({"base64": snip["base64"], "x": 36.0, "y": 36.0})).unwrap();
