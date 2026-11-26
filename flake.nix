@@ -11,7 +11,7 @@
     # scripts have no glyphs. Pinned to the revision the release workflow uses — bump deliberately
     # (`nix flake update nodalia-fonts`).
     nodalia-fonts = {
-      url = "github:getnodalia/foundation (nodalia/fonts)/abb83316d96aa59c1cf64784289e378fe9fa5695";
+      url = "github:getnodalia/foundation/d4f57e6b31d7c7526b539f7aaaa07312c9908bb8";
       flake = false;
     };
   };

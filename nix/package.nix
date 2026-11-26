@@ -8,7 +8,7 @@
 #     git sources (getnodalia/foundation (nodalia/libs)) are fetched at the revision the lock file pins;
 #   * the desktop file, hicolor icons, MIME types and AppStream metadata are the same files the
 #     .deb/.rpm ship (packaging/linux/), so `apt` and NixOS users see one identical Pliego;
-#   * `NODALIA_FONTS_DIR` embeds the fonts from getnodalia/foundation (nodalia/fonts) (the `nodalia-fonts` flake input, pinned to
+#   * `NODALIA_FONTS_DIR` embeds the fonts from getnodalia/foundation's nodalia/fonts branch (the `nodalia-fonts` flake input, pinned to
 #     the revision the release workflow uses); without it everything builds and runs, but some
 #     scripts (e.g. Japanese, Chinese) have no glyphs;
 #   * `doCheck` is off: the test suite needs corpora and a GPU the Nix sandbox cannot provide
@@ -49,7 +49,7 @@
   # Adds the driver search path (/run/opengl-driver/lib) to the binaries' RPATH so wgpu finds the
   # installed Vulkan/GL driver on NixOS. Optional: harmless on nixpkgs without it.
   autoAddDriverRunpath ? null,
-  # getnodalia/foundation (nodalia/fonts) checkout (flake input). `null` builds without the embedded fonts.
+  # getnodalia/foundation's nodalia/fonts branch checkout (flake input). `null` builds without the embedded fonts.
   nodalia-fonts ? null,
   # Release date for the AppStream metadata (YYYY-MM-DD); the flake derives it from its own commit.
   buildDate ? "1970-01-01",
