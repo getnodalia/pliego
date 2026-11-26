@@ -25,7 +25,9 @@ pub fn palette(app: &mut DesignApp, ctx: &egui::Context) {
         });
         egui::ScrollArea::vertical().max_height(340.0).show(ui, |ui| {
             for (i, it) in items.iter().enumerate() {
-                let mut b = egui::Button::new(it.label.as_str()).frame(false);
+                // A command is interface text; a style's name is the person's own.
+                let shown = if it.kind.is_empty() { crate::i18n::tr(&app.ui.language, it.label.as_str()) } else { it.label.as_str() };
+                let mut b = egui::Button::new(shown).frame(false);
                 if let Some(sc) = &it.shortcut {
                     b = b.shortcut_text(shortcut_text(sc));
                 } else if !it.kind.is_empty() {

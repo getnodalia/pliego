@@ -38,6 +38,7 @@ pub(crate) fn ref_point_proxy(ui: &mut Ui, r: Rect, cur: u8) -> Option<u8> {
 }
 
 pub(super) fn transform_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) {
+    let lang = app.ui.language.clone();
     let u = units(app);
     let rp = app.ui.ref_point;
     let b = block(ui, 2.0 * FIELD_H + 4.0);
@@ -54,11 +55,11 @@ pub(super) fn transform_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) {
         [("X:", x, "x", "W:", r.width(), "width"), ("Y:", y, "y", "H:", r.height(), "height")].into_iter().enumerate()
     {
         let yy = row as f32 * 25.0;
-        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, lx, 18.0));
+        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, lx), 18.0));
         if let Some(v) = place(ui, sub(b, 59.0, yy, 54.0, FIELD_H), |ui| measure(ui, kx, Some(vx), u, 54.0)) {
             set.insert(kx.into(), json!(v));
         }
-        place(ui, sub(b, 120.0, yy, 19.0, FIELD_H), |ui| widgets::caption_w(ui, lw, 19.0));
+        place(ui, sub(b, 120.0, yy, 19.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, lw), 19.0));
         if let Some(v) = place(ui, sub(b, 140.0, yy, 54.0, FIELD_H), |ui| measure(ui, kw, Some(vw), u, 54.0)) {
             set.insert(kw.into(), json!(v));
             if constrain && vw > 0.0 {
@@ -95,6 +96,7 @@ pub(super) fn transform_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) {
 /// bounds (from the reference point); X and Y move the points, W and H spread or gather them
 /// about the reference point. No angles: those turn objects.
 pub(super) fn anchor_transform_section(app: &mut DesignApp, ui: &mut Ui, i: &SelInfo) {
+    let lang = app.ui.language.clone();
     let u = units(app);
     let rp = app.ui.ref_point;
     let b = block(ui, 2.0 * FIELD_H + 4.0);
@@ -110,11 +112,11 @@ pub(super) fn anchor_transform_section(app: &mut DesignApp, ui: &mut Ui, i: &Sel
     let (w, h) = if single { i.object_size } else { (r.width(), r.height()) };
     for (row, (lx, vx, kx, lw, vw, kw)) in [("X:", x, "x", "W:", w, "width"), ("Y:", y, "y", "H:", h, "height")].into_iter().enumerate() {
         let yy = row as f32 * 25.0;
-        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, lx, 18.0));
+        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, lx), 18.0));
         if let Some(v) = place(ui, sub(b, 59.0, yy, 54.0, FIELD_H), |ui| measure(ui, &format!("pt_{kx}"), Some(vx), u, 54.0)) {
             set.insert(kx.into(), json!(v));
         }
-        place(ui, sub(b, 120.0, yy, 19.0, FIELD_H), |ui| widgets::caption_w(ui, lw, 19.0));
+        place(ui, sub(b, 120.0, yy, 19.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, lw), 19.0));
         let id = format!("pt_{kw}");
         let field = NumField::measure(&id, Some(vw), u).width(54.0).enabled(!single);
         if let Some(v) = place(ui, sub(b, 140.0, yy, 54.0, FIELD_H), |ui| field.show(ui)) {
@@ -163,12 +165,13 @@ pub(crate) fn transform_anchors(app: &mut DesignApp, set: &Value) -> Result<Valu
 /// Properties › Transform for selected ruler guides: X for one vertical guide, Y for one
 /// horizontal guide; with several guides both fields are empty.
 pub(super) fn guide_section(app: &mut DesignApp, ui: &mut Ui) {
+    let lang = app.ui.language.clone();
     let guide = crate::panels::guide_field(app);
     let b = block(ui, 2.0 * FIELD_H + 4.0);
     for (row, (label, key)) in [("X:", "gx"), ("Y:", "gy")].into_iter().enumerate() {
         let yy = row as f32 * 25.0;
         let on = guide.filter(|g| g.row() == row);
-        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, label, 18.0));
+        place(ui, sub(b, 40.0, yy, 18.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, label), 18.0));
         let typed = place(ui, sub(b, 59.0, yy, 135.0, FIELD_H), |ui| {
             if on.is_none() {
                 ui.disable();
