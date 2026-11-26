@@ -132,7 +132,7 @@ pub const EXTENSION: &str = "pliego";
 
 /// Extensions Pliego documents had before they had their own: files saved under them open and
 /// save like `.pliego` ones.
-pub const OLDER_EXTENSIONS: &[&str] = &["designcraft"]; // rebrand: keep
+pub const OLDER_EXTENSIONS: &[&str] = &["designcraft"];
 
 /// Whether `ext` (without the dot, any case) names a Pliego document: [`EXTENSION`] or an
 /// [`OLDER_EXTENSIONS`] one.

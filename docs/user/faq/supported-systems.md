@@ -9,7 +9,7 @@ Pliego runs on Windows, macOS and Linux, and in a modern web browser. The releas
 
 - **Windows 11**: x64, arm64 and 32-bit x86 installers, plus portable zips.
 - **macOS**: one universal build for Apple silicon and Intel.
-- **Linux**: x86_64 and aarch64 as AppImage, Flatpak, `.deb`, `.rpm` or tarball, and RISC-V as `.deb`, `.rpm` or tarball.
+- **Linux**: x86_64 and aarch64 as AppImage, `.deb`, `.rpm` or tarball, and RISC-V as `.deb`, `.rpm` or tarball.
 - **Web**: a static site you host yourself (`pliego-web-<version>.zip`). It runs on WebGPU and falls back to WebGL2. The web build has no control channel, and Save and Export download the file.
 
 All files are on the [latest release](https://github.com/getnodalia/pliego/releases/latest). See [Install Pliego](../getting-started/install.md) for steps.

@@ -6,7 +6,7 @@ use pliego_engine::Session;
 use pliego_ui_egui::{DesignApp, ImportRequest, ImportedFile, Inbox, Services};
 use wasm_bindgen::JsCast as _;
 
-const DOC_EXTS: &[&str] = &["pliego", "designcraft", "idml", "indd", "indt"]; // rebrand: keep
+const DOC_EXTS: &[&str] = &["pliego", "designcraft", "idml", "indd", "indt"];
 const IMAGE_EXTS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "psd", "svg", "pdf", "ai", "txt", "docx", "rtf", "md", "xlsx", "idml", "pliego"];
 const CANVAS_ID: &str = "pliego_canvas";
