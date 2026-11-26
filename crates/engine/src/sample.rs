@@ -1,5 +1,5 @@
-//! A sample magazine document (original text; imagery generated in code) used for the welcome
-//! screen, screenshots and tests.
+//! A sample magazine document (original text; public-domain paintings and prints from
+//! `assets/sample/`, credited in `ASSETS.md`) used for the welcome screen, screenshots and tests.
 
 use std::sync::Arc;
 
@@ -18,56 +18,27 @@ Color holds it all together. A restrained palette of two or three swatches, appl
 Behind the scenes, styles are the secret to working fast. Paragraph styles define the voice of each element, character styles pick out emphasis, and object styles keep frames consistent. Change a style once and the whole document follows, from the cover to the very last page.\n\
 And when the layout is done, the document must travel: to a printer as a press-ready PDF with bleed and crop marks, to a colleague as an open interchange file, or to a screen as a crisp image. A layout tool earns its keep by making every one of those journeys effortless.";
 
-/// Procedural "photograph": a dusk sky with a sun and layered hills.
-fn art_png(w: u32, h: u32, hue: f32) -> Vec<u8> {
-    let mut px = Vec::with_capacity((w * h * 4) as usize);
-    let sun = (w as f32 * 0.68, h as f32 * 0.42, h as f32 * 0.16);
-    for y in 0..h {
-        for x in 0..w {
-            let fy = y as f32 / h as f32;
-            let fx = x as f32 / w as f32;
-            // Sky gradient.
-            let top = [0.10 + hue * 0.2, 0.12, 0.32 + hue * 0.1];
-            let mid = [0.95, 0.45 + hue * 0.2, 0.30];
-            let t = (fy / 0.62).min(1.0);
-            let mut c = [top[0] + (mid[0] - top[0]) * t, top[1] + (mid[1] - top[1]) * t, top[2] + (mid[2] - top[2]) * t];
-            // Sun glow.
-            let d = ((x as f32 - sun.0).powi(2) + (y as f32 - sun.1).powi(2)).sqrt();
-            if d < sun.2 {
-                c = [1.0, 0.86, 0.55];
-            } else {
-                let g = (1.0 - (d - sun.2) / (h as f32 * 0.5)).max(0.0).powi(2) * 0.5;
-                c = [c[0] + g, c[1] + g * 0.7, c[2] + g * 0.3];
-            }
-            // Hills.
-            for (k, (amp, base, col)) in
-                [(0.05, 0.62, [0.32, 0.16, 0.30]), (0.07, 0.72, [0.20, 0.10, 0.22]), (0.04, 0.84, [0.10, 0.06, 0.14])].iter().enumerate()
-            {
-                let hill = base + amp * ((fx * (5.0 + k as f32 * 3.0) + k as f32).sin() + 0.5 * (fx * 13.0 + hue * 4.0).sin());
-                if fy > hill {
-                    c = *col;
-                }
-            }
-            for v in c {
-                px.push((v.clamp(0.0, 1.0) * 255.0) as u8);
-            }
-            px.push(255);
-        }
-    }
-    let r = pliego_render::Rendered { width: w, height: h, pixels: px };
-    r.to_png()
-}
+// Public-domain artwork, embedded: Hokusai's *The Great Wave off Kanagawa* (c. 1831) and J. M. W.
+// Turner's *The Fighting Temeraire* (1839).
+static WAVE: &[u8] = include_bytes!("../../../assets/sample/wave.jpg");
+static TEMERAIRE: &[u8] = include_bytes!("../../../assets/sample/temeraire.jpg");
 
 fn para_style(name: &str, based: Option<&str>, para: ParaAttrs, chars: CharAttrs) -> ParagraphStyle {
     ParagraphStyle { name: name.into(), based_on: based.map(Into::into), next_style: None, para, chars, shortcut: String::new() }
 }
 
-fn image(d: &mut Document, name: &str, w: u32, h: u32, hue: f32) -> AssetId {
+fn image(d: &mut Document, name: &str, jpeg: &[u8], w: u32, h: u32) -> AssetId {
     let id = AssetId(d.alloc());
-    let data = art_png(w, h, hue);
     d.assets.insert(
         id,
-        Arc::new(Asset { id, name: name.into(), mime: "image/png".into(), data: Arc::new(data), pixels: Some((w, h)), ..Default::default() }),
+        Arc::new(Asset {
+            id,
+            name: name.into(),
+            mime: "image/jpeg".into(),
+            data: Arc::new(jpeg.to_vec()),
+            pixels: Some((w, h)),
+            ..Default::default()
+        }),
     );
     id
 }
@@ -122,6 +93,7 @@ fn build() -> pliego_doc::Result<Document> {
     // Swatches.
     d.swatches.push(Swatch::color("Ink Plum", Color::cmyk(0.62, 0.95, 0.30, 0.25)));
     d.swatches.push(Swatch::color("Sunset", Color::cmyk(0.0, 0.62, 0.78, 0.0)));
+    d.swatches.push(Swatch::color("Prussian", Color::cmyk(0.95, 0.72, 0.32, 0.5)));
     d.swatches.push(Swatch::color("Paper Warm", Color::cmyk(0.0, 0.03, 0.08, 0.0)));
     d.swatches.push(Swatch {
         name: "Dusk Gradient".into(),
@@ -274,20 +246,21 @@ fn build() -> pliego_doc::Result<Document> {
     }
     // Page 1: cover (spread 0, single right page, no parent).
     let _ = d.apply_parent(&[0], None);
-    let cover_art = image(&mut d, "dusk-cover.png", 1400, 1812, 0.0);
-    graphic_frame(&mut d, SpreadRef::Doc(0), Rect::new(-9.0, -9.0, w + 9.0, h + 9.0), cover_art, (1400, 1812))?;
-    let (_, _) = text(&mut d, SpreadRef::Doc(0), Rect::new(42.0, 60.0, 570.0, 120.0), "THE SPRING ISSUE  ·  NO. 01", "Kicker")?;
-    if let Some(st) = d.stories.values().last().map(|s| s.id)
-        && let Some(st) = d.story_mut(st)
-    {
-        st.format_chars(0..st.len(), |f| f.over.fill = Some("[Paper]".into()));
-    }
-    let (_, cs) = text(&mut d, SpreadRef::Doc(0), Rect::new(42.0, 420.0, 570.0, 698.0), "The Quiet\nArt of Layout", "Cover Title")?;
+    let cover_art = image(&mut d, "the-great-wave.jpg", WAVE, 1280, 860);
+    graphic_frame(&mut d, SpreadRef::Doc(0), Rect::new(-9.0, -9.0, w + 9.0, h + 9.0), cover_art, (1280, 860))?;
+    // A deep Prussian-blue panel (the print's own ink) carries the title, so it reads over the busy wave.
+    let lid = d.default_layer();
+    let id = ItemId(d.alloc());
+    let mut panel = Item::new(id, lid, Shape::Rectangle, shapes::rectangle(Rect::new(-9.0, 468.0, w + 9.0, h + 9.0)));
+    panel.fill = Fill::swatch("Prussian");
+    d.insert_item(SpreadRef::Doc(0), panel, None)?;
+    let (_, _) = text(&mut d, SpreadRef::Doc(0), Rect::new(42.0, 488.0, 570.0, 506.0), "THE SPRING ISSUE  ·  NO. 01", "Kicker")?;
+    let (_, cs) = text(&mut d, SpreadRef::Doc(0), Rect::new(42.0, 520.0, 570.0, 725.0), "The Quiet\nArt of Layout", "Cover Title")?;
     let _ = cs;
     text(
         &mut d,
         SpreadRef::Doc(0),
-        Rect::new(42.0, 700.0, 420.0, 760.0),
+        Rect::new(42.0, 735.0, 470.0, 780.0),
         "Grids, type and color: how great pages are made — and the tools that make them.",
         "Cover Deck",
     )?;
@@ -305,16 +278,10 @@ fn build() -> pliego_doc::Result<Document> {
         "A good layout is invisible. Here is what is going on underneath the page — from the baseline grid to the paragraph composer.",
         "Deck",
     )?;
-    let art2 = image(&mut d, "hills.png", 1200, 760, 0.6);
-    let pic = graphic_frame(&mut d, s1, Rect::new(lx, 252.0, w - 54.0, 252.0 + 300.0), art2, (1200, 760))?;
+    let art2 = image(&mut d, "the-fighting-temeraire.jpg", TEMERAIRE, 1600, 1190);
+    let pic = graphic_frame(&mut d, s1, Rect::new(lx, 252.0, w - 54.0, 252.0 + 300.0), art2, (1600, 1190))?;
     let _ = pic;
-    text(
-        &mut d,
-        s1,
-        Rect::new(lx, 558.0, w - 54.0, 572.0),
-        "Evening light over layered hills — generated entirely in code for this sample.",
-        "Caption",
-    )?;
+    text(&mut d, s1, Rect::new(lx, 558.0, w - 54.0, 572.0), "J. M. W. Turner, The Fighting Temeraire, 1839. Public domain.", "Caption")?;
     // Body: threaded through 2 columns on the left page and 3 columns on the right page.
     let (f1, body) = text(&mut d, s1, Rect::new(lx, 584.0, w - 54.0, 738.0), BODY, "Body")?;
     if let Some(it) = d.item_mut(f1).and_then(Item::text_frame_mut) {
@@ -339,7 +306,7 @@ fn build() -> pliego_doc::Result<Document> {
         if let Some(at) = st.text.trim_end().rfind('.') {
             st.insert_note(
                 at + 1,
-                "Every image, swatch and paragraph in this sample is generated in code — no stock assets.",
+                "The cover is Hokusai’s The Great Wave off Kanagawa (about 1831); both pictures are in the public domain.",
                 ParaFormat { style: "Footnote".into(), ..Default::default() },
             );
         }
