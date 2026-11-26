@@ -83,7 +83,7 @@ pub(crate) fn show(app: &mut DesignApp, ui: &mut Ui) {
         {
             for (column, (label, id, key, index)) in fields.into_iter().enumerate() {
                 let x = column as f32 * 108.0;
-                cell(ui, rect, x, row, 14.0, true, |ui| widgets::caption_w(ui, label, 14.0));
+                cell(ui, rect, x, row, 14.0, true, |ui| widgets::caption_w(ui, &tr(label), 14.0));
                 let on_guide = guide.filter(|g| g.row() == index);
                 let value = if guide.is_some() { on_guide.map(|g| g.value) } else { values.map(|v| v[index]) };
                 let enabled = selected || on_guide.is_some();

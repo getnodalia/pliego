@@ -122,7 +122,7 @@ pub(super) fn page_sections(app: &mut DesignApp, ui: &mut Ui, spread: pliego_doc
     let b = block(ui, 2.0 * FIELD_H + 5.0);
     for (row, (label, v, key)) in [("W:", w, "width"), ("H:", h, "height")].into_iter().enumerate() {
         let y = row as f32 * 26.0;
-        place(ui, sub(b, 0.0, y, 20.0, FIELD_H), |ui| widgets::caption_w(ui, label, 20.0));
+        place(ui, sub(b, 0.0, y, 20.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, label), 20.0));
         let nv = place(ui, sub(b, 21.0, y, 72.0, FIELD_H), |ui| {
             NumField::measure(&format!("page_{key}"), Some(v), u).width(72.0).spinner().range(1.0, 15552.0).show(ui)
         });
@@ -292,7 +292,7 @@ pub(super) fn document_sections(app: &mut DesignApp, ui: &mut Ui) {
     let b = block(ui, 2.0 * FIELD_H + 5.0);
     for (row, (label, v, key)) in [("W:", pw, "width"), ("H:", ph, "height")].into_iter().enumerate() {
         let y = row as f32 * 26.0;
-        place(ui, sub(b, 0.0, y, 20.0, FIELD_H), |ui| widgets::caption_w(ui, label, 20.0));
+        place(ui, sub(b, 0.0, y, 20.0, FIELD_H), |ui| widgets::caption_w(ui, crate::i18n::tr(&lang, label), 20.0));
         let nv =
             place(ui, sub(b, 21.0, y, 72.0, FIELD_H), |ui| NumField::measure(key, Some(v), u).width(72.0).spinner().range(1.0, 15552.0).show(ui));
         if let Some(nv) = nv {

@@ -3868,7 +3868,7 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             crate::export_batch_dialog::ID => format!("  {}  ", crate::i18n::tr(&app.ui.language, "Export…")),
             crate::package_dialog::ID => crate::i18n::tr(&app.ui.language, "Package…").to_string(),
             crate::package_dialog::INSTRUCTIONS => crate::i18n::tr(&app.ui.language, "Continue").to_string(),
-            _ => crate::i18n::tr(&app.ui.language, "  OK  ").to_string(),
+            _ => format!("  {}  ", crate::i18n::tr(&app.ui.language, "OK")),
         };
         let cancel_label = match d.id.as_str() {
             "newDocument" => "Close",
