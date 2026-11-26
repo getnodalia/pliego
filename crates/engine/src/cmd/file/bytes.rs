@@ -126,7 +126,7 @@ mod extension_tests {
         assert_eq!(with_document_extension("/a/v1.2 Brochure"), "/a/v1.2 Brochure.pliego");
         assert_eq!(with_document_extension("/a/Brochure.Pliego"), "/a/Brochure.Pliego");
         // Files saved before Pliego had its own extension save back under theirs.
-        assert_eq!(with_document_extension("/a/Brochure.designcraft"), "/a/Brochure.designcraft"); // rebrand: keep
+        assert_eq!(with_document_extension("/a/Brochure.designcraft"), "/a/Brochure.designcraft");
         assert_eq!(with_document_extension("/a/.."), "/a/..");
     }
 

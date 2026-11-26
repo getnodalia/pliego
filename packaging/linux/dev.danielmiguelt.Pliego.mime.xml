@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Installed as share/mime/packages/dev.danielmiguelt.Pliego.xml (package.sh, the Flatpak
-     manifests). Both formats are zip files, so they are matched by extension: zip magic would
+<!-- Installed as share/mime/packages/dev.danielmiguelt.Pliego.xml (package.sh). Both formats are zip files, so they are matched by extension: zip magic would
      claim every archive. -->
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="application/x-pliego">
@@ -8,7 +7,7 @@
     <sub-class-of type="application/zip"/>
     <generic-icon name="dev.danielmiguelt.Pliego"/>
     <glob pattern="*.pliego"/>
-    <glob pattern="*.designcraft"/> <!-- rebrand: keep (saved before the rename) -->
+    <glob pattern="*.designcraft"/>
   </mime-type>
   <mime-type type="application/vnd.adobe.indesign-idml-package">
     <comment>IDML document</comment>

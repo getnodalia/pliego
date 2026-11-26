@@ -71,7 +71,7 @@ set exists; depth gaps are in gaps.md.
 | M11 | Layout power features (liquid/alternate layouts, data merge) | present, shallow; Flex Layout (new in InDesign 2026) ✗ |
 | M12 | Interactive & digital (EPUB, HTML, interactive PDF) | present; HTML basic (#314), fixed-layout EPUB as images |
 | M13 | Automation (scripts, batch) | ✅ own command scripts, CLI, MCP; ExtendScript/UXP compatibility ✗ |
-| M14 | 1.0 polish & packaging | packaging ✅ (macOS, Windows x64/ARM64, Linux deb/AppImage/Flatpak, FreeBSD, web); polish not started |
+| M14 | 1.0 polish & packaging | packaging ✅ (macOS, Windows x64/ARM64, Linux deb/AppImage/FreeBSD, web); polish not started |
 | **A1** | **Alpha** (core-workflow gate) | blocked by the Primary Text Frame page fixes (#165); see Alpha gate |
 | **B1** | **Beta** (ready ≥ 75%, INDD/IDML reliable) | not started as a milestone; see below |
 

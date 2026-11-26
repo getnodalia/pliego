@@ -21,7 +21,6 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 | `storytold/craft-common-actions` | `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
 | `storytold/craft-fonts` | `crates/fonts/build.rs`, `flake.nix`, `nix/package.nix` | getnodalia/foundation `vendor/craft-fonts/main` | repointing |
 | `storytold/craft-libs` | `nix/package.nix`, `packaging/windows/README.md` | to decide | — |
-| `storytold/designcraft` | `.github/workflows/upstream-sync.yml`, `Cargo.toml`, `packaging/linux/ai.storyteller.designcraft.metainfo.xml.in`, `packaging/linux/flatpak-oci.sh`, `packaging/linux/package.sh`, `packaging/windows/sign.ps1` | none: intended upstream sync | — |
 | `storytold/indd-utils` | `Cargo.toml` | to decide | — |
 | `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
 | `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
@@ -31,8 +30,7 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 
 Every name is Pliego's, internal ones included: crates (`pliego-*`), binaries (`pliego`,
 `pliego-cli`), the app id `dev.danielmiguelt.Pliego`, settings folders and packages.
-`scripts/rebrand.py` with `.github/rebrand.toml` renames upstream's tree for the weekly sync
-(`docs/upstream.md`), and the "No upstream names" CI check fails when an old name comes back. New
+There is no upstream sync and no rename tooling. New
 documents save as `.pliego`; `.designcraft` files keep opening, and the document signature and
 media type inside the archive keep their old value so files stay readable both ways.
 

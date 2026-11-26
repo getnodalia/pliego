@@ -382,8 +382,8 @@ fn open_filters(purpose: &str) -> &'static [OpenFilter] {
             OpenFilter { name: "Video and sound", extensions: &["mp4", "m4v", "mov", "webm", "mp3", "m4a", "wav", "ogg"] },
         ],
         _ => &[
-            OpenFilter { name: "Pliego, IDML or InDesign", extensions: &["pliego", "designcraft", "idml", "indd", "indt"] }, // rebrand: keep
-            OpenFilter { name: "Pliego", extensions: &["pliego", "designcraft"] },                                           // rebrand: keep
+            OpenFilter { name: "Pliego, IDML or InDesign", extensions: &["pliego", "designcraft", "idml", "indd", "indt"] },
+            OpenFilter { name: "Pliego", extensions: &["pliego", "designcraft"] },
             OpenFilter { name: "InDesign Markup (IDML)", extensions: &["idml"] },
             OpenFilter { name: "InDesign document or template (INDD, INDT)", extensions: &["indd", "indt"] },
             // Files saved without an extension; `file.open` tells the formats apart by content.

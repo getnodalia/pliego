@@ -30,12 +30,11 @@ Pick one file from the release. Replace `x86_64` with `aarch64` on ARM.
 | File                                          | Notes                                                    |
 |-----------------------------------------------|----------------------------------------------------------|
 | `pliego-<version>-linux-x86_64.AppImage` | Runs anywhere.                                           |
-| `pliego-<version>-linux-x86_64.flatpak`  | Sandboxed. Install with `flatpak install --user <file>`. |
 | `pliego-<version>-linux-x86_64.deb`      | Debian and Ubuntu.                                       |
 | `pliego-<version>-linux-x86_64.rpm`      | Fedora, RHEL and openSUSE.                               |
 | `pliego-<version>-linux-x86_64.tar.gz`   | Unpack anywhere.                                         |
 
-For RISC-V there is a `.deb`, an `.rpm` and a tarball, named with `riscv64` in place of `x86_64`. There is no AppImage or Flatpak for RISC-V. The RISC-V build needs glibc 2.39 or newer (Ubuntu 24.04 or newer). A FreeBSD build (`pliego-<version>-freebsd-x86_64.tar.gz`) is on the release page too.
+For RISC-V there is a `.deb`, an `.rpm` and a tarball, named with `riscv64` in place of `x86_64`. There is no AppImage for RISC-V. The RISC-V build needs glibc 2.39 or newer (Ubuntu 24.04 or newer). A FreeBSD build (`pliego-<version>-freebsd-x86_64.tar.gz`) is on the release page too.
 
 ## Install with Nodalia Launcher
 
