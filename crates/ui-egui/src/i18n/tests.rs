@@ -461,11 +461,8 @@ fn interface_strings() -> HashSet<&'static str> {
     keys.extend(crate::menus::UI_COMMANDS.iter().map(|(_, label, _, _)| *label));
     // Tool names reach `tr` from the Tools panel.
     keys.extend(pliego_tools::TOOL_GROUPS.iter().flat_map(|group| group.iter()).map(|tool| tool.label));
-    // So do the About window's tab names, app descriptions and the credits' column and sort labels.
-    keys.extend(crate::about::ABOUT_TABS);
-    keys.extend(crate::about::SIBLINGS.iter().map(|(_, _, what)| *what));
-    keys.extend(crate::credits::NameMode::ALL.iter().map(|mode| mode.label()));
-    keys.extend(crate::credits::SortKey::ALL.iter().flat_map(|key| [key.label().0, key.label().1]));
+    // So do the About window's links.
+    keys.extend(["Pliego page", "GitHub", "getnodalia.com", "Report an issue", "Includes work by other open-source authors (see NOTICE)."]);
     // Docking chrome labels reach `tr` through nodalia-ui's localizer.
     keys.extend(crate::panel_docking::DOCK_LABELS.iter().map(|(_, english)| *english));
     // File › New's Units list passes each unit's name to `tr`.
@@ -542,9 +539,7 @@ fn interface_strings() -> HashSet<&'static str> {
         "Lines +/−",
         "New Cell Style",
         "New Table Style",
-        "No contributor data was built into this copy.",
         "No matches",
-        "No model credits were built into this copy.",
         "Object Style",
         "Paragraph Style",
         "PDF/X-1a:2003",

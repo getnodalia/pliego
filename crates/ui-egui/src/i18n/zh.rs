@@ -927,4 +927,5 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−Bin", "−Bin"),
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord} 正由 {label} 使用"),
+    ("Includes work by other open-source authors (see NOTICE).", "包含其他开源作者的作品（见 NOTICE）。"),
 ];

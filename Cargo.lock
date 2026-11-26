@@ -4360,7 +4360,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "toml",
  "unicode-bidi",
  "web-time",
  "zip",

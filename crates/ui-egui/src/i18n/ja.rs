@@ -2897,6 +2897,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−Bin", "−Bin"),
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord}は{label}が使用しています"),
+    ("Includes work by other open-source authors (see NOTICE).", "他のオープンソース作者の成果を含みます（NOTICE を参照）。"),
 ];
 
 /// Captions whose Japanese depends on where they appear: (English, context, Japanese).

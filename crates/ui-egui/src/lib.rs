@@ -15,7 +15,6 @@ pub mod about;
 pub mod canvas;
 pub mod chrome;
 pub mod control;
-pub mod credits;
 pub mod cursors;
 pub mod dialogs;
 pub mod dock;

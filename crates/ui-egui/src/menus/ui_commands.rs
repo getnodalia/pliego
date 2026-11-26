@@ -390,12 +390,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
     ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),
     ("help.website", "Nodalia Website…", None, "{} — opens https://getnodalia.com"),
     ("help.app", "Nodalia App Page…", None, "{app} — opens https://getnodalia.com/{app} (e.g. lienzo)"),
-    (
-        "help.about",
-        "About Pliego",
-        None,
-        "{open?: true, tab?: \"about\"|\"contributors\"|\"models\"} — the About window: splash with community links, contributor and model credits (open: false closes it)",
-    ),
+    ("help.about", "About Pliego", None, "{open?: true} — the About window: version, what Pliego is and its links (open: false closes it)"),
     ("help.checkForUpdates", "Check for Updates…", None, "{} — checks for newer releases and offers to update"),
     ("window.toolsDoubleColumn", "Tools: Double Column", None, "{on?: bool (default: toggle)} → whether the Tools panel has two columns"),
     (

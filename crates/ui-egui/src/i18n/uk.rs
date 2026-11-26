@@ -3105,6 +3105,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−Bin", "−Bin"),
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord} використовується в {label}"),
+    ("Includes work by other open-source authors (see NOTICE).", "Містить роботу інших авторів відкритого коду (див. NOTICE)."),
 ];
 
 /// Contexts whose Ukrainian noun differs from the shared action/text-layout label.

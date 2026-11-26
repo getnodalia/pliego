@@ -3103,6 +3103,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord} používá {label}"),
     ("Pos", "Poz."),
+    ("Includes work by other open-source authors (see NOTICE).", "Obsahuje práci dalších autorů open source (viz NOTICE)."),
 ];
 
 /// Czech count captions: English noun → [one (1), few (2–4), other (0, 5 and more)].

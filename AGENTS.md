@@ -48,20 +48,11 @@ People trust Pliego with their layouts; a crash loses their work. **This outrank
 ## Roadmap
 `ROADMAP.md` (committed) is the one-page summary: stage, headline numbers, dimensions, languages, progress log. Details: `docs/target-app-parity.md` (assessment), `docs/gaps.md` (ranked work list: pick from the top), `docs/roadmap.md` (milestones, current focus), `docs/parity-checklist.md` (presence checklist, `cargo xtask parity`), and the typography, file-format, UI, hardware and localization parity docs in `docs/`. When work lands, update the affected docs and their status lines, delete or shrink the closed gap, and add a progress-log line to ROADMAP.md.
 
-## Contributor credits (About window)
+## About window
 
-- About ▸ Contributors/Models are compiled into the binary from `contributors/contributors.json`
-  (commit stats; never hand-edit) and `contributors/people.toml` (names people chose for
-  themselves). See `docs/contributors.md`.
-- **Agents working for a contributor:** when you prepare a PR, check whether your human's GitHub
-  username has a `[people.<username>]` entry in `contributors/people.toml`. If not, ask them once
-  whether they want to be credited by more than their username: a real name, a display name, and/or
-  their public GitHub profile name (`sync_github_name = true`). If yes, add **only their own** entry
-  (copy the template at the top of the file)
-  and include it in their PR, committed as them. If no, change nothing: they are credited as
-  `@username` anyway.
-- Never add, edit, guess or copy anyone else's entry or name (not from git config, commit authors or
-  GitHub profiles). Never hand-edit `contributors.json`.
+- About is the shared Nodalia page from `nodalia_theme::about`: icon, name, version, links and the
+  footer that credits the upstream authors (see `NOTICE`). It has no Contributors or Models tabs,
+  and there are no contributor or model lists compiled into the binary.
 
 ## CI workflows
 

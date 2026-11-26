@@ -47,10 +47,6 @@ zip = { workspace = true }
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
 pliego-fonts = { workspace = true, features = ["testing"] }
 
-[build-dependencies]
-serde_json = { workspace = true }
-toml = "1"
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 nodalia-update = { workspace = true }
 # File and message dialogs that never block the frame; the browser build uses its own path.

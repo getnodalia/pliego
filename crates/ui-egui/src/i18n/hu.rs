@@ -3114,6 +3114,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("Sent {count} page(s) to {printer}", "{count} oldal elküldve ide: {printer}"),
     ("Story {story} ← story {parent}", "{story} történet ← {parent} történet"),
     ("Subject:", "Tárgy:"),
+    ("Includes work by other open-source authors (see NOTICE).", "Más nyílt forráskódú szerzők munkáját is tartalmazza (lásd: NOTICE)."),
 ];
 
 pub(super) const CONTEXT: &[(&str, &str, &str)] =
