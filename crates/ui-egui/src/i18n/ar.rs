@@ -3078,6 +3078,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−Bin", "−Bin"),
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ يستخدم {label} الاختصار {chord}"),
+    ("Includes work by other open-source authors (see NOTICE).", "يتضمن أعمال مؤلفين آخرين مفتوحة المصدر (انظر NOTICE)."),
 ];
 
 /// Contexts whose Arabic caption differs from the shared label.

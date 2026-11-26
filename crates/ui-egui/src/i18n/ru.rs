@@ -3102,6 +3102,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−Bin", "−Bin"),
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord} используется в {label}"),
+    ("Includes work by other open-source authors (see NOTICE).", "Включает работу других авторов открытого кода (см. NOTICE)."),
 ];
 
 /// Contexts whose Russian noun differs from the shared action/text-layout label.

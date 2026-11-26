@@ -365,9 +365,6 @@ pub struct UiState {
     pub task_bar_at: Option<[f32; 2]>,
     /// Help › About Pliego is open.
     pub about: bool,
-    /// The About window's tab: 0 About, 1 Contributors, 2 Models (`about::ABOUT_TABS`).
-    #[serde(skip)]
-    pub about_tab: u8,
     /// URLs to open in the browser on the next frame (Help links, About, start screen).
     pub pending_urls: Vec<String>,
     #[serde(skip)]
@@ -485,7 +482,6 @@ impl Default for UiState {
             task_bar_pin: None,
             task_bar_at: None,
             about: false,
-            about_tab: 0,
             pending_urls: Vec::new(),
             status: String::new(),
             dialog: None,

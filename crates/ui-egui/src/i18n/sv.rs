@@ -3104,6 +3104,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("not separated", "inte separerad"),
     ("{count} shortcuts are reserved by the system and were left out.", "{count} kortkommandon är reserverade av systemet och utelämnades."),
     ("“{file}” already exists. Do you want to replace it?", "”{file}” finns redan. Vill du ersätta den?"),
+    ("Includes work by other open-source authors (see NOTICE).", "Innehåller andra öppen källkod-författares arbete (se NOTICE)."),
 ];
 
 pub(super) const CONTEXT: &[(&str, &str, &str)] = &[

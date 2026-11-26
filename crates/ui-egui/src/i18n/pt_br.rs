@@ -3109,4 +3109,5 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("not separated", "não separado"),
     ("{count} shortcuts are reserved by the system and were left out.", "{count} atalhos são reservados pelo sistema e foram deixados de fora."),
     ("“{file}” already exists. Do you want to replace it?", "“{file}” já existe. Deseja substituí-lo?"),
+    ("Includes work by other open-source authors (see NOTICE).", "Inclui trabalho de outros autores de código aberto (veja NOTICE)."),
 ];

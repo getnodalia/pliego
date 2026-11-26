@@ -3098,6 +3098,7 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("−LOC", "−LOC"),
     ("⚠ {chord} is used by {label}", "⚠ {chord} jest używane przez {label}"),
     ("Document Chapter Numbering", "Numeracja rozdziałów dokumentu"),
+    ("Includes work by other open-source authors (see NOTICE).", "Zawiera prace innych autorów open source (zob. NOTICE)."),
 ];
 
 /// Contexts whose Polish noun differs from the shared action/text-layout label.

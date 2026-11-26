@@ -3108,4 +3108,5 @@ pub(super) const TABLE: &[(&str, &str)] = &[
     ("{count} shortcuts are reserved by the system and were left out.", "{count} მალსახმობი სისტემის მიერაა დაცული და გამოტოვებულია."),
     ("« Add", "« დამატება"),
     ("“{file}” already exists. Do you want to replace it?", "„{file}“ უკვე არსებობს. გსურთ მისი ჩანაცვლება?"),
+    ("Includes work by other open-source authors (see NOTICE).", "შეიცავს სხვა ღია კოდის ავტორთა ნამუშევარს (იხ. NOTICE)."),
 ];
