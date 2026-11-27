@@ -475,7 +475,7 @@ Task notes that headed ROADMAP.md:
 |---|---|---|
 | 2026-11-04 | minor | Localization evidence: 15 translations beyond English, pt-BR ~100%; readiness and hours unchanged |
 | 2026-10-19 | minor | Output assessment records visible unembedded font detection in PDF/X-4 export and `validate-pdf`, the invisible-text exemption, incomplete-check reporting at the operation and nesting-depth limits, and remaining placed-PDF font repair (#909); readiness and hours unchanged |
-| 2026-10-13 | minor | `.indd` and `.indt` open through storytold/indd-utils; INDD remaining work 10–30 h (real-file corpus); readiness unchanged until it is measured |
+| 2026-10-13 | minor | `.indd` and `.indt` open through the `indd` converter; INDD remaining work 10–30 h (real-file corpus); readiness unchanged until it is measured |
 | 2026-10-12 | minor | Text threads by hand; stage note and distance to alpha follow the gate (5–7 h, #165); percentages unchanged |
 | 2026-10-11 | minor | Spring-loaded Zoom navigation added to the working feature inventory (DC-1); readiness estimates unchanged |
 | 2026-10-10 | minor | Full number 42% → 47%: plain weighted sum, the ×0.9 discount dropped, no new evidence; readiness table with hours for full, mainstream and essentials; beta distance 33 → 28 points |

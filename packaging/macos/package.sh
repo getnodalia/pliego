@@ -182,7 +182,7 @@ rm -f "$DMG"
 # `hdiutil create -srcfolder` writes the files as they are. `makehybrid -hfs` gave every file a
 # com.apple.FinderInfo, which `codesign --verify --strict` rejects as "Finder information, or
 # similar detritus" on the app in the image and on a copy installed from it (as Pluma's
-# storytold/vectorcraft#1085 and Papel's storytold/pdfcraft#823). `create` attaches a device
+# #1085 and Papel's #823). `create` attaches a device
 # while it copies, which fails now and then on CI runners ("Resource busy"), so it gets a few
 # tries. The volume name has no version: .DS_Store finds the background through an alias that
 # includes it.

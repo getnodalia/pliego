@@ -25,7 +25,7 @@
 //! when the pointer reaches its edge (lienzo#4845). On each edge with an auto-hidden taskbar the guard
 //! instead stops the window one pixel short of the monitor, as other custom-frame apps do.
 //!
-//! The long-term fix is in winit itself (storytold/winit#17); this module goes when that lands.
+//! The long-term fix is in winit itself (#17); this module goes when that lands.
 //!
 //! The Windows calls go through safe `winsafe` wrappers; the workspace forbids `unsafe`, and
 //! winsafe can't wrap a raw handle without it, so the window is found by its handle instead.

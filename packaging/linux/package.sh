@@ -8,7 +8,7 @@
 #   $DIST/pliego-<version>-linux-<arch>.tar.gz    plain FHS-style tree (bin/, share/)
 #
 # The Arch package (.pkg.tar.zst) is not built here. The release workflow builds it with
-# craft-common-actions/actions/arch-package from this script's tarball, which names it after the
+# the shared arch-package action from this script's tarball, which names it after the
 # .desktop bundle id (dev.danielmiguelt.Pliego, not pliego, so an AUR helper does not claim
 # it) and declares provides/conflicts against the AUR packages. Building a second one here under
 # the same asset name is what made the published package depend on upload order.
