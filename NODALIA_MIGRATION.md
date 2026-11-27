@@ -11,20 +11,13 @@ workflows pinned by commit. SonarCloud was removed; CodeQL and Scorecard remain.
 
 ## Desired state
 
-No workflow, dependency or document depends on storytold; Pliego has its own release workflow; the
+No workflow, dependency or document depends on a repository outside Nodalia; Pliego has its own release workflow; the
 interface follows Foundation's [NDL standard](https://github.com/getnodalia/foundation/blob/main/standards/ndl.md).
 
 ## Inherited dependencies still pending
 
-| Dependency | Where | Replacement | Blocked on |
-|---|---|---|---|
-| `storytold/craft-common-actions` | `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
-| `storytold/craft-fonts` | `crates/fonts/build.rs`, `flake.nix`, `nix/package.nix` | getnodalia/foundation `vendor/craft-fonts/main` | repointing |
-| `storytold/craft-libs` | `nix/package.nix`, `packaging/windows/README.md` | to decide | — |
-| `storytold/indd-utils` | `Cargo.toml` | to decide | — |
-| `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
-| `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
-| `storytold/winprint.rs` | `Cargo.toml` | to decide | — |
+None.
+
 
 ## Names
 
