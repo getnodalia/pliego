@@ -49,12 +49,12 @@ Kind: **F** feature · **U** UI/UX · **T** typography · **FF** file format · 
   Pliego draws from those files is unmeasured, and it inherits the IDML importer's open bugs
   (gap 3).
 - **Impact:** a client's `.indd` opens, but nobody knows how close it comes to the original.
-- **Estimate:** 10–30 h (corpus pinned in a sibling of `storytold/photocraft-corpus`, metric,
+- **Estimate:** 10–30 h (corpus pinned in `getnodalia/nodalia-corpus`, metric,
   fixes in indd-utils or the IDML importer).
 - **Doc:** [file-format-parity.md](file-format-parity.md)
 
 ### 3. IDML round-trip isn't proven on real files (FF)
-- **Missing:** a corpus test of real InDesign-authored IDML (via `storytold/photocraft-corpus` or
+- **Missing:** a corpus test of real InDesign-authored IDML (via `getnodalia/nodalia-corpus` or
   a sibling) measuring what survives import → export → reopen in InDesign. Open bugs: frames not
   rendered without a warning (#193), `$ID/` font names reported missing (#338), no
   `PDFAttribute` on export (#339), drag-drop open of IDML on the app icon (#211).
